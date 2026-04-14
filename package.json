@@ -8,11 +8,24 @@
     "dev": "pnpm -r run dev",
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
-    "bench": "pnpm -r run bench"
+    "bench": "pnpm -r run bench",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
-  "keywords": ["framework", "ai", "reactive", "renderer", "qore"],
+  "keywords": [
+    "framework",
+    "ai",
+    "reactive",
+    "renderer",
+    "qore"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^51.2.1",
+    "vitepress": "^1.6.4"
   }
 }
