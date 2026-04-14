@@ -36,7 +36,7 @@ export function stream(
   container.appendChild(output);
   
   const update = () => {
-    output.innerHTML = parseMarkdown ? parseMarkdown(content) : content;
+    output.innerHTML = parseMarkdown ? doParseMarkdown(content) : content;
   };
   
   const write: StreamWriter = (chunk: string) => {
@@ -59,7 +59,7 @@ export function stream(
 /**
  * Simple Markdown parser
  */
-function parseMarkdown(text: string): string {
+function doParseMarkdown(text: string): string {
   return text
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')

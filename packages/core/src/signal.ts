@@ -9,7 +9,7 @@ let batchDepth = 0;
 const pendingEffects = new Set<EffectNode>();
 
 class EffectNode {
-  deps = new Set<SignalNode>();
+  deps = new Set<SignalNode<any>>();
   fn: EffectFn;
   
   constructor(fn: EffectFn) {
@@ -34,7 +34,7 @@ class EffectNode {
 
 class SignalNode<T> {
   private value: T;
-  private subs = new Set<EffectNode>();
+  subs = new Set<EffectNode>();
   
   constructor(initial: T) {
     this.value = initial;

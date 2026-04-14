@@ -103,10 +103,10 @@ export function text(signalOrValue: (() => string | number) | string | number): 
 }
 
 export function render(root: HTMLElement, fn: () => VNode): () => void {
-  let cleanup: (() => void) | null = null;
+  let cleanup: (() => void) | undefined;
   
-  const run = () => {
-    if (cleanup) cleanup();
+  const run = (): void => {
+    cleanup?.();
     root.innerHTML = '';
     const vnode = fn();
     
@@ -117,7 +117,9 @@ export function render(root: HTMLElement, fn: () => VNode): () => void {
     }
   };
   
-  return effect(run);
+  const stop = effect(run);
+  cleanup = stop;
+  return stop;
 }
 
 export function show<T>(condition: () => boolean, fn: () => T): T | null {
