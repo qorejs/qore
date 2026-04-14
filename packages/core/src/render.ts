@@ -3,10 +3,49 @@
  * No VDOM, No Diff - Direct signal binding
  */
 
-import { effect } from './signal';
+import { effect, signal } from './signal';
 
-export type VNode = string | number | Node | Component;
+export type VNode = string | number | Node | Component | VNode[];
 export type Component = () => VNode;
+
+/**
+ * Portal - Render children to a different DOM node
+ */
+export function Portal({ children, target }: { children: VNode; target: HTMLElement | string }): null {
+  const container = typeof target === 'string' ? document.querySelector(target) : target;
+  
+  if (!container) {
+    console.warn('Portal target not found:', String(target));
+    return null;
+  }
+  
+  const renderToPortal = () => {
+    container.innerHTML = '';
+    const vnode = typeof children === 'function' ? children() : children;
+    
+    if (Array.isArray(vnode)) {
+      vnode.forEach(node => {
+        if (node instanceof Node) {
+          container.appendChild(node);
+        } else if (typeof node === 'string' || typeof node === 'number') {
+          container.appendChild(document.createTextNode(String(node)));
+        }
+      });
+    } else if (vnode instanceof Node) {
+      container.appendChild(vnode);
+    } else if (vnode != null) {
+      container.appendChild(document.createTextNode(String(vnode)));
+    }
+  };
+  
+  if (typeof children === 'function') {
+    effect(renderToPortal);
+  } else {
+    renderToPortal();
+  }
+  
+  return null;
+}
 
 export function h(
   type: string | Component,
@@ -35,14 +74,14 @@ export function h(
     }
   }
   
-  const flatChildren = children.flat();
+  const flatChildren = children.flat(Infinity);
   for (const child of flatChildren) {
     if (child != null) {
-      el.appendChild(
-        typeof child === 'string' || typeof child === 'number'
-          ? document.createTextNode(String(child))
-          : child as Node
-      );
+      if (typeof child === 'string' || typeof child === 'number') {
+        el.appendChild(document.createTextNode(String(child)));
+      } else if (child instanceof Node) {
+        el.appendChild(child);
+      }
     }
   }
   
