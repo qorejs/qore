@@ -1,0 +1,14 @@
+{
+  "name": "@qore/benchmarks",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "bench": "tsx index.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0"
+  },
+  "dependencies": {
+    "@qore/core": "workspace:*"
+  }
+}
