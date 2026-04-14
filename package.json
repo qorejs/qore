@@ -1,0 +1,18 @@
+{
+  "name": "qore-monorepo",
+  "version": "0.0.1",
+  "description": "Qore - AI Native Frontend Framework",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r run dev",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "bench": "pnpm -r run bench"
+  },
+  "keywords": ["framework", "ai", "reactive", "renderer", "qore"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
