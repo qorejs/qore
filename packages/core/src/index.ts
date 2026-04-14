@@ -18,3 +18,7 @@ export type { Component, Props } from './component';
 // Streaming
 export { createStream, createStreamWriter, streamText } from './stream';
 export type { StreamWriter, StreamInstance, StreamOptions } from './stream';
+
+// Suspense
+export { createSuspense, Suspense, lazy, useAsyncData } from './suspense';
+export type { SuspenseState, SuspenseOptions } from './suspense';
