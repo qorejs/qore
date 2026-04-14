@@ -1,14 +1,16 @@
 /**
  * Qore Stream - Streaming Component for AI Responses
- * Supports incremental updates for AI streaming responses
+ * Supports incremental updates with diff-based patching
  */
 
 import { h, VNode, Renderer, patch } from './renderer';
 import { signal, Signal } from './reactive';
+import { diff, Patch, applyPatches } from './diff';
 
 export interface StreamWriter {
   write(vnode: VNode): void;
   update(vnode: VNode): void;
+  patch(vnode: VNode): void; // Incremental patch using diff
   append(vnode: VNode): void;
   clear(): void;
 }
@@ -55,9 +57,7 @@ export function createStream(
   
   const updateDOM = () => {
     if (!container || !renderer || !currentVNode) return;
-    
-    const oldVNode = content.get();
-    patch(container, oldVNode, currentVNode);
+    renderer.patch(currentVNode);
   };
   
   const writer: StreamWriter = {
@@ -65,7 +65,9 @@ export function createStream(
       if (aborted) return;
       currentVNode = vnode;
       content.set(vnode);
-      updateDOM();
+      if (container && renderer) {
+        renderer.render(vnode);
+      }
     },
     
     update(vnode: VNode): void {
@@ -75,6 +77,29 @@ export function createStream(
       updateDOM();
     },
     
+    /**
+     * Incremental patch - only update changed parts
+     * Uses diff algorithm to find minimal changes
+     */
+    patch(vnode: VNode): void {
+      if (aborted) return;
+      
+      if (!currentVNode) {
+        // No previous content, just write
+        writer.write(vnode);
+        return;
+      }
+      
+      // Calculate diff and apply patches
+      const patches = diff(currentVNode, vnode);
+      
+      if (patches.length > 0) {
+        currentVNode = applyPatches(currentVNode, patches);
+        content.set(currentVNode);
+        updateDOM();
+      }
+    },
+    
     append(vnode: VNode): void {
       if (aborted) return;
       if (!currentVNode || typeof currentVNode === 'string' || typeof currentVNode === 'number') {
@@ -82,11 +107,12 @@ export function createStream(
       } else {
         children.push(vnode);
       }
-      currentVNode = {
+      const newVNode = {
         type: 'div',
         props: null,
         children: [...children],
       };
+      currentVNode = newVNode;
       content.set(currentVNode);
       updateDOM();
     },
@@ -143,12 +169,12 @@ export function createStreamWriter(
   let currentVNode: VNode | null = null;
   let children: VNode[] = [];
   let aborted = false;
-  let oldVNode: VNode | null = null;
+  
+  const renderer = new Renderer(container);
   
   const updateDOM = () => {
     if (!currentVNode) return;
-    patch(container, oldVNode, currentVNode);
-    oldVNode = currentVNode;
+    renderer.patch(currentVNode);
   };
   
   const writer: StreamWriter = {
@@ -156,7 +182,7 @@ export function createStreamWriter(
       if (aborted) return;
       currentVNode = vnode;
       content.set(vnode);
-      updateDOM();
+      renderer.render(vnode);
     },
     
     update(vnode: VNode): void {
@@ -164,6 +190,23 @@ export function createStreamWriter(
       currentVNode = vnode;
       content.set(vnode);
       updateDOM();
+    },
+    
+    patch(vnode: VNode): void {
+      if (aborted) return;
+      
+      if (!currentVNode) {
+        writer.write(vnode);
+        return;
+      }
+      
+      const patches = diff(currentVNode, vnode);
+      
+      if (patches.length > 0) {
+        currentVNode = applyPatches(currentVNode, patches);
+        content.set(currentVNode);
+        updateDOM();
+      }
     },
     
     append(vnode: VNode): void {
@@ -186,7 +229,6 @@ export function createStreamWriter(
       if (aborted) return;
       currentVNode = null;
       children = [];
-      oldVNode = null;
       content.set(null);
       container.innerHTML = '';
     },
@@ -224,6 +266,97 @@ export function streamText(
     for (let i = 0; i < text.length; i++) {
       await new Promise(resolve => setTimeout(resolve, speed));
       writer.update(h('span', null, text.slice(0, i + 1)));
+    }
+    
+    onComplete?.();
+  }, options);
+}
+
+/**
+ * Stream markdown content with incremental rendering
+ * Supports incremental updates for better performance
+ */
+export function streamMarkdown(
+  markdown: string,
+  options: {
+    container?: HTMLElement;
+    speed?: number;
+    onComplete?: () => void;
+  } = {}
+): StreamInstance {
+  const { speed = 30, onComplete } = options;
+  
+  return createStream(async (writer) => {
+    writer.write(h('div', { className: 'markdown' }, ''));
+    
+    // Simple markdown parser (can be replaced with a real one)
+    const lines = markdown.split('\n');
+    let currentContent = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      currentContent += (i > 0 ? '\n' : '') + line;
+      
+      await new Promise(resolve => setTimeout(resolve, speed));
+      
+      // Parse markdown to VNode (simplified)
+      const vnode = parseMarkdown(currentContent);
+      writer.patch(vnode);
+    }
+    
+    onComplete?.();
+  }, options);
+}
+
+/**
+ * Simple markdown parser (for demo purposes)
+ */
+function parseMarkdown(text: string): VNode {
+  const lines = text.split('\n');
+  const children: VNode[] = [];
+  
+  for (const line of lines) {
+    if (line.startsWith('# ')) {
+      children.push(h('h1', null, line.slice(2)));
+    } else if (line.startsWith('## ')) {
+      children.push(h('h2', null, line.slice(3)));
+    } else if (line.startsWith('### ')) {
+      children.push(h('h3', null, line.slice(4)));
+    } else if (line.startsWith('- ')) {
+      children.push(h('li', null, line.slice(2)));
+    } else if (line.startsWith('```')) {
+      // Code block handling would go here
+      children.push(h('code', null, line));
+    } else if (line.trim() === '') {
+      children.push(h('br', null));
+    } else {
+      children.push(h('p', null, line));
+    }
+  }
+  
+  return h('div', { className: 'markdown' }, ...children);
+}
+
+/**
+ * Stream code with syntax highlighting (incremental)
+ */
+export function streamCode(
+  code: string,
+  language: string = 'typescript',
+  options: {
+    container?: HTMLElement;
+    speed?: number;
+    onComplete?: () => void;
+  } = {}
+): StreamInstance {
+  const { speed = 20, onComplete } = options;
+  
+  return createStream(async (writer) => {
+    writer.write(h('pre', null, h('code', { className: `language-${language}` }, '')));
+    
+    for (let i = 0; i < code.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, speed));
+      writer.patch(h('pre', null, h('code', { className: `language-${language}` }, code.slice(0, i + 1))));
     }
     
     onComplete?.();

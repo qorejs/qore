@@ -15,8 +15,12 @@ export { createComponent, component, Fragment } from './component';
 export { div, span, button, input, ul, li, h1, h2, p } from './component';
 export type { Component, Props } from './component';
 
+// Diff Algorithm
+export { diff, applyPatches } from './diff';
+export type { Patch, PatchType } from './diff';
+
 // Streaming
-export { createStream, createStreamWriter, streamText } from './stream';
+export { createStream, createStreamWriter, streamText, streamMarkdown, streamCode } from './stream';
 export type { StreamWriter, StreamInstance, StreamOptions } from './stream';
 
 // Suspense
