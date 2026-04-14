@@ -1,106 +1,80 @@
-/**
- * Qore Stream Tests
- */
-
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createStream, streamText, createStreamWriter } from '../src/stream';
-import { h } from '../src/renderer';
+import { describe, it, expect, vi } from 'vitest';
+import { stream, streamText } from '../src/stream';
 
 describe('Stream', () => {
-  let container: HTMLElement;
-
-  beforeEach(() => {
-    container = document.createElement('div');
-    document.body.appendChild(container);
-  });
-
-  afterEach(() => {
-    if (container.parentNode) {
-      document.body.removeChild(container);
-    }
-  });
-
-  describe('createStream', () => {
-    it('should create a stream instance', () => {
-      const stream = createStream(async (writer) => {
-        writer.write(h('div', null, 'Hello'));
+  describe('stream', () => {
+    it('should create a stream instance', async () => {
+      const container = document.createElement('div');
+      const { abort } = stream(async (write) => {
+        write('Hello');
+        write.done();
       }, { container });
-
-      expect(stream.writer).toBeDefined();
-      expect(stream.content).toBeDefined();
-      expect(stream.isComplete).toBeDefined();
-      expect(stream.error).toBeDefined();
-      expect(stream.abort).toBeDefined();
+      
+      expect(abort).toBeDefined();
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(container.querySelector('.stream-output')?.textContent).toBe('Hello');
     });
 
     it('should call onComplete when finished', async () => {
-      return new Promise<void>((resolve) => {
-        const stream = createStream(async (writer) => {
-          writer.write(h('div', null, 'Content'));
-        }, {
-          container,
-          onComplete: () => {
-            expect(stream.isComplete.get()).toBe(true);
-            resolve();
-          },
-        });
-      });
+      const container = document.createElement('div');
+      const onComplete = vi.fn();
+      
+      stream(async (write) => {
+        write('Test');
+        write.done();
+      }, { container, onComplete });
+      
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(onComplete).toHaveBeenCalled();
     });
 
     it('should handle errors', async () => {
-      return new Promise<void>((resolve) => {
-        const stream = createStream(async () => {
-          throw new Error('Test error');
-        }, {
-          container,
-          onError: (err) => {
-            expect(err.message).toBe('Test error');
-            expect(stream.error.get()).toBeDefined();
-            resolve();
-          },
-        });
-      });
+      const container = document.createElement('div');
+      const onError = vi.fn();
+      
+      stream(async () => {
+        throw new Error('Test error');
+      }, { container, onError });
+      
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(onError).toHaveBeenCalled();
     });
 
     it('should abort stream', async () => {
-      return new Promise<void>((resolve) => {
-        const stream = createStream(async (writer) => {
-          stream.abort();
-          writer.write(h('div', null, 'Should not appear'));
-          resolve();
-        }, { container });
-        
-        setTimeout(() => {
-          expect(container.innerHTML).not.toContain('Should not appear');
-          resolve();
-        }, 30);
-      });
+      const container = document.createElement('div');
+      
+      const { abort } = stream(async (write) => {
+        write('Start');
+        await new Promise(resolve => setTimeout(resolve, 5));
+        write('Middle');
+        await new Promise(resolve => setTimeout(resolve, 5));
+        write('End');
+        write.done();
+      }, { container });
+      
+      // Wait for first write
+      await new Promise(resolve => setTimeout(resolve, 2));
+      expect(container.querySelector('.stream-output')?.textContent).toBe('Start');
+      
+      // Abort before more writes
+      abort();
+      await new Promise(resolve => setTimeout(resolve, 20));
+      
+      // Should not have 'Middle' or 'End'
+      expect(container.querySelector('.stream-output')?.textContent).toBe('Start');
     });
   });
 
   describe('streamText', () => {
-    it('should call onComplete when finished', async () => {
-      return new Promise<void>((resolve) => {
-        streamText('Test', {
-          container,
-          speed: 10,
-          onComplete: () => {
-            resolve();
-          },
-        });
-      });
-    });
-  });
-
-  describe('createStreamWriter', () => {
-    it('should create writer for manual control', () => {
-      const { writer } = createStreamWriter(container);
+    it('should stream text with typewriter effect', async () => {
+      const container = document.createElement('div');
+      const onComplete = vi.fn();
       
-      expect(writer).toBeDefined();
+      streamText('Hello', { container, speed: 10, onComplete });
       
-      writer.write(h('div', null, 'Manual write'));
-      
-      expect(container.innerHTML).toContain('Manual write');
+      await new Promise(resolve => setTimeout(resolve, 80));
+      expect(container.querySelector('.stream-output')?.textContent).toBe('Hello');
+      expect(onComplete).toHaveBeenCalled();
     });
   });
 });

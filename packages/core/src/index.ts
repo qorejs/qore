@@ -1,28 +1,19 @@
 /**
- * Qore - The Core of AI Era UI
- * AI-Native Frontend Framework
+ * Qore - AI-Native Frontend Framework
+ * < 3kb gzip core
  */
 
-// Reactive System
-export { Signal, Computed, signal, computed, effect, batch } from './reactive';
+// Signal System
+export { signal, computed, effect, batch } from './signal';
+export type { Signal } from './signal';
 
 // Renderer
-export { h, text, Renderer, patch } from './renderer';
-export type { VNode, VElement, VText } from './renderer';
+export { h, text, render, show, For, Fragment, div, span, button, input, p, h1, h2, h3 } from './render';
+export type { VNode, Component } from './render';
 
-// Components
-export { createComponent, component, Fragment } from './component';
-export { div, span, button, input, ul, li, h1, h2, p } from './component';
-export type { Component, Props } from './component';
+// AI Streaming
+export { stream, streamText } from './stream';
+export type { StreamWriter, StreamOptions } from './stream';
 
-// Diff Algorithm
-export { diff, applyPatches } from './diff';
-export type { Patch, PatchType } from './diff';
-
-// Streaming
-export { createStream, createStreamWriter, streamText, streamMarkdown, streamCode } from './stream';
-export type { StreamWriter, StreamInstance, StreamOptions } from './stream';
-
-// Suspense
-export { createSuspense, Suspense, lazy, useAsyncData } from './suspense';
-export type { SuspenseState, SuspenseOptions } from './suspense';
+// Utilities
+export { debounce, throttle, cx, on, sleep } from './utils';
