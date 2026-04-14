@@ -14,3 +14,7 @@ export type { VNode, VElement, VText } from './renderer';
 export { createComponent, component, Fragment } from './component';
 export { div, span, button, input, ul, li, h1, h2, p } from './component';
 export type { Component, Props } from './component';
+
+// Streaming
+export { createStream, createStreamWriter, streamText } from './stream';
+export type { StreamWriter, StreamInstance, StreamOptions } from './stream';
