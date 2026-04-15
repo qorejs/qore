@@ -33,11 +33,11 @@ Check out our [AI Chat Demo](./examples/ai-chat/) - a real-time chat interface w
 ## 📦 Installation
 
 ```bash
-npm install @qore/core
+npm install qorejs
 # or
-pnpm add @qore/core
+pnpm add qorejs
 # or
-yarn add @qore/core
+yarn add qorejs
 ```
 
 ---
@@ -47,8 +47,8 @@ yarn add @qore/core
 ### Basic Example
 
 ```typescript
-import { signal, computed } from '@qore/core';
-import { h, render } from '@qore/core';
+import { signal, computed } from 'qorejs';
+import { h, render } from 'qorejs';
 
 // Create reactive state
 const count = signal(0);
@@ -73,9 +73,9 @@ render(app, Counter);
 ### Streaming AI Response
 
 ```typescript
-import { signal } from '@qore/core';
-import { h, render } from '@qore/core';
-import { stream } from '@qore/core';
+import { signal } from 'qorejs';
+import { h, render } from 'qorejs';
+import { stream } from 'qorejs';
 
 const ChatApp = () => {
   const response = signal('');

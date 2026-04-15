@@ -20,7 +20,7 @@ export interface StreamOptions {
 }
 
 /**
- * AI 流式响应 (客户端)
+ * AI streaming response (client-side)
  */
 export function stream(
   fn: (write: StreamWriter) => Promise<void>,
@@ -92,8 +92,8 @@ export function streamText(
 // ============== Server-Side Streaming ==============
 
 /**
- * 服务端流式渲染器
- * 支持分块输出 HTML 片段
+ * Server-side stream renderer
+ * Support chunked HTML fragment output
  */
 export class StreamRenderer {
   private chunks: string[] = [];
@@ -102,7 +102,7 @@ export class StreamRenderer {
   private error: Error | null = null;
 
   /**
-   * 写入一个 HTML 块
+   * Write an HTML chunk
    */
   write(chunk: string): void {
     this.chunks.push(chunk);
@@ -110,14 +110,14 @@ export class StreamRenderer {
   }
 
   /**
-   * 完成流式渲染
+   * Complete stream rendering
    */
   end(): void {
     this.resolved = true;
   }
 
   /**
-   * 抛出错误
+   * Throw error
    */
   fail(err: Error): void {
     this.error = err;
@@ -125,11 +125,11 @@ export class StreamRenderer {
   }
 
   /**
-   * 订阅流式输出
+   * Subscribe to stream output
    */
   subscribe(callback: (chunk: string) => void): () => void {
     this.callbacks.push(callback);
-    // 立即发送已有 chunks
+    // Immediately send existing chunks
     this.chunks.forEach(chunk => callback(chunk));
     
     return () => {
@@ -139,14 +139,14 @@ export class StreamRenderer {
   }
 
   /**
-   * 获取完整 HTML
+   * Get complete HTML
    */
   getHTML(): string {
     return this.chunks.join('');
   }
 
   /**
-   * 异步迭代器 - 用于 for await...of
+   * Async iterator - for use with for await...of
    */
   async *[Symbol.asyncIterator](): AsyncGenerator<string, void, unknown> {
     let index = 0;
@@ -175,7 +175,7 @@ export class StreamRenderer {
 }
 
 /**
- * 流式 HTML 片段生成器
+ * Stream HTML fragment generator
  */
 export function createStreamHTML(): {
   renderer: StreamRenderer;
@@ -194,12 +194,12 @@ export function createStreamHTML(): {
 // ============== Suspense & Lazy Loading ==============
 
 /**
- * Suspense 状态
+ * Suspense state
  */
 export type SuspenseState = 'pending' | 'resolved' | 'error';
 
 /**
- * Suspense 组件属性
+ * Suspense component props
  */
 export interface SuspenseProps {
   fallback: VNode;
@@ -208,11 +208,11 @@ export interface SuspenseProps {
 }
 
 /**
- * Suspense 边界组件
- * 用于包裹异步加载的组件 - 每个实例有独立状态
+ * Suspense boundary component
+ * Wraps asynchronously loaded components - each instance has independent state
  */
 export function Suspense({ fallback, children, onError }: SuspenseProps): Component {
-  // 状态下沉到组件实例内部，避免全局单例问题
+  // State sinks to component instance level, avoiding global singleton issues
   const state = signal<SuspenseState>('pending');
   const errorSig = signal<Error | null>(null);
 
@@ -234,8 +234,8 @@ export function Suspense({ fallback, children, onError }: SuspenseProps): Compon
 }
 
 /**
- * 创建带状态的 Suspense 组件
- * 允许外部控制加载状态
+ * Create Suspense component with state
+ * Allow external control of loading state
  */
 export function createSuspense({ fallback, children, onError }: SuspenseProps): {
   component: Component;
@@ -272,8 +272,8 @@ export function createSuspense({ fallback, children, onError }: SuspenseProps): 
 }
 
 /**
- * lazy() - 懒加载组件
- * 返回一个包装的组件，首次渲染时显示 Suspense fallback
+ * lazy() - lazy load component
+ * Returns a wrapped component that displays Suspense fallback on first render
  */
 export function lazy<T extends Component>(
   importFn: () => Promise<{ default: T }>
@@ -302,7 +302,7 @@ export function lazy<T extends Component>(
 }
 
 /**
- * 异步组件包装器
+ * Async component wrapper
  */
 export function asyncComponent<T extends Component>(
   importFn: () => Promise<{ default: T }>,
@@ -340,7 +340,7 @@ export function asyncComponent<T extends Component>(
 // ============== Incremental DOM Updates ==============
 
 /**
- * 增量更新块
+ * Incremental update chunk
  */
 export interface IncrementalUpdate {
   id: string;
@@ -349,14 +349,14 @@ export interface IncrementalUpdate {
 }
 
 /**
- * 创建增量更新消息
+ * Create incremental update message
  */
 export function createUpdate(id: string, html: string, type: IncrementalUpdate['type'] = 'replace'): IncrementalUpdate {
   return { id, html, type };
 }
 
 /**
- * 应用增量更新到 DOM
+ * Apply incremental update to DOM
  */
 export function applyUpdate(container: HTMLElement, update: IncrementalUpdate): void {
   const { id, html, type } = update;
@@ -398,8 +398,8 @@ export function applyUpdate(container: HTMLElement, update: IncrementalUpdate): 
 }
 
 /**
- * 流式渲染到目标元素
- * 支持服务端推送的增量更新
+ * Stream render to target element
+ * Support server-push incremental updates
  */
 export function renderToStream(
   container: HTMLElement,
@@ -412,12 +412,12 @@ export function renderToStream(
       for await (const chunk of stream) {
         if (aborted) break;
         
-        // 解析增量更新
+        // Parse incremental update
         try {
           const update: IncrementalUpdate = JSON.parse(chunk);
           applyUpdate(container, update);
         } catch {
-          // 如果不是 JSON，直接追加 HTML
+          // If not JSON, directly append HTML
           container.insertAdjacentHTML('beforeend', chunk);
         }
       }

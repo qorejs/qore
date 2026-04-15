@@ -1,5 +1,5 @@
 {
-  "name": "qore",
+  "name": "qorejs",
   "version": "0.5.0",
   "description": "Qore - AI-Native Frontend Framework (<3kb gzip)",
   "type": "module",

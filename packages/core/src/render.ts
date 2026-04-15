@@ -56,7 +56,7 @@ export function h(
   ...children: any[]
 ): VNode {
   if (typeof type === 'function') {
-    // 组件函数 - 传入 props 和 children
+    // Component function - pass props and children
     return type({ ...props, children: children.length > 0 ? children.flat() : undefined });
   }
   
@@ -155,8 +155,8 @@ export const h3 = tag('h3');
 // ============== Server-Side Rendering ==============
 
 /**
- * 将 VNode 转换为 HTML 字符串 (SSR)
- * 纯字符串拼接，不依赖任何 DOM API，可在 Node.js 环境运行
+ * Convert VNode to HTML string (SSR)
+ * Pure string concatenation, no DOM API dependency, runs in Node.js environment
  */
 export function renderToString(vnode: VNode): string {
   if (vnode == null) return '';
@@ -170,12 +170,12 @@ export function renderToString(vnode: VNode): string {
   }
   
   if (typeof vnode === 'function') {
-    // 组件函数
+    // Component function
     return renderToString(vnode());
   }
   
-  // 处理 DOM 节点（在 jsdom/浏览器环境）
-  // 使用 nodeType 检测而不是 instanceof，避免依赖特定环境
+  // Handle DOM nodes (in jsdom/browser environment)
+  // Use nodeType detection instead of instanceof to avoid environment dependency
   if (typeof vnode === 'object' && 'nodeType' in vnode) {
     const node = vnode as unknown as { nodeType: number; outerHTML?: string; textContent?: string };
     // Element node
@@ -186,7 +186,7 @@ export function renderToString(vnode: VNode): string {
     return node.textContent || '';
   }
   
-  // 其他对象类型
+  // Other object types
   if (typeof vnode === 'object') {
     return '';
   }
@@ -195,15 +195,15 @@ export function renderToString(vnode: VNode): string {
 }
 
 /**
- * 将组件渲染为 HTML 字符串 (SSR)
+ * Render component to HTML string (SSR)
  */
 export function renderComponentToString(component: Component): string {
   return renderToString(component());
 }
 
 /**
- * 流式渲染到 StreamRenderer
- * 支持分块输出大型组件
+ * Stream render to StreamRenderer
+ * Support chunked output for large components
  */
 export function renderToStream(
   root: StreamRenderer,
@@ -219,14 +219,14 @@ export function renderToStream(
     onChunk?.(html);
   };
   
-  // 分块处理大型内容
+  // Process large content in chunks
   const vnode = fn();
   const html = renderToString(vnode);
   
   if (html.length <= chunkSize) {
     processChunk(html);
   } else {
-    // 分块输出
+    // Output in chunks
     for (let i = 0; i < html.length; i += chunkSize) {
       if (aborted) break;
       processChunk(html.slice(i, i + chunkSize));
@@ -239,8 +239,8 @@ export function renderToStream(
 }
 
 /**
- * 异步 VNode 解析
- * 支持组件返回 Promise
+ * Async VNode parsing
+ * Support components returning Promise
  */
 export async function renderAsync(vnode: VNode | Promise<VNode>): Promise<string> {
   const resolved = await vnode;
@@ -268,8 +268,8 @@ export async function renderAsync(vnode: VNode | Promise<VNode>): Promise<string
 }
 
 /**
- * 异步流式渲染
- * 支持异步组件的流式输出
+ * Async stream rendering
+ * Support streaming output for async components
  */
 export async function renderToStreamAsync(
   renderer: StreamRenderer,

@@ -18,13 +18,13 @@ class EffectNode {
   }
   
   run(): void {
-    // 清理旧的依赖关系
+    // Clean up old dependencies
     for (const dep of this.deps) {
       dep.subs.delete(this);
     }
     this.deps.clear();
     
-    // 调用之前的 cleanup
+    // Call cleanup before execution
     if (this.cleanup) {
       this.cleanup();
       this.cleanup = undefined;
@@ -34,7 +34,7 @@ class EffectNode {
     activeEffect = this;
     try {
       const result = this.fn();
-      // 保存新的 cleanup 函数
+      // Save new cleanup function
       if (typeof result === 'function') {
         this.cleanup = result;
       }
@@ -98,7 +98,7 @@ export function signal<T>(initial: T): Signal<T> {
   
   sig.peek = () => {
     const prev = activeEffect;
-    activeEffect = null; // 临时禁用依赖追踪
+    activeEffect = null; // Temporarily disable dependency tracking
     try {
       return node.get();
     } finally {
@@ -114,10 +114,10 @@ export function computed<T>(fn: () => T): Signal<T> {
   let lastReadVersion = 0;
   const subs = new Set<EffectNode>();
   
-  // 创建 effect node 来追踪依赖
+  // Create effect node to track dependencies
   const effectNode = new EffectNode(() => {
     depsVersion++;
-    // 当依赖变化时，通知所有订阅者
+    // Notify all subscribers when dependencies change
     for (const sub of subs) {
       if (batchDepth > 0) {
         pendingEffects.add(sub);
@@ -127,7 +127,7 @@ export function computed<T>(fn: () => T): Signal<T> {
     }
   });
   
-  // 初始依赖收集 - 必须在创建 effectNode 之后
+  // Initial dependency collection - must be after creating effectNode
   const prevEffect = activeEffect;
   activeEffect = effectNode;
   try {
@@ -142,12 +142,12 @@ export function computed<T>(fn: () => T): Signal<T> {
       throw new Error('Computed signals are read-only');
     }
     
-    // 让当前 effect 订阅这个 computed
+    // Let current effect subscribe to this computed
     if (activeEffect) {
       subs.add(activeEffect);
     }
     
-    // 如果依赖有变化，重新计算
+    // Recalculate if dependencies have changed
     if (depsVersion > lastReadVersion) {
       const prev = activeEffect;
       activeEffect = effectNode;
@@ -165,7 +165,7 @@ export function computed<T>(fn: () => T): Signal<T> {
   sig.peek = () => {
     if (depsVersion > lastReadVersion) {
       const prev = activeEffect;
-      activeEffect = null; // 临时禁用依赖追踪
+      activeEffect = null; // Temporarily disable dependency tracking
       try {
         value = fn();
       } finally {
@@ -183,12 +183,12 @@ export function effect(fn: EffectFn): () => void {
   const node = new EffectNode(fn);
   node.run();
   return () => {
-    // 调用 cleanup
+    // Call cleanup
     if (node.cleanup) {
       node.cleanup();
       node.cleanup = undefined;
     }
-    // 清理依赖关系
+    // Clean up dependencies
     for (const dep of node.deps) {
       dep.subs.delete(node);
     }
