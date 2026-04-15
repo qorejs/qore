@@ -9,6 +9,6 @@
     "tsx": "^4.7.0"
   },
   "dependencies": {
-    "@qore/core": "workspace:*"
+    "@qorejs/qore": "workspace:*"
   }
 }

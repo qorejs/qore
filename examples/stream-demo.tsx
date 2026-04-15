@@ -2,7 +2,7 @@
  * Qore Stream Demo - AI Streaming Response Example
  */
 
-import { h, createStream, streamText, div, span, button } from '@qore/core';
+import { h, createStream, streamText, div, span, button } from '@qorejs/qore';
 
 // Example 1: Basic streaming with AI response simulation
 export function basicStreamDemo(container: HTMLElement): void {

@@ -10,6 +10,6 @@ export default defineConfig({
     minify: 'esbuild',
   },
   optimizeDeps: {
-    include: ['@qore/core', '@qore/primitives', '@qore/devtools'],
+    include: ['@qorejs/qore', '@qore/primitives', '@qore/devtools'],
   },
 })

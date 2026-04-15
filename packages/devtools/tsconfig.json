@@ -15,12 +15,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
-    "jsxImportSource": "@qore/core",
+    "jsxImportSource": "@qorejs/qore",
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@qore/core": ["../core/src/index.ts"]
+      "@qorejs/qore": ["../core/src/index.ts"]
     }
   },
   "include": ["src/**/*"],

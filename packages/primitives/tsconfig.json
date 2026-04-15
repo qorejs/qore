@@ -21,7 +21,7 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@qore/core": ["../core/src/index.ts"]
+      "@qorejs/qore": ["../core/src/index.ts"]
     }
   },
   "include": ["src/**/*.tsx", "src/**/*.ts"],

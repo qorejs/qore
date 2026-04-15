@@ -4,7 +4,7 @@
  * Start building your components here.
  */
 
-import { h, type ComponentChildren } from '@qore/core'
+import { h, type ComponentChildren } from '@qorejs/qore'
 
 export interface MyComponentProps {
   title?: string

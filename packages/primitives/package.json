@@ -95,10 +95,10 @@
     "url": "https://github.com/qore-framework/qore/issues"
   },
   "peerDependencies": {
-    "@qore/core": "^0.6.0"
+    "@qorejs/qore": "^0.6.0"
   },
   "devDependencies": {
-    "@qore/core": "workspace:*",
+    "@qorejs/qore": "workspace:*",
     "@types/node": "^20.11.0",
     "typescript": "^5.4.0",
     "vite": "^5.2.0",

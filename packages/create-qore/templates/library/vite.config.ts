@@ -9,10 +9,10 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['@qore/core'],
+      external: ['@qorejs/qore'],
       output: {
         globals: {
-          '@qore/core': 'Qore',
+          '@qorejs/qore': 'Qore',
         },
       },
     },

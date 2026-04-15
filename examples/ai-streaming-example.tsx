@@ -3,7 +3,7 @@
  * Demonstrates real AI response streaming with incremental rendering
  */
 
-import { h, createStream, streamMarkdown, createStreamWriter } from '@qore/core';
+import { h, createStream, streamMarkdown, createStreamWriter } from '@qorejs/qore';
 
 /**
  * Example 1: AI Chat with Streaming Response

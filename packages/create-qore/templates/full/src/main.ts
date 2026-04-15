@@ -1,4 +1,4 @@
-import { createApp, h } from '@qore/core'
+import { createApp, h } from '@qorejs/qore'
 import { enableDevtools } from '@qore/devtools'
 import { ToastProvider } from '@qore/primitives'
 import { App } from './App'

@@ -1,4 +1,4 @@
-import { signal, h } from '@qore/core'
+import { signal, h } from '@qorejs/qore'
 import { Button, Input, Tabs, TabPanel, success, error } from '@qore/primitives'
 
 const tabs = [

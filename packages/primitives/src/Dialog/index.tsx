@@ -1,4 +1,4 @@
-import { type ComponentChildren, type JSX, signal, effect } from '@qore/core'
+import { type ComponentChildren, type JSX, signal, effect } from '@qorejs/qore'
 
 export interface DialogProps extends JSX.HTMLAttributes<HTMLDivElement> {
   /** Open state (controlled) */

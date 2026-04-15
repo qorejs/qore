@@ -1,4 +1,4 @@
-import { type ComponentChildren, type JSX, signal } from '@qore/core'
+import { type ComponentChildren, type JSX, signal } from '@qorejs/qore'
 
 export interface TextareaProps extends JSX.HTMLAttributes<HTMLTextAreaElement> {
   /** Textarea size */

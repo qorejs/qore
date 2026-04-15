@@ -3,7 +3,7 @@
  * Comprehensive comparison with React, Vue, and Solid
  */
 
-import { signal, effect, h, stream, streamText } from '@qore/core';
+import { signal, effect, h, stream, streamText } from '@qorejs/qore';
 
 export interface BenchmarkResult {
   framework: string;

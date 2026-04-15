@@ -1,4 +1,4 @@
-import { createApp, h } from '@qore/core'
+import { createApp, h } from '@qorejs/qore'
 import { App } from './App'
 
 // Create app

@@ -1,4 +1,4 @@
-import { h, type ComponentChildren } from '@qore/core'
+import { h, type ComponentChildren } from '@qorejs/qore'
 
 export interface ButtonProps {
   /** Button variant */

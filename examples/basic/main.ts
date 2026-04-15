@@ -2,7 +2,7 @@
  * Qore Basic Example - New API
  */
 
-import { signal, h, render, stream, useQuery } from '@qore/core';
+import { signal, h, render, stream, useQuery } from '@qorejs/qore';
 
 // Counter Example
 function Counter() {

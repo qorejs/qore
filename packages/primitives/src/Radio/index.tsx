@@ -1,4 +1,4 @@
-import { type ComponentChildren, type JSX, signal } from '@qore/core'
+import { type ComponentChildren, type JSX, signal } from '@qorejs/qore'
 
 export interface RadioOption {
   value: string | number

@@ -3,7 +3,7 @@
  * Tests for proper cleanup of components, signals, and event listeners
  */
 
-import { signal, effect, h, render, on } from '@qore/core';
+import { signal, effect, h, render, on } from '@qorejs/qore';
 
 export interface MemoryTestResult {
   test: string;

@@ -1,4 +1,4 @@
-import { type ComponentChildren, type JSX, signal, effect, batch } from '@qore/core'
+import { type ComponentChildren, type JSX, signal, effect, batch } from '@qorejs/qore'
 
 export type ToastType = 'info' | 'success' | 'warning' | 'error'
 

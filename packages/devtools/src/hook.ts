@@ -2,11 +2,11 @@
  * Qore Devtools Hook
  * 
  * This module provides hooks for the Qore core to communicate with devtools.
- * It's designed to be called from @qore/core at key lifecycle points.
+ * It's designed to be called from @qorejs/qore at key lifecycle points.
  */
 
-import type { Signal, Computed, Effect } from '@qore/core'
-import type { Component } from '@qore/core'
+import type { Signal, Computed, Effect } from '@qorejs/qore'
+import type { Component } from '@qorejs/qore'
 
 export interface DevtoolsHook {
   /** Called when a signal is created */

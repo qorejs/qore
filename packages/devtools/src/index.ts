@@ -6,7 +6,7 @@
  * performance profiling, and event timeline debugging.
  */
 
-import type { App } from '@qore/core'
+import type { App } from '@qorejs/qore'
 import { registerDevtoolsHook, unregisterDevtoolsHook, type DevtoolsHook } from './hook'
 
 export interface DevtoolsOptions {

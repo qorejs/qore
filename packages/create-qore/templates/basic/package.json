@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@qore/core": "^0.6.0"
+    "@qorejs/qore": "^0.6.0"
   },
   "devDependencies": {
     "@qore/devtools": "^0.6.0",

@@ -3,7 +3,7 @@
  * Tests for rendering performance with 10000+ nodes
  */
 
-import { signal, effect, h, render, batch } from '@qore/core';
+import { signal, effect, h, render, batch } from '@qorejs/qore';
 
 export interface RenderTestResult {
   test: string;

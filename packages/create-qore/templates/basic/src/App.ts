@@ -1,4 +1,4 @@
-import { signal, h } from '@qore/core'
+import { signal, h } from '@qorejs/qore'
 
 export function App() {
   const count = signal(0)
