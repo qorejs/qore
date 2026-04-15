@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Test files
+tests/
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+
+# Build artifacts (kept for development, excluded from npm)
+dist/*.map
+dist/**/*.map
+
+# Development config
+vite.config.ts
+tsconfig.json
+
+# Documentation (kept in repo, not npm)
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/
+
+# Misc
+.git/
+.github/
+.gitignore

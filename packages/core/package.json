@@ -1,25 +1,73 @@
 {
   "name": "@qore/core",
-  "version": "0.0.1",
+  "version": "0.5.0",
+  "description": "Qore - AI-Native Frontend Framework (<3kb gzip)",
   "type": "module",
   "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./ssr": {
+      "import": "./dist/ssr.js",
+      "types": "./dist/ssr.d.ts"
+    },
+    "./virtual-list": {
+      "import": "./dist/virtual-list.js",
+      "types": "./dist/virtual-list.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
   "scripts": {
     "dev": "vite build --watch",
     "build": "vite build",
+    "build:types": "tsc --emitDeclarationOnly",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm run test",
+    "publish:npm": "npm publish --access public"
+  },
+  "keywords": [
+    "frontend",
+    "framework",
+    "reactive",
+    "signals",
+    "ai",
+    "streaming",
+    "ssr",
+    "virtual-list",
+    "lightweight"
+  ],
+  "author": "Qore Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qore-framework/qore.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/qore-framework/qore#readme",
+  "bugs": {
+    "url": "https://github.com/qore-framework/qore/issues"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "jsdom": "^29.0.2",
     "typescript": "^5.4.0",
     "vite": "^5.2.0",
+    "vite-plugin-dts": "^3.7.0",
     "vitest": "^1.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

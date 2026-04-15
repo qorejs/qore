@@ -25,11 +25,28 @@ export {
   h2, 
   h3,
   renderToString,
+  renderToStream,
   renderToStream as renderToStreamDOM,
   renderAsync,
   renderToStreamAsync
 } from './render';
 export type { VNode, Component } from './render';
+
+// SSR - Server-Side Rendering
+export {
+  renderToString as renderToStringSSR,
+  renderComponentToString,
+  renderProps,
+  renderElement,
+  renderToStream as renderToStreamSSR,
+  renderAsync as renderAsyncSSR,
+  renderToStreamAsync as renderToStreamAsyncSSR,
+  renderWithSuspense,
+  renderSSR,
+  prefetchAndRender,
+  createPrefetchContext
+} from './ssr';
+export type { SSRResult, PrefetchContext } from './ssr';
 
 // AI Streaming
 export { stream, streamText } from './stream';
@@ -48,6 +65,20 @@ export {
   renderToStream as renderToStreamIncremental
 } from './stream';
 export type { SuspenseProps, SuspenseState, IncrementalUpdate } from './stream';
+
+// Virtual List - High-performance list rendering
+export {
+  VirtualList,
+  InfiniteList,
+  FixedVirtualList,
+  VirtualGrid
+} from './virtual-list';
+export type {
+  VirtualListProps,
+  VirtualListItem,
+  InfiniteListProps,
+  VirtualGridProps
+} from './virtual-list';
 
 // Error Handling
 export { 
