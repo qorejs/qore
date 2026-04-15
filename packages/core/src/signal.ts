@@ -96,7 +96,15 @@ export function signal<T>(initial: T): Signal<T> {
     return node.get();
   };
   
-  sig.peek = () => node.get();
+  sig.peek = () => {
+    const prev = activeEffect;
+    activeEffect = null; // 临时禁用依赖追踪
+    try {
+      return node.get();
+    } finally {
+      activeEffect = prev;
+    }
+  };
   return sig;
 }
 
@@ -157,7 +165,7 @@ export function computed<T>(fn: () => T): Signal<T> {
   sig.peek = () => {
     if (depsVersion > lastReadVersion) {
       const prev = activeEffect;
-      activeEffect = effectNode;
+      activeEffect = null; // 临时禁用依赖追踪
       try {
         value = fn();
       } finally {

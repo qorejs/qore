@@ -10,9 +10,9 @@ import {
   createUpdate,
   applyUpdate,
   Suspense,
+  createSuspense,
   lazy,
   asyncComponent,
-  setSuspenseState,
   renderToStreamDOM as renderToStream,
   renderToStreamAsync,
   renderToString,
@@ -158,39 +158,37 @@ describe('Incremental Updates', () => {
 
 describe('Suspense', () => {
   it('should render fallback when pending', () => {
-    setSuspenseState('pending');
-    
-    const component = Suspense({
+    const { component, setState } = createSuspense({
       fallback: div({}, 'Loading...'),
       children: () => div({}, 'Content')
     });
     
+    setState('pending');
     const result = component();
     expect(renderToString(result)).toContain('Loading...');
   });
 
   it('should render children when resolved', () => {
-    setSuspenseState('resolved');
-    
-    const component = Suspense({
+    const { component, setState } = createSuspense({
       fallback: div({}, 'Loading...'),
       children: () => div({}, 'Content')
     });
     
+    setState('resolved');
     const result = component();
     expect(renderToString(result)).toContain('Content');
   });
 
   it('should call onError when error', () => {
     const errors: Error[] = [];
-    setSuspenseState('error', new Error('Test'));
     
-    const component = Suspense({
+    const { component, setState } = createSuspense({
       fallback: div({}, 'Error'),
       children: () => div({}, 'Content'),
       onError: (err) => errors.push(err)
     });
     
+    setState('error', new Error('Test'));
     component();
     expect(errors.length).toBe(1);
   });

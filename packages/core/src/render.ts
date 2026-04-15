@@ -56,7 +56,8 @@ export function h(
   ...children: any[]
 ): VNode {
   if (typeof type === 'function') {
-    return type();
+    // 组件函数 - 传入 props 和 children
+    return type({ ...props, children: children.length > 0 ? children.flat() : undefined });
   }
   
   const el = document.createElement(type);
@@ -155,6 +156,7 @@ export const h3 = tag('h3');
 
 /**
  * 将 VNode 转换为 HTML 字符串 (SSR)
+ * 纯字符串拼接，不依赖任何 DOM API，可在 Node.js 环境运行
  */
 export function renderToString(vnode: VNode): string {
   if (vnode == null) return '';
@@ -167,17 +169,29 @@ export function renderToString(vnode: VNode): string {
     return vnode.map(v => renderToString(v)).join('');
   }
   
-  if (vnode instanceof Node) {
-    // 如果已经是 DOM 节点，返回其 outerHTML 或 textContent
-    return vnode instanceof Element ? vnode.outerHTML : vnode.textContent || '';
-  }
-  
   if (typeof vnode === 'function') {
     // 组件函数
     return renderToString(vnode());
   }
   
-  return '';
+  // 处理 DOM 节点（在 jsdom/浏览器环境）
+  // 使用 nodeType 检测而不是 instanceof，避免依赖特定环境
+  if (typeof vnode === 'object' && 'nodeType' in vnode) {
+    const node = vnode as unknown as { nodeType: number; outerHTML?: string; textContent?: string };
+    // Element node
+    if (node.nodeType === 1) {
+      return node.outerHTML || '';
+    }
+    // Text/Comment node
+    return node.textContent || '';
+  }
+  
+  // 其他对象类型
+  if (typeof vnode === 'object') {
+    return '';
+  }
+  
+  return String(vnode);
 }
 
 /**
@@ -192,7 +206,7 @@ export function renderComponentToString(component: Component): string {
  * 支持分块输出大型组件
  */
 export function renderToStream(
-  root: HTMLElement | StreamRenderer,
+  root: StreamRenderer,
   fn: () => VNode,
   options?: { chunkSize?: number; onChunk?: (chunk: string) => void }
 ): { abort: () => void } {
@@ -201,13 +215,7 @@ export function renderToStream(
   
   const processChunk = (html: string) => {
     if (aborted) return;
-    
-    if (root instanceof StreamRenderer) {
-      root.write(html);
-    } else {
-      root.insertAdjacentHTML('beforeend', html);
-    }
-    
+    root.write(html);
     onChunk?.(html);
   };
   

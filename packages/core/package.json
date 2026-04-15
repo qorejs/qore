@@ -55,12 +55,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/qore-framework/qore.git",
+    "url": "https://github.com/qorejs/qore.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/qore-framework/qore#readme",
+  "homepage": "https://github.com/qorejs/qore#readme",
   "bugs": {
-    "url": "https://github.com/qore-framework/qore/issues"
+    "url": "https://github.com/qorejs/qore/issues"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

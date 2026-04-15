@@ -208,26 +208,24 @@ export interface SuspenseProps {
 }
 
 /**
- * 内部 Suspense 状态信号
- */
-const suspenseState = signal<SuspenseState>('pending');
-const suspenseError = signal<Error | null>(null);
-
-/**
  * Suspense 边界组件
- * 用于包裹异步加载的组件
+ * 用于包裹异步加载的组件 - 每个实例有独立状态
  */
 export function Suspense({ fallback, children, onError }: SuspenseProps): Component {
-  return () => {
-    const state = suspenseState();
-    const err = suspenseError();
+  // 状态下沉到组件实例内部，避免全局单例问题
+  const state = signal<SuspenseState>('pending');
+  const errorSig = signal<Error | null>(null);
 
-    if (state === 'error') {
+  return () => {
+    const s = state();
+    const err = errorSig();
+
+    if (s === 'error') {
       onError?.(err!);
       return fallback;
     }
 
-    if (state === 'pending') {
+    if (s === 'pending') {
       return fallback;
     }
 
@@ -236,11 +234,41 @@ export function Suspense({ fallback, children, onError }: SuspenseProps): Compon
 }
 
 /**
- * 设置 Suspense 状态
+ * 创建带状态的 Suspense 组件
+ * 允许外部控制加载状态
  */
-export function setSuspenseState(state: SuspenseState, error?: Error): void {
-  suspenseState(state);
-  if (error) suspenseError(error);
+export function createSuspense({ fallback, children, onError }: SuspenseProps): {
+  component: Component;
+  setState: (state: SuspenseState, error?: Error) => void;
+  getState: () => SuspenseState;
+} {
+  const state = signal<SuspenseState>('pending');
+  const errorSig = signal<Error | null>(null);
+
+  const component: Component = () => {
+    const s = state();
+    const err = errorSig();
+
+    if (s === 'error') {
+      onError?.(err!);
+      return fallback;
+    }
+
+    if (s === 'pending') {
+      return fallback;
+    }
+
+    return children();
+  };
+
+  return {
+    component,
+    setState: (newState: SuspenseState, error?: Error) => {
+      state(newState);
+      if (error) errorSig(error);
+    },
+    getState: () => state()
+  };
 }
 
 /**

@@ -2,3 +2,35 @@ node_modules
 dist
 .DS_Store
 *.log
+
+# VitePress
+.vitepress/cache/
+.vitepress/dist/
+.vitepress/temp/
+
+# TypeScript
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+*.tgz
+.npm/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*

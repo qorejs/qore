@@ -25,7 +25,6 @@ export {
   h2, 
   h3,
   renderToString,
-  renderToStream,
   renderToStream as renderToStreamDOM,
   renderAsync,
   renderToStreamAsync
@@ -34,14 +33,7 @@ export type { VNode, Component } from './render';
 
 // SSR - Server-Side Rendering
 export {
-  renderToString as renderToStringSSR,
   renderComponentToString,
-  renderProps,
-  renderElement,
-  renderToStream as renderToStreamSSR,
-  renderAsync as renderAsyncSSR,
-  renderToStreamAsync as renderToStreamAsyncSSR,
-  renderWithSuspense,
   renderSSR,
   prefetchAndRender,
   createPrefetchContext
@@ -57,14 +49,14 @@ export {
   StreamRenderer, 
   createStreamHTML, 
   Suspense, 
+  createSuspense,
   lazy, 
   asyncComponent,
-  setSuspenseState,
   createUpdate,
   applyUpdate,
   renderToStream as renderToStreamIncremental
 } from './stream';
-export type { SuspenseProps, SuspenseState, IncrementalUpdate } from './stream';
+export type { SuspenseProps, SuspenseState, IncrementalUpdate, StreamWriter, StreamOptions } from './stream';
 
 // Virtual List - High-performance list rendering
 export {
