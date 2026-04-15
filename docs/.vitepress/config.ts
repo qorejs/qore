@@ -75,22 +75,12 @@ export default defineConfig({
           text: 'AI Native',
           items: [
             { text: 'AI 特性概览', link: '/guide/ai-native' },
-            { text: '代码生成', link: '/guide/ai-codegen' },
-            { text: '性能优化', link: '/guide/ai-optimization' },
-          ],
-        },
-        {
-          text: '进阶指南',
-          items: [
-            { text: 'TypeScript', link: '/guide/typescript' },
-            { text: '测试', link: '/guide/testing' },
-            { text: '部署', link: '/guide/deployment' },
           ],
         },
       ],
       '/api/': [
         {
-          text: '核心 API',
+          text: '响应式 API',
           items: [
             { text: 'Signal', link: '/api/signal' },
             { text: 'Computed', link: '/api/computed' },
@@ -103,15 +93,12 @@ export default defineConfig({
           items: [
             { text: 'Component', link: '/api/component' },
             { text: 'Renderer', link: '/api/renderer' },
-            { text: 'Virtual List', link: '/api/virtual-list' },
           ],
         },
         {
           text: 'SSR & Streaming',
           items: [
             { text: 'Streaming', link: '/api/streaming' },
-            { text: 'SSR', link: '/api/ssr' },
-            { text: 'Hydration', link: '/api/hydration' },
           ],
         },
       ],
@@ -122,14 +109,7 @@ export default defineConfig({
             { text: '快速开始', link: '/examples/basic' },
             { text: '计数器', link: '/examples/counter' },
             { text: 'Todo 列表', link: '/examples/todo' },
-          ],
-        },
-        {
-          text: '进阶示例',
-          items: [
             { text: 'AI 集成', link: '/examples/ai-integration' },
-            { text: '流式渲染', link: '/examples/streaming' },
-            { text: '虚拟列表', link: '/examples/virtual-list' },
           ],
         },
       ],
