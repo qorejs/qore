@@ -21,7 +21,7 @@ pnpm add -D @qore/devtools
 ### 基础使用
 
 ```typescript
-import { createApp } from '@qore/core'
+import { createApp } from '@qorejs/qore'
 import { enableDevtools } from '@qore/devtools'
 
 const app = createApp({
