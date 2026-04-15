@@ -53,7 +53,6 @@ onMounted(async () => {
     console.error('Failed to fetch stats:', e)
   }
 })
-})
 
 const statItems = [
   { 
