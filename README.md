@@ -2,10 +2,10 @@
 
 **AI-Native Frontend Framework for the Streaming Era**
 
-[![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/qore-framework/qore)
-[![Tests](https://img.shields.io/badge/tests-150%20passing-green.svg)](https://github.com/qore-framework/qore)
-[![Bundle Size](https://img.shields.io/badge/size-~5kb-orange.svg)](https://github.com/qore-framework/qore)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/qore-framework/qore)
+[![Version](https://img.shields.io/npm/v/qore.svg)](https://www.npmjs.com/package/qore)
+[![Tests](https://img.shields.io/badge/tests-165%20passing-green.svg)](https://github.com/qorejs/qore/actions)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/qore)](https://bundlephobia.com/package/qore)
+[![License](https://img.shields.io/npm/l/qore.svg)](https://github.com/qorejs/qore/blob/main/LICENSE)
 
 ---
 
@@ -20,9 +20,13 @@ Qore is a modern frontend framework built from the ground up for AI-powered appl
 - 🖥️ **Server-Side Rendering** - Complete SSR support with streaming and suspense
 - 📜 **Virtual Lists** - High-performance virtualized lists for large datasets
 - ⚡ **Blazing Fast** - Direct DOM updates, batched changes, optimized effects
-- 📦 **Tiny Bundle** - ~5kb core, perfect for edge deployment
+- 📦 **Tiny Bundle** - <5kb core, perfect for edge deployment
 - 🎨 **Developer Friendly** - Clean API, TypeScript-first, familiar patterns
 - 🔌 **Extensible** - Component system, custom directives, plugins
+
+### 🎬 Live Demo
+
+Check out our [AI Chat Demo](./examples/ai-chat/) - a real-time chat interface with streaming AI responses, Markdown rendering, and code highlighting.
 
 ---
 
@@ -280,8 +284,8 @@ Qore draws inspiration from:
 
 ## 📬 Contact
 
-- GitHub: [@qore-framework](https://github.com/qore-framework)
-- Twitter: [@qore_framework](https://twitter.com/qore_framework)
+- GitHub: [@qorejs](https://github.com/qorejs)
+- Twitter: [@qorejs](https://twitter.com/qorejs)
 - Discord: [Join our server](https://discord.gg/qore)
 
 ---
