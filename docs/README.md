@@ -12,7 +12,7 @@ pnpm install
 pnpm docs:dev
 ```
 
-访问 http://localhost:5173 查看文档。
+访问 http://localhost:5173 查看文档（开发服务器地址可能不同）。
 
 ## 构建
 

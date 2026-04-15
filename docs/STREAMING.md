@@ -395,5 +395,6 @@ interface IncrementalUpdate {
 ## 示例项目
 
 查看完整示例：
-- [Server Streaming Example](../examples/streaming/server-streaming-example.tsx)
-- [Performance Benchmarks](../benchmarks/streaming/streaming-benchmark.ts)
+- [基础示例](/examples/basic)
+- [AI 集成示例](/examples/ai-integration)
+- [性能基准测试](/blog/fine-grained-reactivity)

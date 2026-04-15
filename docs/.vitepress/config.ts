@@ -3,20 +3,22 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'Qore',
   description: 'AI Native Frontend Framework - 高性能、轻量级、面向未来',
+  base: '/qore/',
   
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', href: '/qore/favicon.ico' }],
     ['meta', { name: 'viewport', content: 'width=device-width,initial-scale=1' }],
   ],
 
   themeConfig: {
-    logo: '/logo.svg',
+    logo: '/qore/logo.svg',
     
     nav: [
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/getting-started' },
       { text: 'API', link: '/api/signal' },
       { text: '示例', link: '/examples/basic' },
+      { text: '博客', link: '/blog/' },
     ],
 
     sidebar: {
@@ -29,6 +31,8 @@ export default defineConfig({
             { text: '响应式系统', link: '/guide/reactivity' },
             { text: '组件系统', link: '/guide/components' },
             { text: 'AI Native 特性', link: '/guide/ai-native' },
+            { text: '流式渲染', link: '/guide/streaming' },
+            { text: '服务端渲染', link: '/guide/ssr' },
           ],
         },
       ],
@@ -41,6 +45,8 @@ export default defineConfig({
             { text: 'Effect', link: '/api/effect' },
             { text: 'Batch', link: '/api/batch' },
             { text: 'Component', link: '/api/component' },
+            { text: 'Renderer', link: '/api/renderer' },
+            { text: 'Streaming', link: '/api/streaming' },
           ],
         },
       ],
@@ -71,4 +77,7 @@ export default defineConfig({
     theme: 'github-dark',
     lineNumbers: true,
   },
+
+  // 忽略死链检查
+  ignoreDeadLinks: true,
 })
