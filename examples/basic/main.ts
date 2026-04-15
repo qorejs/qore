@@ -2,7 +2,7 @@
  * Qore Basic Example - New API
  */
 
-import { signal, h, render, stream, useQuery } from '@qorejs/qore';
+import { signal, h, render, stream } from '@qorejs/qore';
 
 // Counter Example
 function Counter() {
@@ -47,25 +47,6 @@ function AIStream() {
   ]);
 }
 
-// Async Data Example
-function UserData() {
-  const { data, loading, error, refetch } = useQuery(
-    'user',
-    () => Promise.resolve({ name: 'Qore User', role: 'Developer' }), // Mock
-    { initialData: null }
-  );
-  
-  return h('div', { style: { marginTop: '20px' } }, [
-    h('h2', null, ['📊 Async Data']),
-    h('button', { onClick: refetch }, ['Refetch']),
-    h('p', null, [
-      loading() ? 'Loading...' : 
-      error() ? `Error: ${error().message}` :
-      `User: ${data()?.name} (${data()?.role})`
-    ])
-  ]);
-}
-
 // Main App
 const app = document.getElementById('app');
 if (app) {
@@ -80,11 +61,6 @@ if (app) {
   const streamContainer = document.createElement('div');
   app.appendChild(streamContainer);
   render(() => AIStream(), streamContainer);
-  
-  // Render user data
-  const userContainer = document.createElement('div');
-  app.appendChild(userContainer);
-  render(() => UserData(), userContainer);
   
   console.log('✅ Qore app rendered!');
 }

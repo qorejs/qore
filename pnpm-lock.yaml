@@ -17,7 +17,7 @@ importers:
 
   benchmarks:
     dependencies:
-      '@qore/core':
+      '@qorejs/qore':
         specifier: workspace:*
         version: link:../packages/core
     devDependencies:
@@ -25,16 +25,11 @@ importers:
         specifier: ^4.7.0
         version: 4.21.0
 
-  docs:
-    dependencies:
-      vitepress:
-        specifier: ^1.6.4
-        version: 1.6.4(@algolia/client-search@5.50.1)(@types/node@20.11.0)(postcss@8.5.9)(search-insights@2.17.3)(typescript@5.9.3)
-      vue:
-        specifier: ^3.5.0
-        version: 3.5.32(typescript@5.9.3)
-
   examples/basic:
+    dependencies:
+      '@qorejs/qore':
+        specifier: workspace:*
+        version: link:../../packages/core
     devDependencies:
       vite:
         specifier: ^5.2.0
@@ -94,7 +89,7 @@ importers:
 
   packages/devtools:
     devDependencies:
-      '@qore/core':
+      '@qorejs/qore':
         specifier: workspace:*
         version: link:../core
       '@types/node':
@@ -115,7 +110,7 @@ importers:
 
   packages/primitives:
     devDependencies:
-      '@qore/core':
+      '@qorejs/qore':
         specifier: workspace:*
         version: link:../core
       '@types/node':

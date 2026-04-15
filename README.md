@@ -124,7 +124,7 @@ const ChatApp = () => {
 Signals are reactive values that automatically track dependencies and trigger updates.
 
 ```typescript
-import { signal, computed, effect } from '@qore/core';
+import { signal, computed, effect } from '@qorejs/qore';
 
 const name = signal('World');
 const greeting = computed(() => `Hello, ${name()}!`);
@@ -155,7 +155,7 @@ const App = () => {
 ### Conditional Rendering
 
 ```typescript
-import { show } from '@qore/core';
+import { show } from '@qorejs/qore';
 
 const Conditional = () => {
   const isVisible = signal(true);
@@ -170,7 +170,7 @@ const Conditional = () => {
 ### List Rendering
 
 ```typescript
-import { For } from '@qore/core';
+import { For } from '@qorejs/qore';
 
 const List = () => {
   const items = signal(['A', 'B', 'C']);
@@ -231,7 +231,7 @@ pnpm build
 
 ## 📝 Project Status
 
-**Current Version**: 0.4.0 (Week 4 Complete)
+**Current Version**: 0.6.0 (Week 4 Complete)
 
 ### Completed (Weeks 1-4)
 - ✅ Signal system with computed & effects

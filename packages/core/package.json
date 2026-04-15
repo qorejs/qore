@@ -1,6 +1,6 @@
 {
   "name": "@qorejs/qore",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Qore - AI-Native Frontend Framework (<3kb gzip)",
   "type": "module",
   "main": "./dist/index.js",

@@ -7,6 +7,9 @@
     "build": "vite build",
     "preview": "vite preview"
   },
+  "dependencies": {
+    "@qorejs/qore": "workspace:*"
+  },
   "devDependencies": {
     "vite": "^5.2.0"
   }
