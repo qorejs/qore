@@ -3,14 +3,14 @@ import { ref, onMounted } from 'vue'
 
 const stars = ref(0)
 
-// 模拟获取 GitHub Stars
+// 获取 GitHub Stars
 onMounted(async () => {
   try {
-    const res = await fetch('https://api.github.com/repos/qore-framework/qore')
+    const res = await fetch('https://api.github.com/repos/qorejs/qore')
     const data = await res.json()
-    stars.value = data.stargazers_count || 1250
+    stars.value = data.stargazers_count || 0
   } catch {
-    stars.value = 1250
+    stars.value = 0
   }
 })
 </script>

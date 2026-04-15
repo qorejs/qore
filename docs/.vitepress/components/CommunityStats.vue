@@ -2,20 +2,29 @@
 import { ref, onMounted } from 'vue'
 
 const stats = ref({
-  stars: 1250,
-  downloads: 15000,
-  discord: 800,
-  contributors: 45
+  stars: 0,
+  downloads: 0,
+  discord: 0,
+  contributors: 0
 })
 
-// 模拟动态增长效果
-onMounted(() => {
-  const targetStats = {
-    stars: 1250,
-    downloads: 15420,
-    discord: 856,
-    contributors: 48
-  }
+// 获取真实数据
+onMounted(async () => {
+  try {
+    const [ghRes, npmRes] = await Promise.all([
+      fetch('https://api.github.com/repos/qorejs/qore'),
+      fetch('https://api.npmjs.org/downloads/point/last-week/qore').catch(() => null)
+    ])
+    
+    const ghData = await ghRes.json()
+    const npmData = npmRes ? await npmRes.json() : null
+    
+    const targetStats = {
+      stars: ghData.stargazers_count || 0,
+      downloads: npmData?.downloads || 0,
+      discord: 0,
+      contributors: ghData.size > 0 ? 1 : 0
+    }
   
   const duration = 2000
   const steps = 60
@@ -95,17 +104,13 @@ const formatNumber = (num: number) => {
       </div>
       
       <div class="community-actions">
-        <a href="https://github.com/qore-framework/qore" class="action-btn" target="_blank">
+        <a href="https://github.com/qorejs/qore" class="action-btn" target="_blank">
           <span class="btn-icon">🐙</span>
           <span>Star on GitHub</span>
         </a>
         <a href="https://discord.gg/qore" class="action-btn" target="_blank">
           <span class="btn-icon">💬</span>
           <span>Join Discord</span>
-        </a>
-        <a href="/guide/contributing" class="action-btn">
-          <span class="btn-icon">🤝</span>
-          <span>成为贡献者</span>
         </a>
       </div>
       
