@@ -33,13 +33,13 @@ onMounted(async () => {
       </p>
       
       <div class="hero-actions">
-        <a href="/guide/getting-started" class="btn btn-primary">
+        <a href="/qore/guide/getting-started.html" class="btn btn-primary">
           <span>🚀</span> 快速开始
         </a>
-        <a href="/examples/basic" class="btn btn-secondary">
+        <a href="/qore/examples/basic.html" class="btn btn-secondary">
           <span>💡</span> 查看示例
         </a>
-        <a href="https://github.com/qore-framework/qore" class="btn btn-ghost" target="_blank">
+        <a href="https://github.com/qorejs/qore" class="btn btn-ghost" target="_blank">
           <span>⭐</span> {{ stars }}+ Stars
         </a>
       </div>
