@@ -26,28 +26,33 @@ onMounted(async () => {
       contributors: ghData.size > 0 ? 1 : 0
     }
   
-  const duration = 2000
-  const steps = 60
-  const interval = duration / steps
-  
-  let current = 0
-  const timer = setInterval(() => {
-    current++
-    const progress = current / steps
-    const ease = 1 - Math.pow(1 - progress, 3) // easeOutCubic
+    const duration = 2000
+    const steps = 60
+    const interval = duration / steps
     
-    stats.value = {
-      stars: Math.round(targetStats.stars * ease),
-      downloads: Math.round(targetStats.downloads * ease),
-      discord: Math.round(targetStats.discord * ease),
-      contributors: Math.round(targetStats.contributors * ease)
-    }
-    
-    if (current >= steps) {
-      clearInterval(timer)
-      stats.value = targetStats
-    }
-  }, interval)
+    let current = 0
+    const timer = setInterval(() => {
+      current++
+      const progress = current / steps
+      const ease = 1 - Math.pow(1 - progress, 3) // easeOutCubic
+      
+      stats.value = {
+        stars: Math.round(targetStats.stars * ease),
+        downloads: Math.round(targetStats.downloads * ease),
+        discord: Math.round(targetStats.discord * ease),
+        contributors: Math.round(targetStats.contributors * ease)
+      }
+      
+      if (current >= steps) {
+        clearInterval(timer)
+        stats.value = targetStats
+      }
+    }, interval)
+  } catch (e) {
+    // 失败时保持初始值 0
+    console.error('Failed to fetch stats:', e)
+  }
+})
 })
 
 const statItems = [
