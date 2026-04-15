@@ -16,6 +16,13 @@ const codeLines = [
   `})`,
 ]
 
+const stats = [
+  { icon: '📦', value: '5KB', label: 'Bundle Size' },
+  { icon: '⚡', value: '5ms', label: 'TTFB' },
+  { icon: '🧪', value: '150+', label: 'Tests' },
+  { icon: '🎯', value: '0.3ms', label: 'Render Time' },
+]
+
 onMounted(async () => {
   isVisible.value = true
   
