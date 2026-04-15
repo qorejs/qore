@@ -14,11 +14,20 @@
     "docs:preview": "vitepress preview docs"
   },
   "keywords": [
+    "qore",
+    "frontend",
     "framework",
-    "ai",
+    "ai-native",
     "reactive",
-    "renderer",
-    "qore"
+    "signals",
+    "streaming",
+    "ssr",
+    "lightweight",
+    "performance",
+    "typescript",
+    "ui",
+    "web",
+    "javascript"
   ],
   "license": "MIT",
   "engines": {

@@ -1,5 +1,5 @@
 {
-  "name": "@qore/core",
+  "name": "qore",
   "version": "0.5.0",
   "description": "Qore - AI-Native Frontend Framework (<3kb gzip)",
   "type": "module",
@@ -38,15 +38,18 @@
     "publish:npm": "npm publish --access public"
   },
   "keywords": [
+    "qore",
     "frontend",
     "framework",
+    "ai-native",
     "reactive",
     "signals",
-    "ai",
     "streaming",
     "ssr",
     "virtual-list",
-    "lightweight"
+    "lightweight",
+    "performance",
+    "typescript"
   ],
   "author": "Qore Team",
   "license": "MIT",
