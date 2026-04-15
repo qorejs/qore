@@ -1,181 +1,114 @@
-# Qore Framework - Publishing Guide
+# NPM 发布指南
 
-## Pre-publish Checklist
+## 📦 发布流程
 
-### 1. Version Update
-- [ ] Update version in `packages/core/package.json`
-- [ ] Update version in root `package.json` (if applicable)
-- [ ] Update `CHANGELOG.md` with new version and changes
+### 方法 1: GitHub Release 自动发布（推荐）
 
-### 2. Code Quality
-- [ ] All tests pass: `pnpm test`
-- [ ] Test coverage >85%: `pnpm test:coverage`
-- [ ] Build succeeds: `pnpm build`
-- [ ] No TypeScript errors: `pnpm build:types`
-- [ ] No console errors in examples
+1. **创建 Release**
+   - 访问 https://github.com/qorejs/qore/releases
+   - 点击 "Create a new release"
+   - 选择 tag (如 `v0.5.0`)
+   - 填写发布说明
+   - 点击 "Publish release"
 
-### 3. Documentation
-- [ ] README.md is up to date
-- [ ] API.md documents all new features
-- [ ] EXAMPLES.md includes examples for new features
-- [ ] CHANGELOG.md is updated
+2. **自动触发**
+   - GitHub Actions 会自动构建并发布
+   - 发布到 npm: https://www.npmjs.com/package/qore
 
-### 4. Package Structure
-- [ ] `.npmignore` is configured correctly
-- [ ] `package.json` exports are correct
-- [ ] TypeScript types are generated
-- [ ] All public APIs are exported from `index.ts`
+---
 
-### 5. Testing
-Run full test suite:
+### 方法 2: 手动触发工作流
+
+1. **访问 Actions**
+   - https://github.com/qorejs/qore/actions/workflows/publish-npm.yml
+
+2. **运行工作流**
+   - 点击 "Run workflow"
+   - 选择要发布的包：
+     - `core` - 核心框架
+     - `devtools` - 开发者工具
+     - `primitives` - UI 组件库
+   - 输入版本号 (如 `0.6.0`)
+   - 点击 "Run workflow"
+
+---
+
+## 🔐 配置 NPM Token
+
+### 在 GitHub 添加密钥
+
+1. 访问 https://github.com/qorejs/qore/settings/secrets/actions
+2. 点击 "New repository secret"
+3. 添加：
+   - **Name**: `NPM_TOKEN`
+   - **Value**: 你的 npm token
+
+### 获取 npm token
+
 ```bash
-cd packages/core
-pnpm test
-pnpm test:coverage
-```
-
-### 6. Build
-Build the package:
-```bash
-pnpm build
-```
-
-Verify output:
-```bash
-ls -la dist/
-# Should include:
-# - index.js
-# - index.d.ts
-# - ssr.js
-# - ssr.d.ts
-# - virtual-list.js
-# - virtual-list.d.ts
-```
-
-### 7. Publish to npm
-
-#### Dry Run (Recommended)
-```bash
-cd packages/core
-npm publish --dry-run
-```
-
-#### Actual Publish
-```bash
-cd packages/core
-npm publish --access public
-```
-
-Or use the script:
-```bash
-pnpm publish:npm
-```
-
-### 8. Post-publish
-- [ ] Create git tag: `git tag v0.5.0 && git push origin v0.5.0`
-- [ ] Create GitHub release
-- [ ] Update documentation website (if applicable)
-- [ ] Announce on social media / community channels
-
-## Version Numbering
-
-Qore follows [Semantic Versioning](https://semver.org/):
-
-- **MAJOR** (X.0.0): Breaking changes
-- **MINOR** (0.X.0): New features, backward compatible
-- **PATCH** (0.0.X): Bug fixes, backward compatible
-
-### Version Examples
-- `0.5.0` - Minor release with new features (SSR, Virtual List)
-- `0.5.1` - Patch release with bug fixes
-- `1.0.0` - Major release, stable API
-
-## npm Scripts
-
-| Script | Description |
-|--------|-------------|
-| `pnpm dev` | Development mode with watch |
-| `pnpm build` | Production build |
-| `pnpm build:types` | Generate TypeScript types |
-| `pnpm test` | Run tests |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm test:coverage` | Run tests with coverage |
-| `pnpm prepublishOnly` | Pre-publish checks (auto-run) |
-| `pnpm publish:npm` | Publish to npm |
-
-## Troubleshooting
-
-### Build Fails
-```bash
-# Clean and rebuild
-rm -rf dist/
-pnpm build
-```
-
-### Tests Fail
-```bash
-# Run specific test file
-pnpm vitest run tests/path/to/test.test.ts
-
-# Run tests with verbose output
-pnpm vitest run --reporter=verbose
-```
-
-### TypeScript Errors
-```bash
-# Check types only
-pnpm build:types
-
-# Fix common issues
-# - Missing type exports in index.ts
-# - Circular dependencies
-# - Import/export mismatches
-```
-
-### npm Publish Fails
-```bash
-# Check npm authentication
-npm whoami
-
-# Login if needed
+# 本地登录 npm
 npm login
 
-# Check package.json fields
-# - name must be unique
-# - version must be higher than published version
+# 获取 token
+cat ~/.npmrc
+# 或访问 https://www.npmjs.com/settings/YOUR_USERNAME/tokens
 ```
 
-## Release Notes Template
+---
 
-```markdown
-## [Version] - YYYY-MM-DD
+## 📋 发布前检查清单
 
-### New Features
-- Feature 1 description
-- Feature 2 description
+- [ ] 所有测试通过 (`pnpm test`)
+- [ ] 构建成功 (`pnpm build`)
+- [ ] 版本号已更新
+- [ ] CHANGELOG.md 已更新
+- [ ] README.md 已更新
+- [ ] TypeScript 类型定义正确
 
-### Improvements
-- Improvement 1
-- Improvement 2
+---
 
-### Bug Fixes
-- Fix for issue #123
-- Fix for issue #456
+## 🚀 发布后验证
 
-### Breaking Changes
-- Description of breaking change
-- Migration guide
+```bash
+# 验证发布
+npm view qore version
+npm view qore dist-tags
 
-### Performance
-- Performance improvement details
-
-### Documentation
-- Updated docs for X
-- Added examples for Y
+# 安装测试
+npm install qore@latest
 ```
 
-## Contact
+---
 
-For publishing issues or questions:
-- GitHub Issues: https://github.com/qore-framework/qore/issues
-- Email: team@qore.dev
+## 📝 版本规范
+
+遵循语义化版本 (SemVer):
+
+- **MAJOR** (1.0.0): 不兼容的 API 变更
+- **MINOR** (0.6.0): 向后兼容的新功能
+- **PATCH** (0.5.1): 向后兼容的 bug 修复
+
+### 当前版本
+
+| 包 | 版本 |
+|---|------|
+| `qore` | 0.5.0 |
+| `@qore/devtools` | 0.6.0 |
+| `@qore/primitives` | 0.6.0 |
+| `create-qore` | 0.6.0 |
+
+---
+
+## ⚠️ 注意事项
+
+1. **不要重复发布同一版本** - 会失败
+2. **发布前本地测试** - 避免发布后发现问题
+3. **使用预发布版本** - 测试用 `npm publish --tag beta`
+4. **保持包干净** - 只包含必要的文件
+
+---
+
+**发布完成后**:
+- 更新官网文档
+- 更新 GitHub Releases
+- 通知社区
