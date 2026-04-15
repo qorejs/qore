@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qore AI Chat Demo - 流式输出 + Markdown</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .chat-container {
+      width: 100%;
+      max-width: 800px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    
+    .chat-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .chat-header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .chat-header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    
+    .chat-messages {
+      height: 500px;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    
+    .message {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+    }
+    
+    .message.user {
+      flex-direction: row-reverse;
+    }
+    
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    
+    .avatar.ai {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .avatar.user {
+      background: #e9ecef;
+      color: #495057;
+    }
+    
+    .message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.6;
+    }
+    
+    .message.ai .message-content {
+      background: white;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .message.user .message-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .message-content pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 10px 0;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 13px;
+    }
+    
+    .message-content code {
+      background: rgba(0,0,0,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 13px;
+    }
+    
+    .message.user .message-content code {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+    
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: #667eea;
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+    
+    .chat-input {
+      display: flex;
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #e9ecef;
+    }
+    
+    .chat-input input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e9ecef;
+      border-radius: 24px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .chat-input input:focus {
+      border-color: #667eea;
+    }
+    
+    .chat-input button {
+      margin-left: 12px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .chat-input button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .chat-input button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .stats {
+      padding: 12px 20px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #6c757d;
+    }
+    
+    .stat-item {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .stat-value {
+      font-weight: 600;
+      color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h1>🤖 Qore AI Chat</h1>
+      <p>Powered by Qore Framework - Signal + Streaming</p>
+    </div>
+    
+    <div id="messages" class="chat-messages"></div>
+    
+    <div class="stats">
+      <div class="stat-item">
+        <span>渲染时间:</span>
+        <span id="renderTime" class="stat-value">0ms</span>
+      </div>
+      <div class="stat-item">
+        <span>消息数:</span>
+        <span id="messageCount" class="stat-value">0</span>
+      </div>
+      <div class="stat-item">
+        <span>Bundle Size:</span>
+        <span class="stat-value">&lt;5KB</span>
+      </div>
+    </div>
+    
+    <div class="chat-input">
+      <input 
+        type="text" 
+        id="input" 
+        placeholder="输入消息..." 
+        autocomplete="off"
+      />
+      <button id="sendBtn">发送</button>
+    </div>
+  </div>
+  
+  <script type="module">
+    import { signal, effect, render, h, stream } from '../../packages/core/src/index.js';
+    
+    // 状态管理
+    const messages = signal([]);
+    const isLoading = signal(false);
+    const renderTime = signal(0);
+    
+    // Markdown 简单解析
+    function parseMarkdown(text) {
+      return text
+        .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+    }
+    
+    // 消息组件
+    function Message({ role, content }) {
+      return h('div', { className: `message ${role}` },
+        h('div', { className: `avatar ${role}` }, role === 'ai' ? '🤖' : '👤'),
+        h('div', { className: 'message-content' }, 
+          role === 'ai' ? h('div', { innerHTML: parseMarkdown(content) }) : content
+        )
+      );
+    }
+    
+    // 打字机动画组件
+    function TypingIndicator() {
+      return h('div', { className: 'typing-indicator' },
+        h('span'), h('span'), h('span')
+      );
+    }
+    
+    // 渲染聊天界面
+    function ChatApp() {
+      const msgs = messages();
+      const loading = isLoading();
+      
+      return [
+        ...msgs.map(msg => Message(msg)),
+        loading ? h('div', { className: 'message ai' },
+          h('div', { className: 'avatar ai' }, '🤖'),
+          TypingIndicator()
+        ) : null
+      ].filter(Boolean);
+    }
+    
+    // 初始化渲染
+    const messagesContainer = document.getElementById('messages');
+    const startTime = performance.now();
+    render(messagesContainer, ChatApp);
+    renderTime.set(performance.now() - startTime);
+    
+    // 状态更新追踪
+    effect(() => {
+      messages();
+      document.getElementById('messageCount').textContent = messages().length;
+    });
+    
+    effect(() => {
+      renderTime();
+      document.getElementById('renderTime').textContent = `${Math.round(renderTime())}ms`;
+    });
+    
+    // 发送消息
+    async function sendMessage(text) {
+      if (!text.trim() || isLoading()) return;
+      
+      // 添加用户消息
+      const currentMessages = messages();
+      messages([...currentMessages, { role: 'user', content: text }]);
+      isLoading(true);
+      
+      // 模拟 AI 流式响应
+      const aiResponse = generateAIResponse(text);
+      let aiContent = '';
+      
+      const { abort } = stream(async (write) => {
+        for await (const chunk of aiResponse) {
+          aiContent += chunk;
+          // 更新 AI 消息
+          const msgs = messages();
+          const lastMsg = msgs[msgs.length - 1];
+          if (lastMsg && lastMsg.role === 'ai') {
+            msgs[msgs.length - 1] = { role: 'ai', content: aiContent };
+          } else {
+            msgs.push({ role: 'ai', content: aiContent });
+          }
+          messages([...msgs]);
+          await new Promise(r => setTimeout(r, 30));
+        }
+        write.done();
+      }, {
+        container: document.createElement('div'),
+        onComplete: () => isLoading(false)
+      });
+    }
+    
+    // 模拟 AI 响应（实际使用时替换为真实 API）
+    async function* generateAIResponse(userMessage) {
+      const responses = {
+        'hello': '你好！我是基于 Qore 框架的 AI 助手。Qore 是一个专为 AI 应用设计的轻量级前端框架，具有信号驱动的响应式系统和内置的流式渲染能力。',
+        'code': '让我给你展示一段代码示例：\n\n```javascript\nimport { signal, effect } from \'qore\'\n\nconst count = signal(0)\n\neffect(() => {\n  console.log(`Count: ${count()}`)\n})\n\ncount(1) // 自动触发 effect\n```\n\n这就是 Qore 的响应式系统，简洁而强大！',
+        'default': `你说了："${userMessage}"\n\n这是一个演示 Qore 框架**流式渲染**能力的 AI 聊天界面。特点包括：\n\n1. **Signal 响应式** - 状态变化自动更新 UI\n2. **流式输出** - 打字机效果，实时显示 AI 响应\n3. **Markdown 解析** - 支持代码高亮和格式化\n4. **轻量级** - 核心库 <5KB\n\n试试问我关于代码的问题！`
+      };
+      
+      const lowerMsg = userMessage.toLowerCase();
+      let response = responses.default;
+      
+      if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) {
+        response = responses.hello;
+      } else if (lowerMsg.includes('code') || lowerMsg.includes('代码')) {
+        response = responses.code;
+      }
+      
+      // 模拟流式输出
+      for (let i = 0; i < response.length; i++) {
+        yield response[i];
+        await new Promise(r => setTimeout(r, 30 + Math.random() * 20));
+      }
+    }
+    
+    // 事件绑定
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    
+    sendBtn.addEventListener('click', () => {
+      sendMessage(input.value);
+      input.value = '';
+    });
+    
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage(input.value);
+        input.value = '';
+      }
+    });
+  </script>
+</body>
+</html>
