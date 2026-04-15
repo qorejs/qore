@@ -222,6 +222,7 @@ async function renderPage() {
   white-space: pre-wrap;
 }
 
+/* Tablet */
 @media (max-width: 960px) {
   .preview-container {
     grid-template-columns: 1fr;
@@ -230,17 +231,125 @@ async function renderPage() {
   .section-title {
     font-size: 2rem;
   }
-}
-
-@media (max-width: 640px) {
+  
   .tabs {
-    flex-wrap: wrap;
+    gap: 0.375rem;
   }
   
   .tab {
-    flex: 1;
-    min-width: 100px;
-    text-align: center;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .code-preview-section {
+    padding: 4rem 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.75rem;
+  }
+  
+  .section-desc {
+    font-size: 1rem;
+  }
+  
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+    justify-content: flex-start;
+  }
+  
+  .tab {
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    /* 触摸友好 - 最小点击区域 */
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 640px) {
+  .code-preview-section {
+    padding: 3rem 1rem;
+  }
+  
+  .section-header {
+    margin-bottom: 2rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .section-desc {
+    font-size: 0.9375rem;
+  }
+  
+  .tabs {
+    gap: 0.25rem;
+  }
+  
+  .tab {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+    min-height: 40px;
+  }
+  
+  .preview-container {
+    border-radius: 0.75rem;
+  }
+  
+  .panel-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .panel-title {
+    font-size: 0.75rem;
+  }
+  
+  .code-block {
+    padding: 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    /* 横向滚动 */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .preview-content {
+    padding: 1rem;
+    min-height: 200px;
+  }
+  
+  .preview-content pre {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+}
+
+/* Very Small Mobile */
+@media (max-width: 400px) {
+  .tab {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.75rem;
+  }
+  
+  .code-block {
+    padding: 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .preview-content pre {
+    font-size: 0.75rem;
   }
 }
 </style>
