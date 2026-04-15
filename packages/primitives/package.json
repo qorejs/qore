@@ -1,0 +1,111 @@
+{
+  "name": "@qore/primitives",
+  "version": "0.6.0",
+  "description": "Qore Framework UI Primitives - Headless, Accessible Component Library",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./button": {
+      "import": "./dist/button.js",
+      "types": "./dist/button.d.ts"
+    },
+    "./input": {
+      "import": "./dist/input.js",
+      "types": "./dist/input.d.ts"
+    },
+    "./textarea": {
+      "import": "./dist/textarea.js",
+      "types": "./dist/textarea.d.ts"
+    },
+    "./select": {
+      "import": "./dist/select.js",
+      "types": "./dist/select.d.ts"
+    },
+    "./checkbox": {
+      "import": "./dist/checkbox.js",
+      "types": "./dist/checkbox.d.ts"
+    },
+    "./radio": {
+      "import": "./dist/radio.js",
+      "types": "./dist/radio.d.ts"
+    },
+    "./switch": {
+      "import": "./dist/switch.js",
+      "types": "./dist/switch.d.ts"
+    },
+    "./dialog": {
+      "import": "./dist/dialog.js",
+      "types": "./dist/dialog.d.ts"
+    },
+    "./toast": {
+      "import": "./dist/toast.js",
+      "types": "./dist/toast.d.ts"
+    },
+    "./tooltip": {
+      "import": "./dist/tooltip.js",
+      "types": "./dist/tooltip.d.ts"
+    },
+    "./tabs": {
+      "import": "./dist/tabs.js",
+      "types": "./dist/tabs.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "build:types": "tsc --emitDeclarationOnly",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm run test",
+    "publish:npm": "npm publish --access public"
+  },
+  "keywords": [
+    "qore",
+    "components",
+    "ui",
+    "primitives",
+    "headless",
+    "accessible",
+    "aria",
+    "frontend"
+  ],
+  "author": "Qore Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qore-framework/qore.git",
+    "directory": "packages/primitives"
+  },
+  "homepage": "https://github.com/qore-framework/qore#readme",
+  "bugs": {
+    "url": "https://github.com/qore-framework/qore/issues"
+  },
+  "peerDependencies": {
+    "@qore/core": "^0.6.0"
+  },
+  "devDependencies": {
+    "@qore/core": "workspace:*",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0",
+    "vite-plugin-dts": "^3.7.0",
+    "vitest": "^1.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

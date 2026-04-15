@@ -1,0 +1,61 @@
+{
+  "name": "create-qore",
+  "version": "0.6.0",
+  "description": "Qore Framework CLI - Create Qore Projects",
+  "type": "module",
+  "bin": {
+    "create-qore": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm run test",
+    "publish:npm": "npm publish --access public"
+  },
+  "keywords": [
+    "qore",
+    "cli",
+    "scaffold",
+    "starter",
+    "template",
+    "frontend",
+    "framework"
+  ],
+  "author": "Qore Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qore-framework/qore.git",
+    "directory": "packages/create-qore"
+  },
+  "homepage": "https://github.com/qore-framework/qore#readme",
+  "bugs": {
+    "url": "https://github.com/qore-framework/qore/issues"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "prompts": "^2.4.2",
+    "kolorist": "^1.8.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/prompts": "^2.4.9",
+    "@types/fs-extra": "^11.0.4",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

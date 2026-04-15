@@ -1,0 +1,13 @@
+node_modules
+dist
+tests
+*.test.ts
+*.spec.ts
+coverage
+.git
+.gitignore
+*.md
+!README.md
+vite.config.ts
+tsconfig.json
+pnpm-lock.yaml

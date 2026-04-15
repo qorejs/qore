@@ -1,0 +1,12 @@
+node_modules
+dist
+tests
+*.test.ts
+*.spec.ts
+coverage
+.git
+.gitignore
+*.md
+!README.md
+tsconfig.json
+pnpm-lock.yaml
