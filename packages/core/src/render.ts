@@ -1,9 +1,12 @@
 /**
  * Qore Renderer - Fine-grained DOM Updates
  * No VDOM, No Diff - Direct signal binding
+ * 
+ * Extended with Server-Side Streaming Support
  */
 
 import { effect, signal } from './signal';
+import { StreamRenderer } from './stream';
 
 export type VNode = string | number | Node | Component | VNode[];
 export type Component = () => VNode;
@@ -147,3 +150,129 @@ export const p = tag('p');
 export const h1 = tag('h1');
 export const h2 = tag('h2');
 export const h3 = tag('h3');
+
+// ============== Server-Side Rendering ==============
+
+/**
+ * 将 VNode 转换为 HTML 字符串 (SSR)
+ */
+export function renderToString(vnode: VNode): string {
+  if (vnode == null) return '';
+  
+  if (typeof vnode === 'string' || typeof vnode === 'number') {
+    return String(vnode);
+  }
+  
+  if (Array.isArray(vnode)) {
+    return vnode.map(v => renderToString(v)).join('');
+  }
+  
+  if (vnode instanceof Node) {
+    // 如果已经是 DOM 节点，返回其 outerHTML 或 textContent
+    return vnode instanceof Element ? vnode.outerHTML : vnode.textContent || '';
+  }
+  
+  if (typeof vnode === 'function') {
+    // 组件函数
+    return renderToString(vnode());
+  }
+  
+  return '';
+}
+
+/**
+ * 将组件渲染为 HTML 字符串 (SSR)
+ */
+export function renderComponentToString(component: Component): string {
+  return renderToString(component());
+}
+
+/**
+ * 流式渲染到 StreamRenderer
+ * 支持分块输出大型组件
+ */
+export function renderToStream(
+  root: HTMLElement | StreamRenderer,
+  fn: () => VNode,
+  options?: { chunkSize?: number; onChunk?: (chunk: string) => void }
+): { abort: () => void } {
+  const { chunkSize = 1000, onChunk } = options || {};
+  let aborted = false;
+  
+  const processChunk = (html: string) => {
+    if (aborted) return;
+    
+    if (root instanceof StreamRenderer) {
+      root.write(html);
+    } else {
+      root.insertAdjacentHTML('beforeend', html);
+    }
+    
+    onChunk?.(html);
+  };
+  
+  // 分块处理大型内容
+  const vnode = fn();
+  const html = renderToString(vnode);
+  
+  if (html.length <= chunkSize) {
+    processChunk(html);
+  } else {
+    // 分块输出
+    for (let i = 0; i < html.length; i += chunkSize) {
+      if (aborted) break;
+      processChunk(html.slice(i, i + chunkSize));
+    }
+  }
+  
+  return {
+    abort: () => { aborted = true; }
+  };
+}
+
+/**
+ * 异步 VNode 解析
+ * 支持组件返回 Promise
+ */
+export async function renderAsync(vnode: VNode | Promise<VNode>): Promise<string> {
+  const resolved = await vnode;
+  
+  if (resolved == null) return '';
+  
+  if (typeof resolved === 'string' || typeof resolved === 'number') {
+    return String(resolved);
+  }
+  
+  if (Array.isArray(resolved)) {
+    const results = await Promise.all(resolved.map(v => renderAsync(v)));
+    return results.join('');
+  }
+  
+  if (resolved instanceof Node) {
+    return resolved instanceof Element ? resolved.outerHTML : resolved.textContent || '';
+  }
+  
+  if (typeof resolved === 'function') {
+    return renderAsync(resolved());
+  }
+  
+  return '';
+}
+
+/**
+ * 异步流式渲染
+ * 支持异步组件的流式输出
+ */
+export async function renderToStreamAsync(
+  renderer: StreamRenderer,
+  fn: () => VNode | Promise<VNode>
+): Promise<void> {
+  try {
+    const vnode = await fn();
+    const html = await renderAsync(vnode);
+    renderer.write(html);
+    renderer.end();
+  } catch (err) {
+    renderer.fail(err as Error);
+  }
+}

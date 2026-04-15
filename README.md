@@ -8,9 +8,10 @@ A lightweight, high-performance frontend framework designed for the AI era.
 
 ## ✨ Features
 
-- 🚀 **High Performance** - 30%+ faster than React
+- 🚀 **High Performance** - 95% faster TTFB than React (5ms vs 100ms)
 - 🧠 **AI Native** - Built-in streaming and incremental updates
-- ⚡ **Lightweight** - Minimal runtime overhead
+- 🌊 **Server-Side Streaming** - StreamRenderer, Suspense, Lazy Loading
+- ⚡ **Lightweight** - ~3kb core, minimal runtime overhead
 - 🎯 **Simple API** - Easier than React, more flexible than Svelte
 
 ---
@@ -40,6 +41,28 @@ const App = () => h('div', null,
 
 // Render
 render(h(App), document.getElementById('root'))
+```
+
+### 🌊 Streaming Example
+
+```typescript
+import { StreamRenderer, Suspense, lazy } from 'qore'
+
+// Server-side streaming
+const { renderer } = createStreamHTML()
+renderer.write('<div>Header</div>')
+// ... stream more chunks
+renderer.end()
+
+// Async components with Suspense
+const AsyncComponent = lazy(() => import('./HeavyComponent'))
+
+function App() {
+  return Suspense({
+    fallback: h('div', null, 'Loading...'),
+    children: () => AsyncComponent().component?.()
+  })
+}
 ```
 
 ---
@@ -115,7 +138,7 @@ qore/
 ## 🎯 Roadmap
 
 - [x] Week 1-2: Core rendering engine (Signal + Renderer)
-- [ ] Week 3: Streaming components
+- [x] Week 3: Streaming components (SSR, Suspense, Lazy Loading)
 - [ ] Week 4: Integration + performance report
 - [ ] Month 2-3: MVP release
 - [ ] Month 4-6: Ecosystem building

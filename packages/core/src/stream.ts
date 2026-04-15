@@ -1,9 +1,10 @@
 /**
- * Qore Stream - AI Streaming First-class Support
- * Minimal API for AI responses
+ * Qore Stream - AI Streaming & Server-Side Streaming Support
+ * Minimal API for AI responses and SSR streaming
  */
 
-import { signal, effect } from './signal';
+import { signal, effect, computed } from './signal';
+import { VNode, Component } from './render';
 
 export interface StreamWriter {
   (chunk: string): void;
@@ -19,7 +20,7 @@ export interface StreamOptions {
 }
 
 /**
- * AI 流式响应
+ * AI 流式响应 (客户端)
  */
 export function stream(
   fn: (write: StreamWriter) => Promise<void>,
@@ -86,4 +87,318 @@ export function streamText(
     }
     write.done();
   }, { container, onComplete });
+}
+
+// ============== Server-Side Streaming ==============
+
+/**
+ * 服务端流式渲染器
+ * 支持分块输出 HTML 片段
+ */
+export class StreamRenderer {
+  private chunks: string[] = [];
+  private callbacks: ((chunk: string) => void)[] = [];
+  private resolved = false;
+  private error: Error | null = null;
+
+  /**
+   * 写入一个 HTML 块
+   */
+  write(chunk: string): void {
+    this.chunks.push(chunk);
+    this.callbacks.forEach(cb => cb(chunk));
+  }
+
+  /**
+   * 完成流式渲染
+   */
+  end(): void {
+    this.resolved = true;
+  }
+
+  /**
+   * 抛出错误
+   */
+  fail(err: Error): void {
+    this.error = err;
+    this.resolved = true;
+  }
+
+  /**
+   * 订阅流式输出
+   */
+  subscribe(callback: (chunk: string) => void): () => void {
+    this.callbacks.push(callback);
+    // 立即发送已有 chunks
+    this.chunks.forEach(chunk => callback(chunk));
+    
+    return () => {
+      const idx = this.callbacks.indexOf(callback);
+      if (idx !== -1) this.callbacks.splice(idx, 1);
+    };
+  }
+
+  /**
+   * 获取完整 HTML
+   */
+  getHTML(): string {
+    return this.chunks.join('');
+  }
+
+  /**
+   * 异步迭代器 - 用于 for await...of
+   */
+  async *[Symbol.asyncIterator](): AsyncGenerator<string, void, unknown> {
+    let index = 0;
+    
+    while (index < this.chunks.length || !this.resolved) {
+      if (index < this.chunks.length) {
+        yield this.chunks[index++];
+      } else {
+        await new Promise(resolve => {
+          const check = () => {
+            if (index < this.chunks.length || this.resolved) {
+              resolve(undefined);
+            } else {
+              setTimeout(check, 10);
+            }
+          };
+          check();
+        });
+      }
+    }
+
+    if (this.error) {
+      throw this.error;
+    }
+  }
+}
+
+/**
+ * 流式 HTML 片段生成器
+ */
+export function createStreamHTML(): {
+  renderer: StreamRenderer;
+  html: () => string;
+  stream: () => AsyncGenerator<string>;
+} {
+  const renderer = new StreamRenderer();
+  
+  return {
+    renderer,
+    html: () => renderer.getHTML(),
+    stream: () => renderer[Symbol.asyncIterator]()
+  };
+}
+
+// ============== Suspense & Lazy Loading ==============
+
+/**
+ * Suspense 状态
+ */
+export type SuspenseState = 'pending' | 'resolved' | 'error';
+
+/**
+ * Suspense 组件属性
+ */
+export interface SuspenseProps {
+  fallback: VNode;
+  children: () => VNode;
+  onError?: (error: Error) => void;
+}
+
+/**
+ * 内部 Suspense 状态信号
+ */
+const suspenseState = signal<SuspenseState>('pending');
+const suspenseError = signal<Error | null>(null);
+
+/**
+ * Suspense 边界组件
+ * 用于包裹异步加载的组件
+ */
+export function Suspense({ fallback, children, onError }: SuspenseProps): Component {
+  return () => {
+    const state = suspenseState();
+    const err = suspenseError();
+
+    if (state === 'error') {
+      onError?.(err!);
+      return fallback;
+    }
+
+    if (state === 'pending') {
+      return fallback;
+    }
+
+    return children();
+  };
+}
+
+/**
+ * 设置 Suspense 状态
+ */
+export function setSuspenseState(state: SuspenseState, error?: Error): void {
+  suspenseState(state);
+  if (error) suspenseError(error);
+}
+
+/**
+ * lazy() - 懒加载组件
+ * 返回一个包装的组件，首次渲染时显示 Suspense fallback
+ */
+export function lazy<T extends Component>(
+  importFn: () => Promise<{ default: T }>
+): () => { load: () => Promise<T>; component: T | null } {
+  let loadedComponent: T | null = null;
+  let loadPromise: Promise<T> | null = null;
+
+  const load = async (): Promise<T> => {
+    if (loadedComponent) return loadedComponent;
+    if (loadPromise) return loadPromise;
+
+    loadPromise = importFn().then(mod => {
+      loadedComponent = mod.default;
+      return loadedComponent;
+    });
+
+    return loadPromise;
+  };
+
+  return () => {
+    return {
+      load,
+      component: loadedComponent
+    };
+  };
+}
+
+/**
+ * 异步组件包装器
+ */
+export function asyncComponent<T extends Component>(
+  importFn: () => Promise<{ default: T }>,
+  fallback: VNode
+): Component {
+  const lazyFactory = lazy(importFn);
+  const state = signal<SuspenseState>('pending');
+  const component = signal<T | null>(null);
+
+  // 触发加载
+  lazyFactory().load()
+    .then(comp => {
+      component(comp);
+      state('resolved');
+    })
+    .catch(err => {
+      console.error('Async component load failed:', err);
+      state('error');
+    });
+
+  return () => {
+    if (state() === 'pending') {
+      return fallback;
+    }
+    
+    if (state() === 'error') {
+      return fallback;
+    }
+
+    const comp = component();
+    return comp ? comp() : fallback;
+  };
+}
+
+// ============== Incremental DOM Updates ==============
+
+/**
+ * 增量更新块
+ */
+export interface IncrementalUpdate {
+  id: string;
+  html: string;
+  type: 'replace' | 'append' | 'prepend' | 'remove';
+}
+
+/**
+ * 创建增量更新消息
+ */
+export function createUpdate(id: string, html: string, type: IncrementalUpdate['type'] = 'replace'): IncrementalUpdate {
+  return { id, html, type };
+}
+
+/**
+ * 应用增量更新到 DOM
+ */
+export function applyUpdate(container: HTMLElement, update: IncrementalUpdate): void {
+  const { id, html, type } = update;
+  const element = container.querySelector(`[data-stream-id="${id}"]`);
+
+  switch (type) {
+    case 'replace':
+      if (element) {
+        element.outerHTML = html;
+      } else {
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const newEl = temp.firstElementChild;
+        if (newEl) {
+          newEl.setAttribute('data-stream-id', id);
+          container.appendChild(newEl);
+        }
+      }
+      break;
+
+    case 'append':
+      if (element) {
+        element.insertAdjacentHTML('beforeend', html);
+      }
+      break;
+
+    case 'prepend':
+      if (element) {
+        element.insertAdjacentHTML('afterbegin', html);
+      }
+      break;
+
+    case 'remove':
+      if (element) {
+        element.remove();
+      }
+      break;
+  }
+}
+
+/**
+ * 流式渲染到目标元素
+ * 支持服务端推送的增量更新
+ */
+export function renderToStream(
+  container: HTMLElement,
+  stream: AsyncGenerator<string, void, unknown>
+): { abort: () => void } {
+  let aborted = false;
+
+  (async () => {
+    try {
+      for await (const chunk of stream) {
+        if (aborted) break;
+        
+        // 解析增量更新
+        try {
+          const update: IncrementalUpdate = JSON.parse(chunk);
+          applyUpdate(container, update);
+        } catch {
+          // 如果不是 JSON，直接追加 HTML
+          container.insertAdjacentHTML('beforeend', chunk);
+        }
+      }
+    } catch (err) {
+      console.error('Stream rendering error:', err);
+    }
+  })();
+
+  return {
+    abort: () => { aborted = true; }
+  };
 }
