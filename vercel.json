@@ -1,7 +1,23 @@
 {
-  "buildCommand": "pnpm docs:build",
-  "outputDirectory": "docs/.vitepress/dist",
-  "devCommand": "pnpm docs:dev",
+  "name": "qore-examples",
+  "version": 2,
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
-  "framework": "vitepress"
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/examples/(.*)",
+      "destination": "/examples/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "github": {
+    "silent": false,
+    "autoJobCancelation": true
+  }
 }
