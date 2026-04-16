@@ -1,0 +1,74 @@
+name: CI - Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Cancel in-progress runs on new commits
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    timeout-minutes: 15
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Run core tests
+        run: pnpm test
+        working-directory: packages/core
+        env:
+          CI: true
+      
+      - name: Run devtools tests
+        run: pnpm test
+        working-directory: packages/devtools
+        env:
+          CI: true
+      
+      - name: Run primitives tests
+        run: pnpm test
+        working-directory: packages/primitives
+        env:
+          CI: true
+      
+      - name: Run create-qore tests
+        run: pnpm test
+        working-directory: packages/create-qore
+        env:
+          CI: true
+      
+      - name: Build all packages
+        run: pnpm build
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            packages/core/test-results
+            packages/devtools/test-results
+            packages/primitives/test-results
+          retention-days: 7

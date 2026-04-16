@@ -142,7 +142,7 @@ describe('Full App Integration', () => {
     expect(effectCount).toBe(1);
     
     count(1);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     // Effect runs: initial (1) + component re-render creates new effect (2) + old effect triggered by count change (3)
     expect(effectCount).toBeGreaterThanOrEqual(2);
     expect(cleanupCount).toBeGreaterThanOrEqual(1);

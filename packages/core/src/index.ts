@@ -26,6 +26,12 @@ export {
 } from './stream';
 export type { StreamWriter, StreamOptions, SuspenseProps, SuspenseState, IncrementalUpdate } from './stream';
 
+// Model Loader (AI model optimization)
+export { 
+  ModelLoader, loadModel, useModel, batchLoadModels
+} from './model';
+export type { ModelLoaderOptions, ModelInstance, ModelStatus } from './model';
+
 // Utilities
 export { debounce, throttle, cx, style, on, onEvent, preventDefault, stopPropagation, sleep } from './utils';
 

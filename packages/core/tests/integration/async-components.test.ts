@@ -65,9 +65,9 @@ describe('Async Components', () => {
     setTimeout(() => {
       userData({ id: 1, name: 'John Doe', email: 'john@example.com' });
       isLoading(false);
-    }, 50);
+    }, 20);
     
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 30));
     
     expect(container.innerHTML).toContain('John Doe');
     expect(container.innerHTML).toContain('john@example.com');

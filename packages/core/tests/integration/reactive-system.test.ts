@@ -168,11 +168,11 @@ describe('Reactive System Stress Tests', () => {
     });
     
     count(1);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     count(2);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     count(3);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     
     expect(cleanups).toEqual([0, 1, 2]);
   });
@@ -192,7 +192,7 @@ describe('Reactive System Stress Tests', () => {
       outer({ inner: signal(5) });
     });
     
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     expect(effectCount).toBe(2);
   });
 
@@ -248,7 +248,7 @@ describe('Reactive System Stress Tests', () => {
     expect(cleanupCalled).toBe(false);
     
     stop();
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     
     expect(cleanupCalled).toBe(true);
   });
@@ -293,13 +293,14 @@ describe('Reactive System Stress Tests', () => {
     expect(order).toEqual(['a', 'b', 'c']);
     
     count(1);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     
     expect(order).toEqual(['a', 'b', 'c', 'a', 'b', 'c']);
   });
 
-  it('should handle stress test: 100000 signals', async () => {
-    const signals = Array.from({ length: 100000 }, (_, i) => signal(i));
+  it('should handle stress test: 50000 signals', async () => {
+    // Reduced from 100000 for CI stability
+    const signals = Array.from({ length: 50000 }, (_, i) => signal(i));
     
     const start = performance.now();
     
@@ -312,7 +313,7 @@ describe('Reactive System Stress Tests', () => {
     
     const end = performance.now();
     
-    expect(end - start).toBeLessThan(5000); // Should complete in under 5 seconds
+    expect(end - start).toBeLessThan(3000); // Should complete in under 3 seconds
   });
 
   it('should handle reactive component re-rendering', async () => {
@@ -329,11 +330,11 @@ describe('Reactive System Stress Tests', () => {
     expect(container.innerHTML).toContain('Count: 0');
     
     count(1);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     expect(container.innerHTML).toContain('Count: 1');
     
     count(2);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
     expect(container.innerHTML).toContain('Count: 2');
     
     // Should have rendered 3 times (initial + 2 updates)

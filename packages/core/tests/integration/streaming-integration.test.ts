@@ -36,7 +36,7 @@ describe('Streaming Integration', () => {
     const chunks = ['Hello', ' ', 'World', '!'];
     for (const chunk of chunks) {
       streamData(streamData() + chunk);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 5));
     }
     
     isComplete(true);
@@ -122,7 +122,7 @@ describe('Streaming Integration', () => {
     
     for (const msg of newMessages) {
       messages([...messages(), msg]);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 5));
     }
     
     expect(container.querySelectorAll('.message').length).toBe(3);
@@ -144,7 +144,7 @@ describe('Streaming Integration', () => {
     
     expect(container.innerHTML).toContain('Loading data...');
     
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 5));
     data('Streamed content');
     isPending(false);
     
@@ -188,7 +188,7 @@ describe('Streaming Integration', () => {
     
     for (const chunk of streamChunks) {
       chunks([...chunks(), chunk]);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 5));
     }
     
     expect(container.innerHTML).toContain('Chunk 1: Chunk 2: Chunk 3: Final');
@@ -263,17 +263,17 @@ describe('Streaming Integration', () => {
     await Promise.all([
       (async () => {
         stream1('A');
-        await new Promise(r => setTimeout(r, 10));
+        await new Promise(r => setTimeout(r, 5));
         stream1('B');
       })(),
       (async () => {
         stream2('1');
-        await new Promise(r => setTimeout(r, 15));
+        await new Promise(r => setTimeout(r, 8));
         stream2('2');
       })(),
       (async () => {
         stream3('X');
-        await new Promise(r => setTimeout(r, 5));
+        await new Promise(r => setTimeout(r, 3));
         stream3('Y');
       })()
     ]);
