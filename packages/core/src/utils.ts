@@ -27,44 +27,28 @@ export function throttle<T extends (...args: any[]) => any>(
   };
 }
 
-/**
- * Class name utility - conditional classes
- */
 export function cx(...classes: (string | false | null | undefined | Record<string, boolean>)[]): string {
   const result: string[] = [];
-  
   for (const cls of classes) {
     if (!cls) continue;
-    
-    if (typeof cls === 'string') {
-      result.push(cls);
-    } else if (typeof cls === 'object') {
+    if (typeof cls === 'string') result.push(cls);
+    else if (typeof cls === 'object') {
       for (const [key, value] of Object.entries(cls)) {
         if (value) result.push(key);
       }
     }
   }
-  
   return result.join(' ');
 }
 
-/**
- * Style merging utility - merge multiple style objects
- */
 export function style(...styles: (Record<string, string | number> | false | null | undefined)[]): Record<string, string | number> {
   const result: Record<string, string | number> = {};
-  
   for (const s of styles) {
-    if (!s) continue;
-    Object.assign(result, s);
+    if (s) Object.assign(result, s);
   }
-  
   return result;
 }
 
-/**
- * Event listener utility with cleanup
- */
 export function on<K extends keyof HTMLElementEventMap>(
   el: HTMLElement,
   type: K,
@@ -75,9 +59,6 @@ export function on<K extends keyof HTMLElementEventMap>(
   return () => el.removeEventListener(type, handler as EventListener, options);
 }
 
-/**
- * Event handler creators for common events
- */
 export const onEvent = {
   click: (handler: (e: MouseEvent) => void) => ({ onClick: handler }),
   change: (handler: (e: Event) => void) => ({ onChange: handler }),
@@ -91,24 +72,12 @@ export const onEvent = {
   mouseleave: (handler: (e: MouseEvent) => void) => ({ onMouseLeave: handler }),
 };
 
-/**
- * Create event handler with prevent default
- */
 export function preventDefault<T extends Event>(handler: (e: T) => void): (e: T) => void {
-  return (e: T) => {
-    e.preventDefault();
-    handler(e);
-  };
+  return (e: T) => { e.preventDefault(); handler(e); };
 }
 
-/**
- * Create event handler with stop propagation
- */
 export function stopPropagation<T extends Event>(handler: (e: T) => void): (e: T) => void {
-  return (e: T) => {
-    e.stopPropagation();
-    handler(e);
-  };
+  return (e: T) => { e.stopPropagation(); handler(e); };
 }
 
 export function sleep(ms: number): Promise<void> {

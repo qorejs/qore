@@ -1,5 +1,6 @@
 /**
  * Qore Signal System - Fine-grained Reactivity
+ * Optimized for minimal bundle size and maximum performance
  */
 
 type EffectFn = () => void | (() => void);
@@ -19,9 +20,7 @@ class EffectNode {
   
   run(): void {
     // Clean up old dependencies
-    for (const dep of this.deps) {
-      dep.subs.delete(this);
-    }
+    for (const dep of this.deps) dep.subs.delete(this);
     this.deps.clear();
     
     // Call cleanup before execution
@@ -30,16 +29,13 @@ class EffectNode {
       this.cleanup = undefined;
     }
     
-    const prevEffect = activeEffect;
+    const prev = activeEffect;
     activeEffect = this;
     try {
       const result = this.fn();
-      // Save new cleanup function
-      if (typeof result === 'function') {
-        this.cleanup = result;
-      }
+      if (typeof result === 'function') this.cleanup = result;
     } finally {
-      activeEffect = prevEffect;
+      activeEffect = prev;
     }
   }
 }
@@ -61,22 +57,18 @@ class SignalNode<T> {
   }
   
   set(newValue: T): void {
-    if (this.value === newValue) return;
-    this.value = newValue;
-    this.notify();
+    if (this.value !== newValue) {
+      this.value = newValue;
+      this.notify();
+    }
   }
   
   private notify(): void {
-    const effectsToRun = Array.from(this.subs);
-    
     if (batchDepth > 0) {
-      effectsToRun.forEach(sub => pendingEffects.add(sub));
+      this.subs.forEach(sub => pendingEffects.add(sub));
       return;
     }
-    
-    for (const effect of effectsToRun) {
-      effect.run();
-    }
+    this.subs.forEach(effect => effect.run());
   }
 }
 
@@ -86,7 +78,7 @@ export interface Signal<T> {
 }
 
 export function signal<T>(initial: T): Signal<T> {
-  const node = new SignalNode(initial);
+  const node = new SignalNode<T>(initial);
   
   const sig = (value?: T): T => {
     if (value !== undefined) {
@@ -98,76 +90,63 @@ export function signal<T>(initial: T): Signal<T> {
   
   sig.peek = () => {
     const prev = activeEffect;
-    activeEffect = null; // Temporarily disable dependency tracking
+    activeEffect = null;
     try {
       return node.get();
     } finally {
       activeEffect = prev;
     }
   };
+  
   return sig;
 }
 
-export function computed<T>(fn: () => T): Signal<T> {
+export function computed<T>(getter: () => T): Signal<T> {
   let value: T;
   let depsVersion = 0;
   let lastReadVersion = 0;
   const subs = new Set<EffectNode>();
   
-  // Create effect node to track dependencies
   const effectNode = new EffectNode(() => {
     depsVersion++;
-    // Notify all subscribers when dependencies change
-    for (const sub of subs) {
-      if (batchDepth > 0) {
-        pendingEffects.add(sub);
-      } else {
-        sub.run();
-      }
-    }
+    subs.forEach(sub => {
+      if (batchDepth > 0) pendingEffects.add(sub);
+      else sub.run();
+    });
   });
   
-  // Initial dependency collection - must be after creating effectNode
-  const prevEffect = activeEffect;
+  const prev = activeEffect;
   activeEffect = effectNode;
   try {
-    value = fn();
+    value = getter();
   } finally {
-    activeEffect = prevEffect;
+    activeEffect = prev;
   }
   lastReadVersion = depsVersion;
   
   const sig = (val?: T): T => {
-    if (val !== undefined) {
-      throw new Error('Computed signals are read-only');
-    }
+    if (val !== undefined) throw new Error('Computed signals are read-only');
+    if (activeEffect) subs.add(activeEffect);
     
-    // Let current effect subscribe to this computed
-    if (activeEffect) {
-      subs.add(activeEffect);
-    }
-    
-    // Recalculate if dependencies have changed
     if (depsVersion > lastReadVersion) {
       const prev = activeEffect;
       activeEffect = effectNode;
       try {
-        value = fn();
+        value = getter();
       } finally {
         activeEffect = prev;
       }
       lastReadVersion = depsVersion;
     }
-    
     return value;
   };
   
   sig.peek = () => {
     if (depsVersion > lastReadVersion) {
       const prev = activeEffect;
-      activeEffect = null; // Temporarily disable dependency tracking
+      activeEffect = null;
       try {
-        value = fn();
+        value = getter();
       } finally {
         activeEffect = prev;
       }
@@ -183,15 +162,11 @@ export function effect(fn: EffectFn): () => void {
   const node = new EffectNode(fn);
   node.run();
   return () => {
-    // Call cleanup
     if (node.cleanup) {
       node.cleanup();
       node.cleanup = undefined;
     }
-    // Clean up dependencies
-    for (const dep of node.deps) {
-      dep.subs.delete(node);
-    }
+    node.deps.forEach(dep => dep.subs.delete(node));
     node.deps.clear();
   };
 }
@@ -205,9 +180,7 @@ export function batch<T>(fn: () => T): T {
     if (batchDepth === 0) {
       const effects = Array.from(pendingEffects);
       pendingEffects.clear();
-      for (const eff of effects) {
-        eff.run();
-      }
+      effects.forEach(eff => eff.run());
     }
   }
 }

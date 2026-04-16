@@ -16,7 +16,10 @@
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
-    "prepublishOnly": "pnpm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm run test",
     "publish:npm": "npm publish --access public"
   },
   "keywords": [

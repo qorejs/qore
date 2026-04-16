@@ -2,6 +2,11 @@ import { defineConfig } from 'vite'
 import { resolve } from 'path'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@qorejs/qore': resolve(__dirname, '../core/src/index.ts'),
+    },
+  },
   build: {
     lib: {
       entry: {

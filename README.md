@@ -240,15 +240,24 @@ pnpm build
 - ✅ Streaming rendering
 - ✅ Suspense & Lazy Loading
 - ✅ Error boundaries
-- ✅ 110+ passing tests
 - ✅ Performance benchmarks
 - ✅ Demo applications
 - ✅ Documentation
 
+### Test Coverage (Week 5)
+- ✅ **core**: 68 tests passing (utils, error, stream, reactive, render)
+- ✅ **devtools**: 20 tests passing (panel, devtools)
+- ✅ **primitives**: 35 tests passing (components, exports)
+- ✅ **create-qore**: 4 tests passing (CLI)
+- ⏳ **integration tests**: In progress (some timeout issues being addressed)
+
+**Total**: 127+ unit tests passing
+
 ### Roadmap
-- [ ] v0.5: SSR completion
-- [ ] v0.6: Devtools
-- [ ] v0.7: Component primitives
+- [x] v0.5: SSR completion
+- [x] v0.6: Devtools
+- [x] v0.7: Component primitives
+- [ ] v0.8: Integration test fixes
 - [ ] v1.0: Production release
 
 ---
