@@ -95,7 +95,7 @@ function demoCodeStreaming() {
   document.body.appendChild(container);
   
   const code = `// Qore - AI Native Framework
-import { signal, computed, h, render } from 'qore'
+import { signal, computed, h, render } from '@qorejs/qore'
 
 // Reactive state
 const count = signal(0)

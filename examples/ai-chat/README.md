@@ -8,10 +8,10 @@
 
 ```bash
 # 如果使用 npm
-npm install qore
+npm install @qorejs/qore
 
 # 或使用 pnpm
-pnpm add qore
+pnpm add @qorejs/qore
 ```
 
 ### 2. 配置 API Key
@@ -37,7 +37,7 @@ npx vite examples/ai-chat
 ### Signal 状态管理
 
 ```typescript
-import { signal, effect } from 'qore'
+import { signal, effect } from '@qorejs/qore'
 
 // 响应式状态
 const messages = signal([])
@@ -55,7 +55,7 @@ messages([...messages(), { role: 'user', content: 'Hello' }])
 ### 流式渲染 AI 响应
 
 ```typescript
-import { stream } from 'qore'
+import { stream } from '@qorejs/qore'
 
 // 创建 AI 流式响应
 const { abort } = stream(async (write) => {
@@ -107,7 +107,7 @@ const { abort } = stream(async (write) => {
 ### 组件化 UI
 
 ```typescript
-import { h, render } from 'qore'
+import { h, render } from '@qorejs/qore'
 
 // 消息组件
 function Message({ role, content }) {
@@ -175,7 +175,7 @@ function Chat() {
 **Qore 实现**（只需 10 行）：
 
 ```typescript
-import { signal, stream } from 'qore'
+import { signal, stream } from '@qorejs/qore'
 
 const messages = signal([])
 const loading = signal(false)
@@ -207,9 +207,10 @@ stream(async (write) => {
 
 ## 📚 更多资源
 
-- [Qore 文档](https://qorejs.github.io/qore/)
-- [API 参考](https://qorejs.github.io/qore/api/)
+- [Qore 文档](https://qorejs.dev/)
+- [API 参考](https://qorejs.dev/api/)
 - [GitHub](https://github.com/qorejs/qore)
+- [npm 包](https://www.npmjs.com/package/@qorejs/qore)
 
 ---
 
