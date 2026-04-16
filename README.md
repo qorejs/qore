@@ -2,10 +2,10 @@
 
 **AI-Native Frontend Framework for the Streaming Era**
 
-[![Version](https://img.shields.io/npm/v/qore.svg)](https://www.npmjs.com/package/qore)
-[![Tests](https://img.shields.io/badge/tests-165%20passing-green.svg)](https://github.com/qorejs/qore/actions)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/qore)](https://bundlephobia.com/package/qore)
-[![License](https://img.shields.io/npm/l/qore.svg)](https://github.com/qorejs/qore/blob/main/LICENSE)
+[![Version](https://img.shields.io/npm/v/@qorejs/qore.svg)](https://www.npmjs.com/package/@qorejs/qore)
+[![Tests](https://img.shields.io/badge/tests-200+%20passing-green.svg)](https://github.com/qorejs/qore/actions)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@qorejs/qore)](https://bundlephobia.com/package/@qorejs/qore)
+[![License](https://img.shields.io/npm/l/@qorejs/qore.svg)](https://github.com/qorejs/qore/blob/main/LICENSE)
 
 ---
 
@@ -211,7 +211,7 @@ Qore is ideal for:
 
 ```bash
 # Clone the repository
-git clone https://github.com/qore-framework/qore.git
+git clone https://github.com/qorejs/qore.git
 cd qore
 
 # Install dependencies
