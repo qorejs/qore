@@ -13,7 +13,7 @@
 
 2. **自动触发**
    - GitHub Actions 会自动构建并发布
-   - 发布到 npm: https://www.npmjs.com/package/qore
+   - 发布到 npm: https://www.npmjs.com/package/@qorejs/qore
 
 ---
 
@@ -71,11 +71,11 @@ cat ~/.npmrc
 
 ```bash
 # 验证发布
-npm view qore version
-npm view qore dist-tags
+npm view @qorejs/qore version
+npm view @qorejs/qore dist-tags
 
 # 安装测试
-npm install qore@latest
+npm install @qorejs/qore@latest
 ```
 
 ---
@@ -92,9 +92,9 @@ npm install qore@latest
 
 | 包 | 版本 |
 |---|------|
-| `qore` | 0.5.0 |
-| `@qore/devtools` | 0.6.0 |
-| `@qore/primitives` | 0.6.0 |
+| `@qorejs/qore` | 0.6.0 |
+| `@qorejs/devtools` | 0.6.0 |
+| `@qorejs/primitives` | 0.6.0 |
 | `create-qore` | 0.6.0 |
 
 ---
