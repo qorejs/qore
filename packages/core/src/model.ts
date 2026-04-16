@@ -1,10 +1,11 @@
 /**
- * Qore Model Loader - Optimized AI Model Loading
- * Features: Lazy loading, persistent caching, async initialization
+ * Qore Model Loader - Optimized AI Model Loading with Enhanced Error Handling
+ * Features: Lazy loading, persistent caching, async initialization, retry logic, timeout, fallback
  * Import via: import { ModelLoader, loadModel } from '@qorejs/qore/model'
  */
 
 import { signal, computed } from './signal';
+import { retry as retryUtil } from './error';
 
 /**
  * Model loading state
@@ -22,7 +23,16 @@ interface ModelCacheEntry<T = unknown> {
 }
 
 /**
- * Model loader options
+ * Fallback strategy for model loading
+ */
+export type FallbackStrategy = 
+  | 'none'           // No fallback, just fail
+  | 'cache'          // Use cached version if available
+  | 'default'        // Use a default mock model
+  | 'graceful';      // Return partial functionality
+
+/**
+ * Model loader options with enhanced error handling
  */
 export interface ModelLoaderOptions {
   /** Model identifier/name */
@@ -37,10 +47,30 @@ export interface ModelLoaderOptions {
   lazy?: boolean;
   /** Preload on initialization */
   preload?: boolean;
+  
+  // Error handling options
+  /** Maximum number of retry attempts (default: 3) */
+  maxRetries?: number;
+  /** Initial retry delay in milliseconds (default: 1000) */
+  retryDelay?: number;
+  /** Retry backoff multiplier (default: 2) */
+  retryBackoff?: number;
+  /** Load timeout in milliseconds (default: 30000) */
+  timeout?: number;
+  /** Fallback strategy when all retries fail */
+  fallbackStrategy?: FallbackStrategy;
+  /** Default/fallback model data */
+  fallbackData?: any;
+  /** Called on each retry attempt */
+  onRetry?: (error: Error, attempt: number) => void;
+  /** Called when load fails completely */
+  onLoadError?: (error: Error) => void;
+  /** Called when fallback is used */
+  onFallback?: (reason: string) => void;
 }
 
 /**
- * Model instance wrapper
+ * Model instance wrapper with enhanced error information
  */
 export interface ModelInstance<T = unknown> {
   /** The loaded model */
@@ -55,6 +85,14 @@ export interface ModelInstance<T = unknown> {
   reload: () => Promise<void>;
   /** Unload and clear cache */
   unload: () => void;
+  /** Whether using fallback data */
+  isFallback?: boolean;
+  /** Number of retry attempts made */
+  retryCount?: number;
+  /** Time taken to load in milliseconds */
+  loadTime?: number;
+  /** Force reload ignoring cache */
+  forceReload: () => Promise<void>;
 }
 
 /**
@@ -284,43 +322,60 @@ export class ModelLoader {
       }
     }
 
-    // Lazy loading - return placeholder if not preloading
+    // Lazy loading - create instance with idle state, load in background
     if (lazy && !preload) {
-      const placeholder: ModelInstance<T> = {
+      const status = signal<ModelStatus>('idle');
+      const errorSig = signal<Error | null>(null);
+      const progress = signal(0);
+      const isFallback = signal(false);
+      const retryCount = signal(0);
+
+      const instance: ModelInstance<T> = {
         data: null,
-        status: 'idle',
-        error: null,
-        progress: 0,
+        get status() { return status(); },
+        get error() { return errorSig(); },
+        get progress() { return progress(); },
+        get isFallback() { return isFallback(); },
+        get retryCount() { return retryCount(); },
         reload: () => this.load(options).then(() => {}),
-        unload: () => this.unload(name)
+        unload: () => this.unload(name),
+        forceReload: () => {
+          this.unload(name);
+          return this.load({ ...options, preload: true }).then(() => {});
+        }
       };
-      this.models.set(name, placeholder);
+      this.models.set(name, instance);
       
-      // Start background loading
-      this.startBackgroundLoad<T>(options, placeholder);
+      // Start background loading (will update the same instance's signals)
+      this.startBackgroundLoad<T>(options, name);
       
-      return placeholder;
+      return instance;
     }
 
     // Immediate loading
     return this.startLoading<T>(options);
   }
 
-  private async startBackgroundLoad<T>(options: ModelLoaderOptions, placeholder: ModelInstance<T>): Promise<void> {
-    try {
-      const instance = await this.startLoading<T>(options);
-      // Update placeholder reference
-      placeholder.data = instance.data;
-      placeholder.status = instance.status;
-      placeholder.progress = instance.progress;
-    } catch (error) {
-      placeholder.status = 'error';
-      placeholder.error = error as Error;
-    }
+  private async startBackgroundLoad<T>(options: ModelLoaderOptions, name: string): Promise<void> {
+    // Background load will update the instance in models map via startLoading
+    await this.startLoading<T>(options);
   }
 
-  private async startLoading<T>(options: ModelLoaderOptions): Promise<ModelInstance<T>> {
-    const { name, source, cacheTTL = 3600000 } = options;
+  private async startLoading<T>(options: ModelLoaderOptions, existingInstance?: ModelInstance<T>): Promise<ModelInstance<T>> {
+    const { 
+      name, 
+      source, 
+      cacheTTL = 3600000,
+      maxRetries = 3,
+      retryDelay = 1000,
+      retryBackoff = 2,
+      timeout = 30000,
+      fallbackStrategy = 'none',
+      fallbackData,
+      onRetry,
+      onLoadError,
+      onFallback
+    } = options;
 
     // Check if already loading (deduplicate concurrent loads)
     const existingLoad = this.loadingPromises.get(name);
@@ -330,11 +385,50 @@ export class ModelLoader {
       if (instance) return instance as ModelInstance<T>;
     }
 
-    const status = signal<ModelStatus>('loading');
-    const errorSig = signal<Error | null>(null);
-    const progress = signal(0);
+    // Use existing instance signals if provided (for lazy loading background load)
+    const status = existingInstance ? (existingInstance.status as any)._signal ?? signal<ModelStatus>('loading') : signal<ModelStatus>('loading');
+    const errorSig = existingInstance ? (existingInstance.error as any)._signal ?? signal<Error | null>(null) : signal<Error | null>(null);
+    const progress = existingInstance ? (existingInstance.progress as any)._signal ?? signal(0) : signal(0);
+    const retryCount = existingInstance ? (existingInstance.retryCount as any)._signal ?? signal(0) : signal(0);
+    const isFallback = existingInstance ? (existingInstance.isFallback as any)._signal ?? signal(false) : signal(false);
+    const loadStartTime = Date.now();
 
-    const loadPromise = this.fetchModel<T>(source, progress)
+    // Create the actual load function with timeout
+    const loadWithTimeout = (): Promise<T> => {
+      return Promise.race([
+        this.fetchModel<T>(source, progress, options),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error(`Model load timeout after ${timeout}ms`)), timeout)
+        )
+      ]);
+    };
+
+    // Create load function with retry logic
+    const loadWithRetry = async (): Promise<T> => {
+      let lastError: Error | null = null;
+      let currentDelay = retryDelay;
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        retryCount(attempt);
+        try {
+          return await loadWithTimeout();
+        } catch (err) {
+          lastError = err as Error;
+          onRetry?.(lastError, attempt);
+          
+          if (attempt < maxRetries) {
+            console.log(`[ModelLoader] Retry ${attempt}/${maxRetries} for "${name}" failed: ${lastError.message}`);
+            await new Promise(resolve => setTimeout(resolve, currentDelay));
+            currentDelay *= retryBackoff;
+            progress(Math.min(10 + (attempt * 10), 50)); // Show retry progress
+          }
+        }
+      }
+
+      throw lastError;
+    };
+
+    const loadPromise = loadWithRetry()
       .then(async (model) => {
         // Store in caches
         this.memoryCache.set(name, model, cacheTTL);
@@ -355,22 +449,86 @@ export class ModelLoader {
           status: 'ready' as ModelStatus,
           error: null,
           progress: 100,
+          retryCount: retryCount(),
+          loadTime: Date.now() - loadStartTime,
+          isFallback: false,
           reload: () => this.load(options).then(() => {}),
-          unload: () => this.unload(name)
+          unload: () => this.unload(name),
+          forceReload: () => {
+            this.unload(name);
+            return this.load({ ...options, preload: true }).then(() => {});
+          }
         };
       })
-      .catch((err) => {
-        status('error');
-        errorSig(err as Error);
+      .catch(async (err) => {
+        const loadError = err as Error;
         this.loadingPromises.delete(name);
+
+        // Try fallback strategy
+        let fallbackModel: T | null = null;
+        let fallbackReason = '';
+
+        if (fallbackStrategy !== 'none') {
+          // Try cache fallback
+          if (fallbackStrategy === 'cache' || fallbackStrategy === 'graceful') {
+            const cached = this.memoryCache.get(name);
+            if (cached) {
+              fallbackModel = cached.model as T;
+              fallbackReason = 'cache';
+              onFallback?.('Using cached version due to load failure');
+            }
+          }
+
+          // Try default fallback
+          if (!fallbackModel && fallbackData && (fallbackStrategy === 'default' || fallbackStrategy === 'graceful')) {
+            fallbackModel = fallbackData as T;
+            fallbackReason = 'default';
+            onFallback?.('Using default fallback model');
+          }
+        }
+
+        if (fallbackModel) {
+          // Use fallback successfully
+          status('ready');
+          isFallback(true);
+          progress(100);
+
+          return {
+            data: fallbackModel,
+            status: 'ready' as ModelStatus,
+            error: loadError,
+            progress: 100,
+            retryCount: retryCount(),
+            loadTime: Date.now() - loadStartTime,
+            isFallback: true,
+            reload: () => this.load(options).then(() => {}),
+            unload: () => this.unload(name),
+            forceReload: () => {
+              this.unload(name);
+              return this.load({ ...options, preload: true }).then(() => {});
+            }
+          };
+        }
+
+        // No fallback available, report error
+        status('error');
+        errorSig(loadError);
+        onLoadError?.(loadError);
 
         return {
           data: null,
           status: 'error' as ModelStatus,
-          error: err as Error,
+          error: loadError,
           progress: 0,
+          retryCount: retryCount(),
+          loadTime: Date.now() - loadStartTime,
+          isFallback: false,
           reload: () => this.load(options).then(() => {}),
-          unload: () => this.unload(name)
+          unload: () => this.unload(name),
+          forceReload: () => {
+            this.unload(name);
+            return this.load({ ...options, preload: true }).then(() => {});
+          }
         };
       });
 
@@ -381,8 +539,14 @@ export class ModelLoader {
       get status() { return status(); },
       get error() { return errorSig(); },
       get progress() { return progress(); },
+      get isFallback() { return isFallback(); },
+      get retryCount() { return retryCount(); },
       reload: () => this.load(options).then(() => {}),
-      unload: () => this.unload(name)
+      unload: () => this.unload(name),
+      forceReload: () => {
+        this.unload(name);
+        return this.load({ ...options, preload: true }).then(() => {});
+      }
     };
 
     this.models.set(name, instance);
@@ -390,7 +554,11 @@ export class ModelLoader {
     return this.models.get(name) as ModelInstance<T>;
   }
 
-  private async fetchModel<T>(source: string, progress: (value: number) => void): Promise<T> {
+  private async fetchModel<T>(
+    source: string, 
+    progress: (value: number) => void,
+    options?: ModelLoaderOptions
+  ): Promise<T> {
     // Simulate model loading with progress
     // In real implementation, this would fetch from URL or load from file
     progress(10);
@@ -403,22 +571,38 @@ export class ModelLoader {
     progress(80);
     
     // Mock model data - in real implementation, this would be the actual model
-    const model = await this.loadFromSource<T>(source);
+    const model = await this.loadFromSource<T>(source, options);
     progress(100);
     
     return model;
   }
 
-  private async loadFromSource<T>(source: string): Promise<T> {
+  private async loadFromSource<T>(source: string, options?: ModelLoaderOptions): Promise<T> {
     // Try to fetch from URL
     if (source.startsWith('http://') || source.startsWith('https://')) {
-      const response = await fetch(source);
-      if (!response.ok) throw new Error(`Failed to fetch model: ${response.statusText}`);
-      return response.json() as Promise<T>;
+      try {
+        const response = await fetch(source, {
+          headers: {
+            'Accept': 'application/json',
+            ...(options?.name ? { 'X-Model-Name': options.name } : {})
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch model "${options?.name || source}": ${response.statusText} (${response.status})`);
+        }
+        
+        return response.json() as Promise<T>;
+      } catch (error) {
+        if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
+          throw new Error(`Network error loading model "${options?.name || source}": ${(error as Error).message}`);
+        }
+        throw error;
+      }
     }
     
     // Otherwise, treat as mock data for testing
-    return { source, type: 'mock-model' } as T;
+    return { source, type: 'mock-model', name: options?.name } as T;
   }
 
   /**

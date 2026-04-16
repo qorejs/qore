@@ -10,21 +10,11 @@ describe('ModelLoader', () => {
   let loader: ModelLoader;
 
   beforeEach(() => {
-    // Reset singleton instance for each test
-    vi.spyOn(ModelLoader, 'getInstance').mockReturnValue({
-      load: vi.fn(),
-      initPersistentCache: vi.fn(),
-      unload: vi.fn(),
-      clearCache: vi.fn(),
-      getStatus: vi.fn(),
-      preloadAll: vi.fn(),
-      getStats: vi.fn().mockReturnValue({ memoryCacheSize: 0, loadedModels: 0 })
-    } as any);
+    // Get fresh instance for each test
     loader = ModelLoader.getInstance();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     loader.clearCache();
   });
 
