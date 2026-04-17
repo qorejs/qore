@@ -19,8 +19,8 @@ import {
 } from '../src/ssr';
 import { StreamRenderer } from '../src/stream';
 
-describe('SSR - Error Types', () => {
-  it('should have correct error reason enum values', () => {
+describe('SSR - 错误类型', () => {
+  it('应该具有正确的错误原因枚举值', () => {
     expect(SSRErrorReason.TIMEOUT).toBe('TIMEOUT');
     expect(SSRErrorReason.COMPONENT_ERROR).toBe('COMPONENT_ERROR');
     expect(SSRErrorReason.ASYNC_ERROR).toBe('ASYNC_ERROR');
@@ -29,7 +29,7 @@ describe('SSR - Error Types', () => {
     expect(SSRErrorReason.UNKNOWN).toBe('UNKNOWN');
   });
 
-  it('should have correct recovery strategy enum values', () => {
+  it('应该具有正确的恢复策略枚举值', () => {
     expect(SSRRecoveryStrategy.FALLBACK_COMMENT).toBe('FALLBACK_COMMENT');
     expect(SSRRecoveryStrategy.EMPTY).toBe('EMPTY');
     expect(SSRRecoveryStrategy.THROW).toBe('THROW');
@@ -305,8 +305,10 @@ describe('SSR - renderSSR with detailed errors', () => {
   });
 
   it('should return timeout error in SSR result', async () => {
-    const Component = () => {
-      throw new Error('Slow');
+    // 创建一个真正会超时的异步组件
+    const Component = async () => {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return 'Slow content';
     };
     
     const result = await renderSSR(Component, { timeoutMs: 10 });

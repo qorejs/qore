@@ -18,12 +18,17 @@ export {
   renderToStream as renderToStreamDOM, renderToStreamAsync as renderToStreamAsyncDOM,
   div, span, button, input
 } from './render';
-// 向后兼容别名（已废弃，带 DOM 后缀以区分 SSR 版本）
-// SSR 场景请使用：import { renderToString, renderAsync } from '@qorejs/qore/ssr'
+// Backward Compatibility Aliases (Deprecated - will be removed in v1.0.0)
+// These aliases point to DOM versions for backward compatibility
+// For SSR, use: import { renderToString, renderAsync } from '@qorejs/qore/ssr'
 export { 
   renderToString as renderToStringDOM, 
   renderComponentToString as renderComponentToStringDOM,
-  renderAsync as renderAsyncDOM
+  renderAsync as renderAsyncDOM,
+  // Direct aliases for backward compatibility (deprecated)
+  renderToString as renderToString,
+  renderComponentToString as renderComponentToString,
+  renderAsync as renderAsync
 } from './render';
 export type { VNode, Component } from './render';
 

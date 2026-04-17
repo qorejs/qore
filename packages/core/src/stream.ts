@@ -1,5 +1,5 @@
 /**
- * Qore Stream - AI Streaming & Server-Side Streaming
+ * Qore Stream - AI Streaming Response and Server-Side Streaming
  * Import via: import { ... } from '@qorejs/qore/stream'
  */
 
@@ -29,7 +29,13 @@ export interface SuspenseProps {
 }
 
 /**
- * AI streaming response (client-side)
+ * AI 流式响应（客户端）
+ * 
+ * 用于处理 AI 生成的流式文本响应，支持 Markdown 解析。
+ * 
+ * @param fn - 写入函数，接收 StreamWriter 对象
+ * @param options - 流式选项，包括容器、Markdown 解析、完成/错误回调
+ * @returns Abort 控制器用于停止流式传输
  */
 export function stream(
   fn: (write: StreamWriter) => Promise<void>,
@@ -305,28 +311,31 @@ export function applyUpdate(container: HTMLElement, update: IncrementalUpdate): 
 }
 
 /**
- * 渲染增量流更新到 DOM 容器
+ * Render Incremental Stream Updates to DOM Container
  * 
- * 消费 HTML 块或 IncrementalUpdate 对象的异步流，并将其应用到容器。
- * 支持 JSON 编码的增量更新（replace/append/prepend/remove）或原始 HTML 块。
+ * Consumes an async stream of HTML chunks or IncrementalUpdate objects
+ * and applies them to the container. Supports JSON-encoded incremental
+ * updates (replace/append/prepend/remove) or raw HTML chunks.
  * 
- * 用途：专门用于处理服务端流式响应，将流式 HTML 增量渲染到页面。
- * 与 render.ts 中的 renderToStream 区分：
- *   - renderStreamToDOM：消费流 → 渲染到 DOM（客户端接收流）
- *   - renderToStream：渲染组件 → 输出流（服务端生成流）
+ * Purpose: Specifically designed for handling server-side streaming responses,
+ * incrementally rendering streamed HTML to the page.
  * 
- * @param container - 目标 DOM 容器
- * @param stream - 异步生成器，产出 HTML 块或 IncrementalUpdate JSON
- * @returns 用于停止渲染的 Abort 控制器
+ * Distinction from renderToStream in render.ts:
+ *   - renderStreamToDOM: Consume stream → Render to DOM (client receives stream)
+ *   - renderToStream: Render component → Output stream (server generates stream)
+ * 
+ * @param container - Target DOM container
+ * @param stream - Async generator yielding HTML chunks or IncrementalUpdate JSON
+ * @returns Abort controller to stop rendering
  * 
  * @example
  * ```ts
  * const { abort } = renderStreamToDOM(container, async function* () {
  *   yield JSON.stringify({ id: 'msg1', html: '<div>Hello</div>', type: 'replace' });
- *   yield '<div>More content</div>'; // 原始 HTML
+ *   yield '<div>More content</div>'; // Raw HTML
  * });
  * 
- * // 稍后：abort();
+ * // Later: abort();
  * ```
  */
 export function renderStreamToDOM(

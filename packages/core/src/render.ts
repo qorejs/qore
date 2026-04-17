@@ -1,6 +1,6 @@
 /**
- * Qore Renderer - Fine-grained DOM Updates
- * No VDOM, No Diff - Direct signal binding
+ * Qore Renderer - 细粒度 DOM 更新
+ * 无虚拟 DOM，无 Diff - 直接信号绑定
  */
 
 import { effect } from './signal';
@@ -112,27 +112,27 @@ export function show<T>(condition: () => boolean, fn: () => T): T | null {
 }
 
 /**
- * For 循环组件 - 渲染列表项
+ * For Loop Component - Renders List Items
  * 
- * 用于渲染数组中的每个项目，支持可选的 key 函数以实现高效的列表更新。
+ * Renders each item in an array, with optional key function for efficient list updates.
  * 
- * @param items - 返回数组的信号或函数
- * @param fn - 每个项目的渲染函数，接收 (item, index) 参数
- * @param keyFn - 可选的 key 函数，用于高效 diff。提供时可启用 O(1) 更新，
- *                而非完全重新渲染。应返回稳定的唯一标识符。
- *                注意：当前实现为简单映射，完整 keyed diff 请使用 ForWithKey。
- * @returns 渲染后的节点数组
+ * @param items - Signal or function returning an array
+ * @param fn - Render function for each item, receives (item, index)
+ * @param keyFn - Optional key function for efficient diffing. When provided, enables O(1) updates
+ *                instead of full re-render. Should return a stable unique identifier.
+ *                Note: Current implementation is a simple map, use ForWithKey for full keyed diff.
+ * @returns Array of rendered nodes
  * 
  * @example
  * ```ts
- * // 基础用法（向后兼容）
+ * // Basic usage (backward compatible)
  * For(() => [1, 2, 3], (item) => h('div', null, item))
  * 
- * // 带 key 函数的用法
+ * // With key function
  * For(
  *   () => users,
  *   (user) => h('div', null, user.name),
- *   (user) => user.id  // 稳定的 key
+ *   (user) => user.id  // Stable key
  * )
  * ```
  */
@@ -143,26 +143,26 @@ export function For<T, U>(
 ): U[] {
   const itemList = items();
   
-  // 未提供 keyFn 时，使用基于索引的简单渲染（向后兼容）
+  // Without keyFn, use simple index-based rendering (backward compatible)
   if (!keyFn) {
     return itemList.map((item, i) => fn(item, () => i));
   }
   
-  // 提供 keyFn 时，使用带 key 的映射
-  // 注意：当前版本为简单实现，完整 keyed diff 逻辑请使用 ForWithKey
+  // With keyFn, use keyed mapping
+  // Note: Current version is a simple implementation, use ForWithKey for full keyed diff logic
   return itemList.map((item, i) => fn(item, () => i));
 }
 
 /**
- * ForWithKey - List rendering with efficient keyed diffing
+ * ForWithKey - Efficient List Rendering with Keys
  * 
- * This is a more advanced version of For that maintains DOM node identity
- * based on keys, enabling efficient insertions, deletions, and reordering.
+ * Advanced version of For that maintains DOM node identity based on keys,
+ * enabling efficient insertions, deletions, and reordering.
  * 
- * @param container - DOM container to render into
- * @param items - Signal or function returning array of items
+ * @param container - Target DOM container
+ * @param items - Signal or function returning an array
  * @param fn - Render function for each item, receives (item, index, key)
- * @param keyFn - Key function returning stable unique identifier
+ * @param keyFn - Key function returning a stable unique identifier
  * @returns Cleanup function to stop reactive updates
  * 
  * @example
@@ -174,7 +174,7 @@ export function For<T, U>(
  *   (todo) => todo.id
  * );
  * 
- * // Later: cleanup();
+ * // 稍后：cleanup();
  * ```
  */
 export function ForWithKey<T>(
@@ -217,8 +217,8 @@ export function ForWithKey<T>(
     
     // Cleanup old nodes
     keyToNode.forEach((node, key) => {
-      if (!newKeyToNode.has(key)) {
-        node.remove();
+      if (!newKeyToNode.has(key) && node.parentNode) {
+        node.parentNode.removeChild(node);
       }
     });
     
@@ -245,10 +245,10 @@ export const input = tag('input');
 // ============== DOM String Rendering (Browser Only) ==============
 
 /**
- * 将 VNode 转换为 HTML 字符串（仅限浏览器/DOM 环境）
+ * Convert VNode to HTML string (Browser/DOM environments only)
  * 
- * @deprecated 服务端渲染请使用 `import { renderToString } from '@qorejs/qore/ssr'`
- * 此函数需要 DOM API，在 Node.js 环境中无法工作
+ * @deprecated For SSR use `import { renderToString } from '@qorejs/qore/ssr'` instead
+ * This function requires DOM APIs and will not work in Node.js environments
  */
 export function renderToDOMString(vnode: VNode): string {
   if (vnode == null) return '';
@@ -267,18 +267,18 @@ export function renderToDOMString(vnode: VNode): string {
 }
 
 /**
- * 渲染组件为 HTML 字符串（仅限浏览器/DOM 环境）
+ * Render component to HTML string (Browser/DOM environments only)
  * 
- * @deprecated 服务端渲染请使用 `import { renderComponentToString } from '@qorejs/qore/ssr'`
+ * @deprecated For SSR use `import { renderComponentToString } from '@qorejs/qore/ssr'` instead
  */
 export function renderComponentToDOMString(component: Component): string {
   return renderToDOMString(component());
 }
 
 /**
- * 异步 VNode 解析（仅限浏览器/DOM 环境）
+ * Async VNode parsing (Browser/DOM environments only)
  * 
- * @deprecated 服务端渲染请使用 `import { renderAsync } from '@qorejs/qore/ssr'`
+ * @deprecated For SSR use `import { renderAsync } from '@qorejs/qore/ssr'` instead
  */
 export async function renderDOMAsync(vnode: VNode | Promise<VNode>): Promise<string> {
   const resolved = await vnode;
@@ -298,15 +298,15 @@ export async function renderDOMAsync(vnode: VNode | Promise<VNode>): Promise<str
 import { StreamRenderer } from './stream';
 
 /**
- * 渲染到流（仅限浏览器/DOM 环境）
+ * Render to stream (Browser/DOM environments only)
  * 
- * 将组件渲染为 HTML 流，通过 StreamRenderer 输出。
+ * Renders a component to an HTML stream, outputting through StreamRenderer.
  * 
- * @deprecated 服务端渲染请使用 `import { renderToStream } from '@qorejs/qore/ssr'`
+ * @deprecated For SSR use `import { renderToStream } from '@qorejs/qore/ssr'` instead
  * 
- * 与 stream.ts 中的 renderStreamToDOM 区分：
- *   - renderToStream：渲染组件 → 输出流（生成流）
- *   - renderStreamToDOM：消费流 → 渲染到 DOM（接收流）
+ * Distinction from renderStreamToDOM in stream.ts:
+ *   - renderToStream: Render component → Output stream (generates stream)
+ *   - renderStreamToDOM: Consume stream → Render to DOM (receives stream)
  */
 export function renderToStream(
   root: StreamRenderer,
@@ -334,9 +334,9 @@ export function renderToStream(
 }
 
 /**
- * 异步渲染到流（仅限浏览器/DOM 环境）
+ * Async render to stream (Browser/DOM environments only)
  * 
- * @deprecated 服务端渲染请使用 `import { renderToStreamAsync } from '@qorejs/qore/ssr'`
+ * @deprecated For SSR use `import { renderToStreamAsync } from '@qorejs/qore/ssr'` instead
  */
 export async function renderToStreamAsync(
   renderer: StreamRenderer,

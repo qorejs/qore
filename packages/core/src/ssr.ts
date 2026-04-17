@@ -1,13 +1,13 @@
 /**
- * Qore SSR - Server-Side Rendering (separate entry point)
- * Import via: import { ... } from '@qorejs/qore/ssr'
+ * Qore SSR - 服务端渲染（独立入口）
+ * 导入方式：import { ... } from '@qorejs/qore/ssr'
  */
 
 import { StreamRenderer } from './stream';
 import type { VNode, Component } from './render';
 
 // ============================================================================
-// SSR Error Types
+// SSR 错误类型
 // ============================================================================
 
 /**
@@ -22,7 +22,7 @@ export enum SSRErrorReason {
   ASYNC_ERROR = 'ASYNC_ERROR',
   /** 预取数据错误 */
   PREFETCH_ERROR = 'PREFETCH_ERROR',
-  /** 流渲染错误 */
+  /** 流式渲染错误 */
   STREAM_ERROR = 'STREAM_ERROR',
   /** 未知错误 */
   UNKNOWN = 'UNKNOWN'
@@ -32,7 +32,7 @@ export enum SSRErrorReason {
  * 错误恢复策略
  */
 export enum SSRRecoveryStrategy {
-  /** 返回错误注释，继续渲染 */
+  /** 返回错误注释并继续 */
   FALLBACK_COMMENT = 'FALLBACK_COMMENT',
   /** 返回空内容 */
   EMPTY = 'EMPTY',
@@ -52,9 +52,9 @@ export interface SSRError {
   originalError?: Error;
   /** 错误消息摘要 */
   message: string;
-  /** 组件名称（如果有） */
+  /** 组件名称（如果可用） */
   componentName?: string;
-  /** 错误发生时间 */
+  /** 错误时间戳 */
   timestamp: number;
   /** 是否已恢复 */
   recovered: boolean;
@@ -66,9 +66,9 @@ export interface SSRError {
  * SSR 错误日志配置
  */
 export interface SSRErrorLogConfig {
-  /** 是否启用错误日志 */
+  /** 启用错误日志 */
   enabled: boolean;
-  /** 是否输出详细堆栈信息 */
+  /** 输出详细堆栈跟踪 */
   verbose: boolean;
   /** 自定义日志函数 */
   logFn?: (error: SSRError) => void;
@@ -78,7 +78,7 @@ export interface SSRErrorLogConfig {
  * SSR 全局配置
  */
 export interface SSRConfig {
-  /** 是否为开发模式 */
+  /** 开发模式标志 */
   devMode: boolean;
   /** 错误日志配置 */
   errorLog: SSRErrorLogConfig;
@@ -118,11 +118,11 @@ export function getSSRConfig(): SSRConfig {
 }
 
 // ============================================================================
-// Helper Functions
+// 辅助函数
 // ============================================================================
 
 function escapeHtml(str: string): string {
-  // 如果已经是 HTML 注释（SSR 错误标记），不要转义
+  // 如果已经是 HTML 注释（SSR 错误标记），则不转义
   if (str.startsWith('<!--') && str.endsWith('-->')) {
     return str;
   }
@@ -137,7 +137,7 @@ function createSSRError(
   originalError?: Error,
   componentName?: string
 ): SSRError {
-  const message = originalError?.message || 'Unknown SSR error';
+  const message = originalError?.message || '未知 SSR 错误';
   const error: SSRError = {
     reason,
     originalError,
@@ -147,7 +147,7 @@ function createSSRError(
     recovered: false
   };
 
-  // 在开发模式下输出错误日志
+  // 开发模式下记录错误
   if (globalConfig.devMode && globalConfig.errorLog.enabled) {
     logSSRError(error);
   }
@@ -156,28 +156,28 @@ function createSSRError(
 }
 
 /**
- * 输出 SSR 错误日志
+ * 记录 SSR 错误
  */
 function logSSRError(error: SSRError): void {
   if (globalConfig.errorLog.logFn) {
     globalConfig.errorLog.logFn(error);
   } else {
-    const prefix = `[Qore SSR Error] ${error.reason}`;
+    const prefix = `[Qore SSR 错误] ${error.reason}`;
     if (globalConfig.errorLog.verbose && error.originalError) {
       console.error(`${prefix}: ${error.message}`, error.originalError);
     } else {
-      console.error(`${prefix}: ${error.message}${error.componentName ? ` (Component: ${error.componentName})` : ''}`);
+      console.error(`${prefix}: ${error.message}${error.componentName ? `（组件：${error.componentName}）` : ''}`);
     }
   }
 }
 
 /**
- * 根据错误生成 HTML 注释
+ * 将错误转换为 HTML 注释
  */
 function errorToComment(error: SSRError): string {
   const reasonText = error.reason === SSRErrorReason.TIMEOUT 
-    ? `SSR Timeout (${globalConfig.defaultTimeoutMs / 1000}s)`
-    : `SSR Error: ${error.message}`;
+    ? `SSR 超时（${globalConfig.defaultTimeoutMs / 1000}秒）`
+    : `SSR 错误：${error.message}`;
   
   return `<!-- ${reasonText} -->`;
 }
@@ -190,7 +190,7 @@ function getComponentName(component: Component): string | undefined {
 }
 
 // ============================================================================
-// Core Rendering Functions
+// 核心渲染函数
 // ============================================================================
 
 export function renderToString(vnode: VNode): string {
@@ -210,7 +210,7 @@ export function renderToString(vnode: VNode): string {
       if (globalConfig.devMode) {
         return errorToComment(error);
       }
-      return '<!-- Error -->';
+      return '<!-- 错误 -->';
     }
   }
   return '';
@@ -286,7 +286,7 @@ export async function renderAsync(vnode: VNode | Promise<VNode>): Promise<string
       if (globalConfig.devMode) {
         return errorToComment(error);
       }
-      return '<!-- Async Error -->';
+      return '<!-- 异步错误 -->';
     }
   }
   return '';
@@ -348,7 +348,7 @@ export async function prefetchAndRender<T>(
     if (globalConfig.devMode) {
       return errorToComment(error);
     }
-    return '<!-- Prefetch Error -->';
+    return '<!-- 预取错误 -->';
   }
   const data = await ctx.promises[0];
   return renderToString(renderFn(data)());
@@ -393,7 +393,7 @@ export async function renderWithSuspense(
 
   let renderError: SSRError | undefined;
 
-  // 创建超时 promise，使用 setTimeout 包装以便正确触发
+  // 创建超时 promise
   const timeoutPromise: Promise<string> = new Promise((_, reject) => {
     const timeoutId = setTimeout(() => {
       const timeoutError = new Error('SSR timeout');
@@ -401,13 +401,15 @@ export async function renderWithSuspense(
       reject(timeoutError);
     }, timeoutMs);
     
-    // 清理超时（虽然 race 后不会用到，但保持良好实践）
     timeoutId.unref?.();
   });
 
-  const renderPromise = Promise.resolve().then(() => {
+  const renderPromise = Promise.resolve().then(async () => {
     try {
-      return renderToString(component());
+      const vnode = component();
+      // 如果组件返回 Promise，等待它
+      const resolvedVNode = vnode instanceof Promise ? await vnode : vnode;
+      return renderToString(resolvedVNode);
     } catch (err) {
       renderError = createSSRError(
         SSRErrorReason.COMPONENT_ERROR,
@@ -536,16 +538,16 @@ export async function renderSSR(
         success = false;
         const error: SSRError = {
           reason: SSRErrorReason.TIMEOUT,
-          message: `SSR Timeout (${timeoutMs || globalConfig.defaultTimeoutMs}ms)`,
+          message: `SSR 超时（${timeoutMs || globalConfig.defaultTimeoutMs}毫秒）`,
           timestamp: Date.now(),
           recovered: false
         };
         errors.push(error);
-      } else if (html.includes('<!-- SSR Error:')) {
+      } else if (html.includes('<!-- SSR 错误：')) {
         success = false;
         // 从注释中提取错误消息
-        const match = html.match(/<!-- SSR Error: ([^-]+?) -->/);
-        const errorMessage = match ? match[1].trim() : 'Unknown SSR error';
+        const match = html.match(/<!-- SSR 错误：([^-]+?) -->/);
+        const errorMessage = match ? match[1].trim() : '未知 SSR 错误';
         const error: SSRError = {
           reason: SSRErrorReason.COMPONENT_ERROR,
           message: errorMessage,
@@ -589,7 +591,7 @@ export async function renderSSR(
 }
 
 // ============================================================================
-// Error Boundary Component (Optional Helper)
+// 错误边界组件（可选辅助）
 // ============================================================================
 
 /**
@@ -636,7 +638,7 @@ export function createErrorBoundary(props: ErrorBoundaryProps): Component {
         return errorToComment(error);
       }
 
-      return props.captureError ? '' : '<!-- Error -->';
+      return props.captureError ? '' : '<!-- 错误 -->';
     }
   };
 }

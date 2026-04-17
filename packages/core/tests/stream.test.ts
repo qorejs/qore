@@ -14,12 +14,15 @@ import {
   lazy,
   asyncComponent,
   renderToStreamDOM as renderToStream,
-  renderToStreamAsync,
-  renderToString,
+  renderToStreamAsyncDOM as renderToStreamAsync,
+  renderToDOMString,
   h,
   div,
   renderStreamToDOM
 } from '../src/index';
+// SSR 版本的 renderToString（纯字符串实现，带 HTML 转义）
+// 注意：renderToString 用于纯字符串/组件渲染，renderToDOMString 用于 DOM Node 渲染
+import { renderToString } from '../src/ssr';
 
 // Import parseMarkdownText for direct testing
 import { parseMarkdownText } from '../src/stream';
