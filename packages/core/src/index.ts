@@ -1,20 +1,48 @@
 /**
  * Qore - AI-Native Frontend Framework
  * Lightweight core with essential features
+ * 
+ * @packageDocumentation
  */
 
 // Signal System
 export { signal, computed, effect, batch } from './signal';
 export type { Signal } from './signal';
 
-// Renderer
+// Renderer (Browser/DOM only)
+// 注意：SSR/Node.js 环境请使用 '@qorejs/qore/ssr'
 export { 
   h, text, render, show, For, Fragment, Portal,
-  renderToString, renderComponentToString,
-  renderToStream as renderToStreamDOM, renderToStreamAsync,
+  renderToDOMString, renderComponentToDOMString,
+  renderDOMAsync,
+  renderToStream as renderToStreamDOM, renderToStreamAsync as renderToStreamAsyncDOM,
   div, span, button, input
 } from './render';
+// 向后兼容别名（已废弃，带 DOM 后缀以区分 SSR 版本）
+// SSR 场景请使用：import { renderToString, renderAsync } from '@qorejs/qore/ssr'
+export { 
+  renderToString as renderToStringDOM, 
+  renderComponentToString as renderComponentToStringDOM,
+  renderAsync as renderAsyncDOM
+} from './render';
 export type { VNode, Component } from './render';
+
+// Environment Detection
+/**
+ * Check if running in Node.js environment
+ * @returns true if in Node.js, false otherwise
+ */
+export function isNode(): boolean {
+  return typeof process !== 'undefined' && process.versions?.node != null;
+}
+
+/**
+ * Check if running in browser environment
+ * @returns true if in browser, false otherwise
+ */
+export function isBrowser(): boolean {
+  return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
 
 // Stream (core features)
 export { 
@@ -22,7 +50,8 @@ export {
   StreamRenderer, createStreamHTML,
   Suspense, createSuspense,
   lazy, asyncComponent,
-  createUpdate, applyUpdate
+  createUpdate, applyUpdate,
+  renderStreamToDOM
 } from './stream';
 export type { StreamWriter, StreamOptions, SuspenseProps, SuspenseState, IncrementalUpdate } from './stream';
 

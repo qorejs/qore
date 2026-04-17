@@ -62,15 +62,69 @@ export function stream(
   return { abort: () => { aborted = true; } };
 }
 
-function parseMarkdownText(text: string): string {
+/**
+ * Escape HTML special characters to prevent XSS
+ */
+export function escapeHTML(text: string): string {
   return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Parse markdown text with XSS protection
+ * 1. First escape HTML special characters
+ * 2. Extract and protect code blocks (fenced and inline)
+ * 3. Parse markdown syntax
+ * 4. Restore code block content
+ */
+export function parseMarkdownText(text: string): string {
+  // First, escape all HTML special characters to prevent XSS
+  let escaped = escapeHTML(text);
+  
+  // Extract fenced code blocks (```) and replace with placeholders
+  const fencedCodeBlocks: string[] = [];
+  escaped = escaped.replace(/```([\s\S]*?)```/g, (match, code) => {
+    const index = fencedCodeBlocks.length;
+    fencedCodeBlocks.push(code);
+    return `__FENCED_CODE_${index}__`;
+  });
+  
+  // Extract inline code blocks (`) and replace with placeholders
+  const inlineCodeBlocks: string[] = [];
+  escaped = escaped.replace(/`([^`]+)`/g, (match, code) => {
+    const index = inlineCodeBlocks.length;
+    inlineCodeBlocks.push(code);
+    return `__INLINE_CODE_${index}__`;
+  });
+  
+  // Now parse markdown syntax on the escaped, code-protected text
+  let result = escaped
+    // Headers (must process h3 before h2 before h1)
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
     .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-    .replace(/\*(.*)\*/gim, '<em>$1</em>')
-    .replace(/`([^`]+)`/gim, '<code>$1</code>')
-    .replace(/\n/gim, '<br>');
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italic
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // Line breaks
+    .replace(/\n/g, '<br>');
+  
+  // Restore inline code blocks (with proper <code> tags)
+  result = result.replace(/__INLINE_CODE_(\d+)__/g, (match, index) => {
+    return `<code>${inlineCodeBlocks[parseInt(index)]}</code>`;
+  });
+  
+  // Restore fenced code blocks (with proper <pre><code> tags)
+  result = result.replace(/__FENCED_CODE_(\d+)__/g, (match, index) => {
+    return `<pre><code>${fencedCodeBlocks[parseInt(index)]}</code></pre>`;
+  });
+  
+  return result;
 }
 
 export function streamText(
@@ -250,7 +304,32 @@ export function applyUpdate(container: HTMLElement, update: IncrementalUpdate): 
   }
 }
 
-export function renderToStream(
+/**
+ * 渲染增量流更新到 DOM 容器
+ * 
+ * 消费 HTML 块或 IncrementalUpdate 对象的异步流，并将其应用到容器。
+ * 支持 JSON 编码的增量更新（replace/append/prepend/remove）或原始 HTML 块。
+ * 
+ * 用途：专门用于处理服务端流式响应，将流式 HTML 增量渲染到页面。
+ * 与 render.ts 中的 renderToStream 区分：
+ *   - renderStreamToDOM：消费流 → 渲染到 DOM（客户端接收流）
+ *   - renderToStream：渲染组件 → 输出流（服务端生成流）
+ * 
+ * @param container - 目标 DOM 容器
+ * @param stream - 异步生成器，产出 HTML 块或 IncrementalUpdate JSON
+ * @returns 用于停止渲染的 Abort 控制器
+ * 
+ * @example
+ * ```ts
+ * const { abort } = renderStreamToDOM(container, async function* () {
+ *   yield JSON.stringify({ id: 'msg1', html: '<div>Hello</div>', type: 'replace' });
+ *   yield '<div>More content</div>'; // 原始 HTML
+ * });
+ * 
+ * // 稍后：abort();
+ * ```
+ */
+export function renderStreamToDOM(
   container: HTMLElement,
   stream: AsyncGenerator<string, void, unknown>
 ): { abort: () => void } {
