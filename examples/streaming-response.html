@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Qore - Stream = Signal</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f2efe8;
+        --panel: rgba(255, 250, 241, 0.9);
+        --ink: #182126;
+        --muted: #5a6a70;
+        --line: #d8cfbe;
+        --accent: #d45d2c;
+        --accent-soft: #ffe4d4;
+        --user: #0f6c5f;
+        --code: #f8f0e2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Iowan Old Style", "Palatino Linotype", serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(212, 93, 44, 0.15), transparent 28%),
+          radial-gradient(circle at right 20%, rgba(15, 108, 95, 0.12), transparent 24%),
+          linear-gradient(180deg, #f8f4ec 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+
+      .hero {
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        font: 700 0.8rem/1.2 "IBM Plex Mono", "SFMono-Regular", monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .masthead {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .home-link,
+      .demo-badge {
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 250, 241, 0.7);
+        font: 700 0.75rem/1 "IBM Plex Mono", "SFMono-Regular", monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      .hero h1 {
+        margin: 0;
+        max-width: 760px;
+        font-size: clamp(3rem, 8vw, 5.8rem);
+        line-height: 0.93;
+        letter-spacing: -0.07em;
+      }
+
+      .lede {
+        max-width: 640px;
+        margin: 14px 0 0;
+        font-size: 1.08rem;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        overflow: hidden;
+        background: var(--panel);
+        box-shadow: 0 24px 70px rgba(24, 33, 38, 0.1);
+        backdrop-filter: blur(16px);
+      }
+
+      .feed {
+        display: grid;
+        gap: 14px;
+        min-height: 440px;
+        max-height: 62vh;
+        padding: 22px;
+        overflow: auto;
+      }
+
+      .message {
+        display: grid;
+        gap: 8px;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .message.user {
+        background: rgba(15, 108, 95, 0.08);
+      }
+
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      .state {
+        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+        color: var(--accent);
+      }
+
+      .markdown {
+        font-size: 1rem;
+        line-height: 1.75;
+      }
+
+      .markdown h3 {
+        margin: 0 0 10px;
+        font-size: 1.1rem;
+      }
+
+      .markdown p {
+        margin: 0 0 12px;
+      }
+
+      .markdown p:last-child {
+        margin-bottom: 0;
+      }
+
+      .inline,
+      .code code {
+        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+      }
+
+      .inline {
+        padding: 0.12rem 0.34rem;
+        border-radius: 0.4rem;
+        background: rgba(24, 33, 38, 0.08);
+      }
+
+      .code {
+        margin: 0;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--code);
+      }
+
+      .lang {
+        padding: 10px 14px 0;
+        font: 700 0.72rem/1 "IBM Plex Mono", "SFMono-Regular", monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .code code {
+        display: block;
+        padding: 12px 14px 16px;
+        white-space: pre-wrap;
+      }
+
+      .kw {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .composer {
+        display: grid;
+        gap: 10px;
+        padding: 18px 22px 22px;
+        border-top: 1px solid var(--line);
+      }
+
+      .composer span {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .composer input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        font: inherit;
+        color: var(--ink);
+        background: #fff;
+      }
+
+      .composer button {
+        width: fit-content;
+        padding: 12px 18px;
+        border: 0;
+        border-radius: 999px;
+        font: 700 0.95rem/1 "IBM Plex Mono", "SFMono-Regular", monospace;
+        color: #fff;
+        background: linear-gradient(135deg, #bc4a20 0%, var(--accent) 100%);
+        cursor: pointer;
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          padding-top: 28px;
+        }
+
+        .feed {
+          min-height: 360px;
+          max-height: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./qore-chat.js"></script>
+  </body>
+</html>

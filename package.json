@@ -1,0 +1,23 @@
+{
+  "name": "@qorejs/qore",
+  "version": "0.1.0",
+  "description": "Qore is a streaming-first reactive framework.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "qore",
+    "streaming",
+    "reactive",
+    "framework",
+    "async-iterable"
+  ],
+  "license": "MIT"
+}
