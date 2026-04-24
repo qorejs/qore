@@ -115,11 +115,26 @@ const answer = stream.paced(openAI.chat('hello'), 16);
 
 ```js
 const answer = stream.withBackpressure(openAI.chat('hello'), {
-  interval: 16
+  interval: 16,
+  buffer: 8,
+  overflow: 'drop-oldest'
 });
 ```
 
-这里的 `interval` 表示 chunk 进入 signal / UI 之间的最小间隔。对 `AsyncIterable` source 会自动生效; 对手写 producer, 只要 `await push(chunk)` 就会尊重这个节奏。
+这里的 backpressure 现在不只是“睡一下”:
+
+- `interval`: chunk 进入 signal / UI 之间的最小间隔
+- `buffer`: 在 UI 前面最多允许排队多少个 chunk
+- `overflow`: 缓冲区满了以后怎么办, 可选 `wait` / `drop-oldest` / `drop-newest` / `error`
+
+它对 `AsyncIterable` source 会自动生效; 对手写 producer, 就算没有显式 `await push(chunk)`, Qore 也会把 chunk 串行推进到 UI。
+
+你还可以直接观察压力状态:
+
+```js
+answer.buffered(); // 当前还有多少 chunk 在排队
+answer.dropped(); // 因 overflow 策略被丢掉了多少 chunk
+```
 
 ### `signal`, `computed`, `effect`
 
@@ -164,6 +179,6 @@ npm test
 
 ## 下一步
 
-- 继续把 backpressure 从 pacing 扩展到更完整的 buffer / overflow 策略
 - 围绕服务端流式渲染收敛 hydration 模型
 - 为真实 LLM provider 做 adapter, 把对象 chunk 收敛成文本流或结构化流
+- 做公开 benchmark, 把 Qore 和 React/Vercel AI SDK 的差异变成可重复的数据

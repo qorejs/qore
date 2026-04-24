@@ -1,4 +1,5 @@
 import { createResponse } from './response.js';
+import { signal } from './signal.js';
 import { toAsyncIterable } from './iterable.js';
 import { normalizeError, sleep } from './utils.js';
 
@@ -96,37 +97,50 @@ function reduceText(currentValue, chunk) {
   return currentValue + String(chunk ?? '');
 }
 
-// Normalize the first backpressure primitive into a predictable internal shape.
+// Normalize backpressure into one consistent shape the runtime can enforce.
 function normalizeBackpressure(backpressure) {
   if (backpressure == null) {
-    return { interval: 0 };
+    return {
+      interval: 0,
+      buffer: Infinity,
+      overflow: 'wait'
+    };
   }
 
   const options = typeof backpressure === 'number'
     ? { interval: backpressure }
     : backpressure;
   const interval = options.interval ?? 0;
+  const buffer = options.buffer ?? Infinity;
+  const overflow = options.overflow ?? 'wait';
 
   if (!Number.isFinite(interval) || interval < 0) {
     throw new TypeError('Qore stream backpressure.interval must be a non-negative finite number');
   }
 
-  return { interval };
+  if (buffer !== Infinity && (!Number.isInteger(buffer) || buffer < 1)) {
+    throw new TypeError('Qore stream backpressure.buffer must be a positive integer or Infinity');
+  }
+
+  if (!['wait', 'drop-oldest', 'drop-newest', 'error'].includes(overflow)) {
+    throw new TypeError(
+      'Qore stream backpressure.overflow must be one of "wait", "drop-oldest", "drop-newest", or "error"'
+    );
+  }
+
+  return { interval, buffer, overflow };
 }
 
-// Pause between pushes so fast producers do not overwhelm downstream UI updates.
-async function applyBackpressure(backpressure, signal) {
-  if (backpressure.interval <= 0) {
-    return;
-  }
+// Build a deferred promise so queue operations can wait for capacity or completion.
+function createDeferred() {
+  let resolve = null;
+  let reject = null;
+  const promise = new Promise((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
 
-  try {
-    await sleep(backpressure.interval, signal);
-  } catch (error) {
-    if (!signal?.aborted) {
-      throw error;
-    }
-  }
+  return { promise, resolve, reject };
 }
 
 // Distinguish a setup callback from callable stream or signal-like values.
@@ -174,23 +188,142 @@ export function createStream(sourceOrSetup, options = {}) {
   const state = createResponse({ seed, reduce });
   const queue = new AsyncQueue();
   const readable = createReadableSignal(state.value);
+  const buffered = signal(0);
+  const dropped = signal(0);
 
   let activeSignal = null;
   let terminated = false;
+  let flushActiveWrites = () => readable.peek();
 
-  // Close queue delivery first, then delegate the final lifecycle transition.
-  const stopStream = (finalizer) => {
+  // Close queue delivery and flush any buffered chunks before the final lifecycle transition.
+  const stopStream = (finalizer, cleanup = flushActiveWrites) => {
     if (terminated) {
       return readable.peek();
     }
 
     terminated = true;
+    cleanup?.();
     queue.close();
     return finalizer();
   };
 
   const run = state.run(async ({ signal, push, complete, fail, abort }) => {
     activeSignal = signal;
+    const pendingWrites = [];
+    const spaceWaiters = [];
+    const scheduledPushes = new Set();
+    let drainPromise = null;
+    let lastPushAt = 0;
+
+    // Wake producers waiting on queue space once the buffer has room again.
+    function releaseSpaceWaiters() {
+      if (pressure.buffer === Infinity) {
+        while (spaceWaiters.length > 0) {
+          spaceWaiters.shift().resolve();
+        }
+
+        return;
+      }
+
+      while (spaceWaiters.length > 0 && pendingWrites.length < pressure.buffer) {
+        spaceWaiters.shift().resolve();
+      }
+    }
+
+    // Resolve buffered writes when the stream finishes so late chunks do not leak through.
+    function flushBufferedWrites(result = readable.peek()) {
+      while (pendingWrites.length > 0) {
+        pendingWrites.shift().resolve(result);
+      }
+
+      buffered(0);
+      releaseSpaceWaiters();
+      return result;
+    }
+
+    flushActiveWrites = flushBufferedWrites;
+
+    // Allow setup functions that ignore await push(...) to still drain in order before completion.
+    async function flushScheduledPushes() {
+      while (scheduledPushes.size > 0) {
+        await Promise.all(Array.from(scheduledPushes));
+      }
+
+      while (drainPromise) {
+        await drainPromise;
+      }
+    }
+
+    // Maintain a minimum delay between chunks entering signal/UI state.
+    async function waitForNextWindow() {
+      if (pressure.interval <= 0 || lastPushAt === 0) {
+        return;
+      }
+
+      const remaining = pressure.interval - (Date.now() - lastPushAt);
+
+      if (remaining > 0) {
+        try {
+          await sleep(remaining, signal);
+        } catch (error) {
+          if (!signal.aborted) {
+            throw error;
+          }
+        }
+      }
+    }
+
+    // Serialize writes so buffered or unawaited producers still update the UI one chunk at a time.
+    function scheduleDrain() {
+      if (drainPromise || terminated) {
+        return drainPromise;
+      }
+
+      drainPromise = (async () => {
+        try {
+          while (pendingWrites.length > 0 && !terminated && !signal.aborted) {
+            const entry = pendingWrites.shift();
+            buffered(pendingWrites.length);
+            releaseSpaceWaiters();
+
+            await waitForNextWindow();
+
+            if (terminated || signal.aborted) {
+              entry.resolve(readable.peek());
+              continue;
+            }
+
+            queue.push(entry.chunk);
+            const nextValue = push(entry.chunk);
+            lastPushAt = Date.now();
+            entry.resolve(nextValue);
+          }
+        } finally {
+          drainPromise = null;
+
+          if (pendingWrites.length > 0 && !terminated && !signal.aborted) {
+            scheduleDrain();
+          }
+        }
+      })();
+
+      return drainPromise;
+    }
+
+    // Wait until buffered chunks can fit into the configured queue capacity.
+    async function waitForBufferSpace() {
+      if (pressure.buffer === Infinity) {
+        return true;
+      }
+
+      while (!terminated && !signal.aborted && pendingWrites.length >= pressure.buffer) {
+        const gate = createDeferred();
+        spaceWaiters.push(gate);
+        await gate.promise;
+      }
+
+      return !terminated && !signal.aborted;
+    }
 
     // Wrap the response lifecycle so streams can push, fail, or abort through one surface.
     const controller = {
@@ -198,16 +331,52 @@ export function createStream(sourceOrSetup, options = {}) {
         return signal;
       },
 
-      // Push into both the async queue and the reactive response value.
+      // Queue chunks first, then let the serialized drain loop move them into state/UI.
       async push(chunk) {
         if (terminated || signal.aborted) {
           return readable.peek();
         }
 
-        queue.push(chunk);
-        const nextValue = push(chunk);
-        await applyBackpressure(pressure, signal);
-        return nextValue;
+        const writeTask = (async () => {
+          if (pressure.overflow === 'wait') {
+            const hasSpace = await waitForBufferSpace();
+
+            if (!hasSpace) {
+              return readable.peek();
+            }
+          } else if (pressure.buffer !== Infinity && pendingWrites.length >= pressure.buffer) {
+            if (pressure.overflow === 'drop-oldest' && pendingWrites.length > 0) {
+              const droppedWrite = pendingWrites.shift();
+              dropped(dropped.peek() + 1);
+              droppedWrite.resolve(readable.peek());
+            } else if (pressure.overflow === 'drop-newest' || pressure.overflow === 'drop-oldest') {
+              dropped(dropped.peek() + 1);
+              return readable.peek();
+            } else if (pressure.overflow === 'error') {
+              controller.fail(new Error('Qore stream backpressure buffer overflow'));
+              return readable.peek();
+            }
+          }
+
+          if (terminated || signal.aborted) {
+            return readable.peek();
+          }
+
+          const entry = createDeferred();
+          entry.chunk = chunk;
+          pendingWrites.push(entry);
+          buffered(pendingWrites.length);
+          scheduleDrain();
+          return entry.promise;
+        })();
+
+        scheduledPushes.add(writeTask);
+
+        try {
+          return await writeTask;
+        } finally {
+          scheduledPushes.delete(writeTask);
+        }
       },
 
       // Mark the stream as gracefully finished.
@@ -222,6 +391,7 @@ export function createStream(sourceOrSetup, options = {}) {
         }
 
         terminated = true;
+        flushBufferedWrites();
         queue.fail(error);
         return fail(error);
       },
@@ -234,6 +404,7 @@ export function createStream(sourceOrSetup, options = {}) {
 
     try {
       await startSource(sourceOrSetup, controller);
+      await flushScheduledPushes();
 
       if (!terminated && signal.aborted) {
         controller.abort(signal.reason ?? 'Stream aborted');
@@ -273,6 +444,8 @@ export function createStream(sourceOrSetup, options = {}) {
   readable.aborted = state.aborted;
   readable.chunkCount = state.chunkCount;
   readable.snapshot = state.snapshot;
+  readable.buffered = createReadableSignal(buffered);
+  readable.dropped = createReadableSignal(dropped);
   readable.ready = run;
   readable.abort = (reason) => stopStream(() => state.abort(reason));
 

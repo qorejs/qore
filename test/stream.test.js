@@ -142,6 +142,65 @@ test('stream.withBackpressure applies pacing to iterable sources too', async () 
   assert.ok(Date.now() - startedAt >= 30);
 });
 
+// Unawaited producer writes should still enter the UI one chunk at a time under pacing.
+test('stream.withBackpressure serializes manual pushes even without awaiting push', async () => {
+  const timestamps = [];
+  const answer = stream.withBackpressure(async ({ push }) => {
+    push('Q');
+    push('o');
+    push('re');
+  }, { interval: 12 });
+
+  answer.subscribe(() => {
+    timestamps.push(Date.now());
+  }, { immediate: false });
+
+  const startedAt = Date.now();
+  await answer.ready;
+
+  assert.equal(answer(), 'Qore');
+  assert.equal(timestamps.length, 3);
+  assert.ok(Date.now() - startedAt >= 20);
+  assert.ok(timestamps[1] - timestamps[0] >= 8);
+  assert.ok(timestamps[2] - timestamps[1] >= 8);
+});
+
+// Overflow strategies should be able to trim buffered chunks while exposing what was dropped.
+test('stream.withBackpressure can drop older buffered chunks on overflow', async () => {
+  const answer = stream.withBackpressure(async ({ push }) => {
+    push('A');
+    push('B');
+    push('C');
+  }, {
+    interval: 12,
+    buffer: 1,
+    overflow: 'drop-oldest'
+  });
+
+  await answer.ready;
+
+  assert.equal(answer(), 'AC');
+  assert.equal(answer.buffered(), 0);
+  assert.equal(answer.dropped(), 1);
+});
+
+// External aborts should clear any buffered writes instead of leaving producer promises hanging.
+test('stream abort flushes queued writes created by unawaited producers', async () => {
+  const answer = stream.withBackpressure(async ({ push }) => {
+    push('A');
+    push('B');
+    push('C');
+  }, { interval: 18, buffer: 2 });
+
+  await sleep(4);
+  answer.abort();
+  await answer.ready;
+
+  assert.equal(answer.status(), 'aborted');
+  assert.equal(answer.buffered(), 0);
+  assert.equal(answer(), 'A');
+});
+
 // Derived streams should preserve the chunk-by-chunk composition model.
 test('mapStream transforms a source stream', async () => {
   const source = stream(async ({ push }) => {
