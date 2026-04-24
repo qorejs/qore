@@ -1,19 +1,23 @@
 import { effect, isSignal } from './signal.js';
 
+// Store mount cleanup directly on the root node so remounts can tear down old scopes.
 const ROOT_CLEANUP = Symbol('qore.dom.cleanup');
 
 let activeScope = null;
 
+// Guard DOM helpers so they only run in browser-like environments.
 function assertDocument() {
   if (typeof document === 'undefined') {
     throw new Error('Qore DOM APIs require a browser-like environment');
   }
 }
 
+// A scope collects effect disposers created while rendering a subtree.
 function createScope() {
   return { cleanups: [] };
 }
 
+// Temporarily switch the active scope while a subtree is being materialized.
 function withScope(scope, fn) {
   const previousScope = activeScope;
   activeScope = scope;
@@ -25,6 +29,7 @@ function withScope(scope, fn) {
   }
 }
 
+// Register a cleanup callback on the currently active scope, if one exists.
 function registerCleanup(cleanup) {
   if (typeof cleanup === 'function' && activeScope) {
     activeScope.cleanups.push(cleanup);
@@ -33,6 +38,7 @@ function registerCleanup(cleanup) {
   return cleanup;
 }
 
+// Dispose nested resources in reverse order so teardown mirrors setup.
 function disposeScope(scope) {
   if (!scope) {
     return;
@@ -49,18 +55,22 @@ function disposeScope(scope) {
   scope.cleanups.length = 0;
 }
 
+// Treat signals and getters as reactive values the DOM layer should subscribe to.
 function isReactiveValue(value) {
   return isSignal(value) || typeof value === 'function';
 }
 
+// Read the current value regardless of whether the input is static or reactive.
 function resolveAccessor(value) {
   return isReactiveValue(value) ? value() : value;
 }
 
+// Accept either a literal template value or a render callback.
 function resolveTemplate(template, value) {
   return typeof template === 'function' ? template(value) : template;
 }
 
+// Normalize class payloads so callers can pass strings, arrays, or object maps.
 function normalizeClassName(value) {
   if (Array.isArray(value)) {
     return value
@@ -83,6 +93,7 @@ function normalizeClassName(value) {
   return String(value);
 }
 
+// Apply styles from either a raw string or a property map.
 function setStyleValue(element, value) {
   element.style.cssText = '';
 
@@ -106,6 +117,7 @@ function setStyleValue(element, value) {
   }
 }
 
+// Centralize DOM property and attribute writes behind one compatibility layer.
 function setDomProperty(element, key, value) {
   const attributeName = key === 'className' ? 'class' : key;
 
@@ -163,6 +175,7 @@ function setDomProperty(element, key, value) {
   element.setAttribute(attributeName, String(value));
 }
 
+// Bind events and support handlers that can change reactively over time.
 function bindEvent(element, key, handler) {
   const eventName = key.slice(2).toLowerCase();
 
@@ -199,6 +212,7 @@ function bindEvent(element, key, handler) {
   }
 }
 
+// Bind a prop key, upgrading reactive values into tracked effects when needed.
 function bindProp(element, key, value) {
   if (key === 'ref') {
     if (typeof value === 'function') {
@@ -225,6 +239,7 @@ function bindProp(element, key, value) {
   setDomProperty(element, key, value);
 }
 
+// Convert supported child types into concrete nodes that can be inserted into the DOM.
 function materializeChild(buffer, child) {
   if (Array.isArray(child)) {
     for (const entry of child) {
@@ -258,18 +273,21 @@ function materializeChild(buffer, child) {
   );
 }
 
+// Flatten any child payload into a linear list of nodes.
 function materialize(value) {
   const nodes = [];
   materializeChild(nodes, value);
   return nodes;
 }
 
+// Append normalized child content to a parent node or fragment.
 function appendChild(parent, child) {
   for (const node of materialize(child)) {
     parent.appendChild(node);
   }
 }
 
+// Remove every node between the two markers of a dynamic region.
 function clearRange(start, end) {
   let current = start.nextSibling;
 
@@ -280,6 +298,7 @@ function clearRange(start, end) {
   }
 }
 
+// Replace a dynamic region without recreating its boundary markers.
 function replaceRange(start, end, nextValue) {
   const parent = end.parentNode;
 
@@ -294,6 +313,7 @@ function replaceRange(start, end, nextValue) {
   }
 }
 
+// Read a response into one plain object so templates can branch on status cleanly.
 function readResponseState(responseState) {
   return {
     response: responseState,
@@ -312,6 +332,7 @@ function readResponseState(responseState) {
   };
 }
 
+// Pick the best matching view override for the current response lifecycle state.
 function pickResponseTemplate(status, views) {
   switch (status) {
     case 'idle':
@@ -331,6 +352,7 @@ function pickResponseTemplate(status, views) {
   }
 }
 
+// Allow mount targets to be passed as selectors or direct nodes.
 function resolveRoot(root) {
   if (typeof root === 'string') {
     const element = document.querySelector(root);
@@ -345,6 +367,7 @@ function resolveRoot(root) {
   return root;
 }
 
+// Build a fragment from a variadic list of children.
 export function fragment(...children) {
   assertDocument();
 
@@ -357,6 +380,7 @@ export function fragment(...children) {
   return node;
 }
 
+// Render a live region between comment markers and refresh it when the source changes.
 export function dynamic(source, render = (value) => value) {
   assertDocument();
 
@@ -385,6 +409,7 @@ export function dynamic(source, render = (value) => value) {
   return node;
 }
 
+// Conditionally render one branch or a fallback from a truthy source.
 export function show(source, render, fallback = null) {
   const truthyView = render === undefined ? (value) => value : render;
   return dynamic(source, (value) => value
@@ -392,6 +417,7 @@ export function show(source, render, fallback = null) {
     : resolveTemplate(fallback, value));
 }
 
+// Render a list reactively, or a fallback when the collection is empty.
 export function list(source, render, options = {}) {
   const { fallback = null } = options;
 
@@ -410,6 +436,7 @@ export function list(source, render, options = {}) {
   });
 }
 
+// Render response state through status-aware template overrides.
 export function renderResponse(responseState, views = {}) {
   return dynamic(() => readResponseState(responseState), (state) => {
     const template = pickResponseTemplate(state.status, views);
@@ -426,6 +453,7 @@ export function renderResponse(responseState, views = {}) {
   });
 }
 
+// Create a DOM element or invoke a component function with normalized children.
 export function h(tag, props = null, ...children) {
   assertDocument();
 
@@ -451,6 +479,7 @@ export function h(tag, props = null, ...children) {
   return element;
 }
 
+// Create a text node and keep it in sync with a reactive getter when necessary.
 export function text(valueOrGetter) {
   assertDocument();
 
@@ -470,6 +499,7 @@ export function text(valueOrGetter) {
   return node;
 }
 
+// Mount a view into a root element and return a disposer for its reactive scope.
 export function mount(root, view) {
   assertDocument();
 

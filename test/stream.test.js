@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { mapStream, scanStream, stream } from '../src/index.js';
+import { mapStream, scanStream, sleep, stream } from '../src/index.js';
 
+// The default stream surface should read like a signal while keeping stream lifecycle state.
 test('stream is also a signal and accumulates text by default', async () => {
   const answer = stream(async ({ push }) => {
     push('Qore ');
@@ -17,6 +18,7 @@ test('stream is also a signal and accumulates text by default', async () => {
   assert.equal(answer.chunkCount(), 3);
 });
 
+// Async iteration should still expose every original chunk in order.
 test('stream yields chunks pushed by the producer', async () => {
   const source = stream(async ({ push }) => {
     push('流');
@@ -33,6 +35,7 @@ test('stream yields chunks pushed by the producer', async () => {
   assert.deepEqual(chunks, ['流', '式', '响应']);
 });
 
+// list streams should keep structured chunks instead of forcing text concatenation.
 test('stream.list keeps structured chunks in signal form', async () => {
   const feed = stream.list(async ({ push }) => {
     push({ step: 1 });
@@ -44,6 +47,102 @@ test('stream.list keeps structured chunks in signal form', async () => {
   assert.deepEqual(feed(), [{ step: 1 }, { step: 2 }]);
 });
 
+// Wrapping an existing stream should treat it as data, not as a setup callback.
+test('stream can wrap another stream without treating it like a setup function', async () => {
+  const source = stream(async ({ push }) => {
+    push('流');
+    push('式');
+    push('响应');
+  });
+
+  const mirrored = stream(source);
+
+  await Promise.all([source.ready, mirrored.ready]);
+
+  assert.equal(mirrored(), '流式响应');
+  assert.deepEqual(mirrored.chunks(), ['流', '式', '响应']);
+});
+
+// Abort should stop future chunks while keeping the partial text visible to the UI.
+test('stream abort preserves the partial value collected so far', async () => {
+  const answer = stream(async ({ push, signal }) => {
+    push('Q');
+    await sleep(50, signal);
+    push('ore');
+  });
+
+  await sleep(10);
+  answer.abort();
+  await answer.ready;
+
+  assert.equal(answer.status(), 'aborted');
+  assert.equal(answer(), 'Q');
+});
+
+// Producer errors should reject ready and surface through the stream lifecycle state.
+test('stream surfaces producer failures through ready and status', async () => {
+  const answer = stream(async ({ push }) => {
+    push('Q');
+    throw new Error('boom');
+  });
+
+  await assert.rejects(answer.ready, /boom/);
+
+  assert.equal(answer.status(), 'error');
+  assert.equal(answer(), 'Q');
+  assert.equal(answer.error().message, 'boom');
+});
+
+// latest streams should keep every chunk in history while exposing only the newest value.
+test('stream.latest keeps only the newest chunk as its signal value', async () => {
+  const answer = stream.latest(async ({ push }) => {
+    push('old');
+    push('new');
+  });
+
+  await answer.ready;
+
+  assert.equal(answer(), 'new');
+  assert.deepEqual(answer.chunks(), ['old', 'new']);
+});
+
+// paced streams should visibly space out chunk delivery for streaming UIs.
+test('stream.paced spaces chunk delivery over time', async () => {
+  const timestamps = [];
+  const answer = stream.paced(async ({ push }) => {
+    await sleep(0);
+    await push('Q');
+    await push('o');
+    await push('re');
+  }, 12);
+
+  answer.subscribe(() => {
+    timestamps.push(Date.now());
+  }, { immediate: false });
+
+  const startedAt = Date.now();
+  await answer.ready;
+  const elapsed = Date.now() - startedAt;
+
+  assert.equal(answer(), 'Qore');
+  assert.equal(timestamps.length, 3);
+  assert.ok(elapsed >= 24);
+  assert.ok(timestamps[1] - timestamps[0] >= 8);
+  assert.ok(timestamps[2] - timestamps[1] >= 8);
+});
+
+// Iterable sources should honor the same backpressure behavior as manual producers.
+test('stream.withBackpressure applies pacing to iterable sources too', async () => {
+  const startedAt = Date.now();
+  const answer = stream.withBackpressure(['流', '式', '响', '应'], 10);
+
+  await answer.ready;
+
+  assert.equal(answer(), '流式响应');
+  assert.ok(Date.now() - startedAt >= 30);
+});
+
+// Derived streams should preserve the chunk-by-chunk composition model.
 test('mapStream transforms a source stream', async () => {
   const source = stream(async ({ push }) => {
     push(1);
@@ -61,6 +160,7 @@ test('mapStream transforms a source stream', async () => {
   assert.deepEqual(chunks, [10, 20, 30]);
 });
 
+// scanStream should emit the running reduction after each source chunk.
 test('scanStream turns a stream into a running reduction', async () => {
   const source = stream(async ({ push }) => {
     push(1);

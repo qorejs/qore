@@ -1,11 +1,13 @@
 import { createApp, computed, effect, fragment, h, list, show, signal, stream, text } from '../src/index.js';
 import { renderMarkdown } from './render-markdown.js';
 
+// Reuse tiny helpers so the landing page can demonstrate streaming without external services.
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const escapeHtml = (value = '') => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const lineCount = (value) => value.trim().split('\n').length;
 const chunkText = (value) => value.match(/```|`[^`]*`|\*\*[^*]+\*\*|\n|[^\s]{1,5}\s?/g) ?? [value];
 
+// Offer curated prompts so a new visitor can see the core story with one click.
 const presets = [
   '为什么 stream 应该直接是 signal？',
   '给我一个最小 AI 聊天界面',
@@ -36,6 +38,7 @@ return (
   </form>
 );`;
 
+// Generate the narrative body shown in the landing page demo.
 function answerText(prompt, run) {
   const libraryPitch = prompt.includes('UI 库')
     ? 'Qore 不想成为 Button、Dialog、Tabs 的集合。它只关心一件事：让正在生成的数据直接驱动界面。'
@@ -48,6 +51,7 @@ function answerText(prompt, run) {
   return `### Stream = Signal\n**Qore** 的主张不是“AI 原生”，而是更具体的 **流式响应**。\n\n\`\`\`js\nconst answer = stream(openAI.chat(${JSON.stringify(prompt)}));\nreturn h('article', {}, text(() => answer()));\n\`\`\`\n\n${libraryPitch}\n\n第 ${run} 次演示里，Qore 只是在推进一个 signal；UI 只是在响应那条流。`;
 }
 
+// Yield the landing page answer in small chunks to make the stream tangible.
 async function* answerFor(prompt, run) {
   for (const chunk of chunkText(answerText(prompt, run))) {
     yield chunk;
@@ -55,18 +59,22 @@ async function* answerFor(prompt, run) {
   }
 }
 
+// Highlight keywords in the static comparison snippets.
 function renderCode(code) {
   return escapeHtml(code).replace(/\b(const|return|await|stream|text|useState|useChat|sendMessage)\b/g, '<span class="kw">$1</span>');
 }
 
+// Normalize message bodies because some entries are plain strings and others are live streams.
 function currentMessageBody(body) {
   return typeof body === 'function' ? body() : body;
 }
 
+// Surface whether a message body is still streaming so the UI can label it correctly.
 function currentMessageLive(body) {
   return typeof body === 'function' && typeof body.streaming === 'function' && body.streaming();
 }
 
+// Reusable metric tile for the right-hand runtime summary rail.
 function Metric({ label, value, note }) {
   return h('div', { className: 'metric' },
     h('span', { className: 'metric-label' }, label),
@@ -75,6 +83,7 @@ function Metric({ label, value, note }) {
   );
 }
 
+// Reusable code card so the compare section stays declarative.
 function SnippetCard({ title, eyebrow, code, note }) {
   return h('article', { className: 'code-card' },
     h('div', { className: 'snippet-head' },
@@ -88,6 +97,7 @@ function SnippetCard({ title, eyebrow, code, note }) {
   );
 }
 
+// Build the landing page as a reactive narrative around one live streaming response.
 createApp(() => {
   const draft = signal(presets[0]);
   const selectedPrompt = signal(presets[0]);
@@ -103,6 +113,7 @@ createApp(() => {
   const activeResponse = signal(null);
   let feedElement;
 
+  // Count how many times the current stream actually pushes into the signal layer.
   effect(() => {
     const response = activeResponse();
     signalPushes(0);
@@ -115,6 +126,7 @@ createApp(() => {
     }, { immediate: false });
   });
 
+  // Keep the transcript pinned to the bottom as new streamed content arrives.
   effect(() => {
     messages();
     const response = activeResponse();
@@ -129,6 +141,7 @@ createApp(() => {
     });
   });
 
+  // Derive a few view-facing metrics from the currently active response.
   const status = computed(() => {
     const response = activeResponse();
     return response ? response.status() : 'idle';
@@ -151,6 +164,7 @@ createApp(() => {
 
   const currentPrompt = computed(() => selectedPrompt());
 
+  // Start a new showcase run from either the selected preset or the current draft.
   const runPrompt = (prompt = draft().trim() || presets[0]) => {
     const textValue = prompt.trim();
     if (!textValue) {
@@ -172,6 +186,7 @@ createApp(() => {
 
   return {
     onMount: () => runPrompt(selectedPrompt.peek()),
+    // Organize the page as hero, live proof, compare view, and manifesto.
     view: () => h('main', { className: 'site' },
       h('header', { className: 'nav' },
         h('a', { className: 'brand', href: '#top' },
@@ -235,6 +250,7 @@ createApp(() => {
                 feedElement = node;
               }
             },
+              // The assistant body itself may be a stream, so rendering stays fully reactive.
               list(messages, (message) => h('article', { className: `message ${message.role}` },
                 h('div', { className: 'meta' },
                   h('strong', null, message.role === 'assistant' ? 'Qore' : 'You'),
@@ -282,6 +298,7 @@ createApp(() => {
               h('h3', null, '运行时轨迹'),
               h('p', null, text(() => `当前 prompt: ${currentPrompt()}`)),
               h('div', { className: 'trace-list' },
+                // Explain the full handoff from provider chunks to text-node updates.
                 h('div', { className: () => ['trace-step', { active: status() !== 'idle' }] },
                   h('span', { className: 'trace-index' }, '1'),
                   h('div', null,
@@ -306,6 +323,7 @@ createApp(() => {
               ),
               h('div', { className: 'token-river' },
                 show(() => latestTokens().length > 0,
+                  // Surface recent chunks as a visual "river" beside the transcript.
                   () => list(() => latestTokens(), (token) => h('span', { className: 'token' }, typeof token === 'string' ? token.trim() || '↵' : JSON.stringify(token))),
                   () => h('span', { className: 'muted' }, '触发一次流，最近的 chunk 会在这里留下痕迹。')
                 )

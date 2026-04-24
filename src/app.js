@@ -12,6 +12,7 @@ import { batch, computed, effect, signal, untrack } from './signal.js';
 import { response } from './response.js';
 import { from, mapStream, scanStream, stream } from './stream.js';
 
+// Resolve a CSS selector or direct node into the root mount target.
 function resolveTarget(target) {
   if (typeof document === 'undefined') {
     throw new Error('Qore app mounting requires a browser-like environment');
@@ -30,12 +31,14 @@ function resolveTarget(target) {
   return target;
 }
 
+// Create a tiny application shell around Qore's lower-level primitives.
 export function createApp(setup) {
   let dispose = null;
   let mountedRoot = null;
   let cleanupHandlers = [];
 
   const app = {
+    // Mount the app, provide framework primitives to setup, and render the resulting view.
     mount(target, props = {}) {
       const root = resolveTarget(target);
       app.unmount();
@@ -43,6 +46,7 @@ export function createApp(setup) {
       cleanupHandlers = [];
       mountedRoot = root;
 
+      // Expose the core runtime pieces so an app can stay entirely within Qore primitives.
       const context = {
         app,
         root,
@@ -73,6 +77,7 @@ export function createApp(setup) {
         }
       };
 
+      // Allow setup to return either a raw view or an object with lifecycle hooks.
       const result = setup(context);
       const view = result && typeof result === 'object' && 'view' in result
         ? result.view
@@ -88,6 +93,7 @@ export function createApp(setup) {
       return root;
     },
 
+    // Tear down the mounted tree and any user-registered cleanup handlers.
     unmount() {
       if (dispose) {
         const stop = dispose;

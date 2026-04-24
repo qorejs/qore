@@ -1,5 +1,8 @@
+// Escape user content before injecting any HTML into the demo output.
 const escapeHtml = (value = '') => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// Apply lightweight highlighting to the demo snippets without adding a heavy dependency.
 const highlight = (code) => escapeHtml(code).replace(/\b(const|return|stream|text|signal|await|yield)\b/g, '<span class="kw">$1</span>');
+// Render a deliberately small Markdown subset that stays safe for the showcase.
 export const renderMarkdown = (value = '') => {
   const blocks = [];
   return escapeHtml(value)

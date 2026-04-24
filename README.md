@@ -105,6 +105,22 @@ const events = stream.list(eventSource);
 const latest = stream.latest(modelEvents);
 ```
 
+如果你需要控速:
+
+```js
+const answer = stream.paced(openAI.chat('hello'), 16);
+```
+
+或者更明确地声明 backpressure:
+
+```js
+const answer = stream.withBackpressure(openAI.chat('hello'), {
+  interval: 16
+});
+```
+
+这里的 `interval` 表示 chunk 进入 signal / UI 之间的最小间隔。对 `AsyncIterable` source 会自动生效; 对手写 producer, 只要 `await push(chunk)` 就会尊重这个节奏。
+
 ### `signal`, `computed`, `effect`
 
 Qore 依旧保留细粒度响应系统, 但现在它最重要的职责是承接流:
@@ -148,6 +164,6 @@ npm test
 
 ## 下一步
 
-- 把 backpressure 设计成一等 API
+- 继续把 backpressure 从 pacing 扩展到更完整的 buffer / overflow 策略
 - 围绕服务端流式渲染收敛 hydration 模型
 - 为真实 LLM provider 做 adapter, 把对象 chunk 收敛成文本流或结构化流

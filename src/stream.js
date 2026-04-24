@@ -2,6 +2,7 @@ import { createResponse } from './response.js';
 import { toAsyncIterable } from './iterable.js';
 import { normalizeError, sleep } from './utils.js';
 
+// Bridge producer pushes and async iteration with a minimal internal queue.
 class AsyncQueue {
   constructor() {
     this.values = [];
@@ -80,6 +81,7 @@ class AsyncQueue {
   }
 }
 
+// Expose a response value as a read-only signal surface.
 function createReadableSignal(sourceSignal) {
   const read = () => sourceSignal();
 
@@ -89,22 +91,65 @@ function createReadableSignal(sourceSignal) {
   return read;
 }
 
+// Text streams concatenate chunks by default so they can drive text nodes directly.
 function reduceText(currentValue, chunk) {
   return currentValue + String(chunk ?? '');
 }
 
+// Normalize the first backpressure primitive into a predictable internal shape.
+function normalizeBackpressure(backpressure) {
+  if (backpressure == null) {
+    return { interval: 0 };
+  }
+
+  const options = typeof backpressure === 'number'
+    ? { interval: backpressure }
+    : backpressure;
+  const interval = options.interval ?? 0;
+
+  if (!Number.isFinite(interval) || interval < 0) {
+    throw new TypeError('Qore stream backpressure.interval must be a non-negative finite number');
+  }
+
+  return { interval };
+}
+
+// Pause between pushes so fast producers do not overwhelm downstream UI updates.
+async function applyBackpressure(backpressure, signal) {
+  if (backpressure.interval <= 0) {
+    return;
+  }
+
+  try {
+    await sleep(backpressure.interval, signal);
+  } catch (error) {
+    if (!signal?.aborted) {
+      throw error;
+    }
+  }
+}
+
+// Distinguish a setup callback from callable stream or signal-like values.
+function isSetupFunction(sourceOrSetup) {
+  return typeof sourceOrSetup === 'function'
+    && typeof sourceOrSetup[Symbol.asyncIterator] !== 'function'
+    && typeof sourceOrSetup.peek !== 'function';
+}
+
+// Pipe any async iterable-like source into the controller, honoring aborts and pacing.
 async function pipeSource(source, controller) {
   for await (const chunk of toAsyncIterable(source)) {
     if (controller.signal.aborted) {
       break;
     }
 
-    controller.push(chunk);
+    await controller.push(chunk);
   }
 }
 
+// Accept either a setup callback or a pre-existing iterable source.
 async function startSource(sourceOrSetup, controller) {
-  if (typeof sourceOrSetup === 'function') {
+  if (isSetupFunction(sourceOrSetup)) {
     const maybeSource = await sourceOrSetup(controller);
 
     if (maybeSource !== undefined) {
@@ -117,11 +162,14 @@ async function startSource(sourceOrSetup, controller) {
   await pipeSource(sourceOrSetup, controller);
 }
 
+// Create the core stream primitive: a read-only signal plus async iterable plus lifecycle state.
 export function createStream(sourceOrSetup, options = {}) {
   const {
     seed = '',
-    reduce = reduceText
+    reduce = reduceText,
+    backpressure = null
   } = options;
+  const pressure = normalizeBackpressure(backpressure);
 
   const state = createResponse({ seed, reduce });
   const queue = new AsyncQueue();
@@ -130,6 +178,7 @@ export function createStream(sourceOrSetup, options = {}) {
   let activeSignal = null;
   let terminated = false;
 
+  // Close queue delivery first, then delegate the final lifecycle transition.
   const stopStream = (finalizer) => {
     if (terminated) {
       return readable.peek();
@@ -143,24 +192,30 @@ export function createStream(sourceOrSetup, options = {}) {
   const run = state.run(async ({ signal, push, complete, fail, abort }) => {
     activeSignal = signal;
 
+    // Wrap the response lifecycle so streams can push, fail, or abort through one surface.
     const controller = {
       get signal() {
         return signal;
       },
 
-      push(chunk) {
+      // Push into both the async queue and the reactive response value.
+      async push(chunk) {
         if (terminated || signal.aborted) {
           return readable.peek();
         }
 
         queue.push(chunk);
-        return push(chunk);
+        const nextValue = push(chunk);
+        await applyBackpressure(pressure, signal);
+        return nextValue;
       },
 
+      // Mark the stream as gracefully finished.
       done() {
         return stopStream(() => complete());
       },
 
+      // Surface producer failures to both async consumers and signal readers.
       fail(error) {
         if (terminated) {
           return state.error.peek();
@@ -171,6 +226,7 @@ export function createStream(sourceOrSetup, options = {}) {
         return fail(error);
       },
 
+      // Abort the stream and preserve the partial value already accumulated.
       abort(reason = 'Stream aborted') {
         return stopStream(() => abort(reason));
       }
@@ -198,6 +254,7 @@ export function createStream(sourceOrSetup, options = {}) {
     }
   });
 
+  // Keep async consumers in sync with failures that surface after startup.
   run.catch((error) => {
     if (!queue.closed) {
       queue.fail(error);
@@ -219,6 +276,7 @@ export function createStream(sourceOrSetup, options = {}) {
   readable.ready = run;
   readable.abort = (reason) => stopStream(() => state.abort(reason));
 
+  // Expose the current AbortSignal so advanced integrations can observe cancellation.
   Object.defineProperty(readable, 'signal', {
     enumerable: true,
     get() {
@@ -226,6 +284,7 @@ export function createStream(sourceOrSetup, options = {}) {
     }
   });
 
+  // Preserve async iteration so streams can still compose with for-await and adapters.
   readable[Symbol.asyncIterator] = async function*() {
     try {
       for await (const chunk of queue) {
@@ -241,6 +300,7 @@ export function createStream(sourceOrSetup, options = {}) {
   return readable;
 }
 
+// Create a text-accumulating stream by default.
 export function stream(sourceOrSetup, options = {}) {
   return createStream(sourceOrSetup, {
     seed: '',
@@ -249,26 +309,46 @@ export function stream(sourceOrSetup, options = {}) {
   });
 }
 
+// Alias the generic constructor for advanced callers that provide custom reducers.
 stream.create = createStream;
 
+// Convenience constructor for explicit text streams.
 stream.text = (sourceOrSetup, options = {}) => createStream(sourceOrSetup, {
   seed: '',
   reduce: reduceText,
   ...options
 });
 
+// Convenience constructor for streams that accumulate every chunk into an array.
 stream.list = (sourceOrSetup, options = {}) => createStream(sourceOrSetup, {
   seed: [],
   reduce: (currentValue, chunk) => [...currentValue, chunk],
   ...options
 });
 
+// Convenience constructor for streams that only expose the latest chunk as current value.
 stream.latest = (sourceOrSetup, options = {}) => createStream(sourceOrSetup, {
   seed: null,
   reduce: (_, chunk) => chunk,
   ...options
 });
 
+// Attach backpressure behavior without changing the reducer semantics.
+stream.withBackpressure = (sourceOrSetup, backpressure, options = {}) => createStream(sourceOrSetup, {
+  ...options,
+  backpressure: typeof options.backpressure === 'object' && typeof backpressure === 'object'
+    ? { ...options.backpressure, ...backpressure }
+    : backpressure
+});
+
+// Shorthand for the first backpressure primitive: minimum interval between chunks.
+stream.paced = (sourceOrSetup, interval, options = {}) => stream.withBackpressure(
+  sourceOrSetup,
+  { interval },
+  options
+);
+
+// Turn any iterable or async iterable into a stream, optionally adding source delay.
 export function from(source, options = {}) {
   const { delay = 0, ...streamOptions } = options;
 
@@ -282,11 +362,12 @@ export function from(source, options = {}) {
         await sleep(delay, controller.signal);
       }
 
-      controller.push(chunk);
+      await controller.push(chunk);
     }
   }, streamOptions);
 }
 
+// Map source chunks into a new stream while preserving stream semantics.
 export function mapStream(source, mapper, options = {}) {
   return createStream(async (controller) => {
     let index = 0;
@@ -296,12 +377,13 @@ export function mapStream(source, mapper, options = {}) {
         break;
       }
 
-      controller.push(await mapper(chunk, index));
+      await controller.push(await mapper(chunk, index));
       index += 1;
     }
   }, options);
 }
 
+// Emit a running reduction so each chunk sees the accumulated state so far.
 export function scanStream(source, reducer, seed, options = {}) {
   return createStream(async (controller) => {
     let index = 0;
@@ -313,7 +395,7 @@ export function scanStream(source, reducer, seed, options = {}) {
       }
 
       current = await reducer(current, chunk, index);
-      controller.push(current);
+      await controller.push(current);
       index += 1;
     }
   }, {
@@ -323,4 +405,5 @@ export function scanStream(source, reducer, seed, options = {}) {
   });
 }
 
+// Re-export the iterable helper so integrations can normalize external sources.
 export { toAsyncIterable } from './iterable.js';

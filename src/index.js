@@ -1,3 +1,4 @@
+// Re-export the public runtime surface from a single module entrypoint.
 export { signal, computed, effect, batch, untrack, isSignal } from './signal.js';
 export { stream, createStream, from, mapStream, scanStream, toAsyncIterable } from './stream.js';
 export { createResponse, response } from './response.js';

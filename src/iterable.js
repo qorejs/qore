@@ -1,3 +1,4 @@
+// Normalize values, iterables, and async iterables into one async iterable shape.
 export function toAsyncIterable(source) {
   if (source == null) {
     return (async function* empty() {})();

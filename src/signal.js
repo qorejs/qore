@@ -1,9 +1,11 @@
+// Use a sentinel so signals can still store undefined as a real value.
 const READ = Symbol('qore.signal.read');
 
 let activeObserver = null;
 let batchDepth = 0;
 const pendingObservers = new Set();
 
+// Remove this observer from every dependency it tracked during the last run.
 function cleanupObserver(observer) {
   for (const dep of observer.deps) {
     dep.subscribers.delete(observer);
@@ -12,6 +14,7 @@ function cleanupObserver(observer) {
   observer.deps.clear();
 }
 
+// Queue observer work during batching, otherwise notify immediately.
 function scheduleObserver(observer) {
   if (!observer.active) {
     return;
@@ -25,6 +28,7 @@ function scheduleObserver(observer) {
   observer.notify();
 }
 
+// Flush batched observer work in FIFO-like waves until the queue is empty.
 function flushObservers() {
   while (pendingObservers.size > 0) {
     const queue = Array.from(pendingObservers);
@@ -36,6 +40,7 @@ function flushObservers() {
   }
 }
 
+// A mutable signal node stores a value and fan-outs updates to listeners and observers.
 class SignalNode {
   constructor(initialValue) {
     this.value = initialValue;
@@ -84,6 +89,7 @@ class SignalNode {
     };
   }
 
+  // Snapshot listeners first so resubscription during notification cannot loop forever.
   emit() {
     for (const listener of Array.from(this.listeners)) {
       listener(this.value);
@@ -95,6 +101,7 @@ class SignalNode {
   }
 }
 
+// A computed node re-runs its getter whenever one of its dependencies changes.
 class ComputedNode {
   constructor(getter) {
     this.getter = getter;
@@ -139,6 +146,7 @@ class ComputedNode {
     };
   }
 
+  // Recompute under dependency tracking and notify downstream observers only on change.
   recompute() {
     if (!this.active) {
       return;
@@ -187,6 +195,7 @@ class ComputedNode {
   }
 }
 
+// Effects are observers with optional cleanup that re-run when dependencies change.
 class EffectNode {
   constructor(fn) {
     this.fn = fn;
@@ -201,6 +210,7 @@ class EffectNode {
     this.run();
   }
 
+  // Execute the effect under tracking and remember any returned cleanup callback.
   run() {
     if (!this.active) {
       return;
@@ -240,6 +250,7 @@ class EffectNode {
   }
 }
 
+// Create a mutable signal function with helper methods attached to it.
 export function signal(initialValue) {
   const node = new SignalNode(initialValue);
 
@@ -259,6 +270,7 @@ export function signal(initialValue) {
   return readWriteSignal;
 }
 
+// Create a read-only computed signal backed by dependency tracking.
 export function computed(getter) {
   const node = new ComputedNode(getter);
 
@@ -277,11 +289,13 @@ export function computed(getter) {
   return readOnlySignal;
 }
 
+// Run a reactive effect and return a disposer for it.
 export function effect(fn) {
   const node = new EffectNode(fn);
   return () => node.stop();
 }
 
+// Batch synchronous updates so dependent observers only re-run once afterward.
 export function batch(fn) {
   batchDepth += 1;
 
@@ -296,6 +310,7 @@ export function batch(fn) {
   }
 }
 
+// Read signals without subscribing the current observer to them.
 export function untrack(fn) {
   const previousObserver = activeObserver;
   activeObserver = null;
@@ -307,6 +322,7 @@ export function untrack(fn) {
   }
 }
 
+// Detect Qore signal-like values by their callable shape plus peek helper.
 export function isSignal(value) {
   return typeof value === 'function' && typeof value.peek === 'function';
 }

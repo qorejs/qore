@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { batch, computed, effect, signal } from '../src/index.js';
+import { batch, computed, effect, signal, untrack } from '../src/index.js';
 
+// Cover the core signal API surface from raw writes through observer semantics.
 test('signal supports undefined and direct updates', () => {
   const value = signal(undefined);
 
@@ -25,6 +26,7 @@ test('computed reacts to upstream signals', () => {
   assert.equal(doubled(), 14);
 });
 
+// Verify that effects clean up old resources before re-running with new dependencies.
 test('effect tracks dependencies and runs cleanup before re-run', () => {
   const count = signal(0);
   const events = [];
@@ -49,6 +51,7 @@ test('effect tracks dependencies and runs cleanup before re-run', () => {
   ]);
 });
 
+// A batch should collapse multiple synchronous writes into one downstream observer pass.
 test('batch collapses synchronous churn into one observer pass', () => {
   const count = signal(0);
   const seen = [];
@@ -64,4 +67,47 @@ test('batch collapses synchronous churn into one observer pass', () => {
   });
 
   assert.deepEqual(seen, [0, 3]);
+});
+
+// Subscriptions should be able to start silently and stop receiving updates after unsubscribe.
+test('signal subscribe can skip the immediate emission and unsubscribe cleanly', () => {
+  const value = signal(1);
+  const seen = [];
+
+  const unsubscribe = value.subscribe((nextValue) => {
+    seen.push(nextValue);
+  }, { immediate: false });
+
+  value.set(2);
+  unsubscribe();
+  value.set(3);
+
+  assert.deepEqual(seen, [2]);
+});
+
+// Stopped computed signals should retain their last value instead of continuing to track.
+test('computed stop freezes its current value', () => {
+  const count = signal(2);
+  const doubled = computed(() => count() * 2);
+
+  assert.equal(doubled(), 4);
+
+  doubled.stop();
+  count.set(10);
+
+  assert.equal(doubled(), 4);
+});
+
+// untrack should allow one-off reads without wiring them into reactive dependencies.
+test('untrack reads without subscribing to future updates', () => {
+  const count = signal(1);
+  const seen = [];
+
+  effect(() => {
+    seen.push(untrack(() => count()));
+  });
+
+  count.set(2);
+
+  assert.deepEqual(seen, [1]);
 });
