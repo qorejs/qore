@@ -175,14 +175,14 @@ function setDomProperty(element, key, value) {
   element.setAttribute(attributeName, String(value));
 }
 
-// Bind events and support handlers that can change reactively over time.
+// Bind events and only treat signal-like values as reactive handler containers.
 function bindEvent(element, key, handler) {
   const eventName = key.slice(2).toLowerCase();
 
-  if (isReactiveValue(handler)) {
+  if (isSignal(handler)) {
     let activeHandler = null;
     const stop = effect(() => {
-      const nextHandler = resolveAccessor(handler);
+      const nextHandler = handler();
 
       if (activeHandler) {
         element.removeEventListener(eventName, activeHandler);
