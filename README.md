@@ -11,9 +11,10 @@ Qore 不把数据当快照看待, 而是把数据视为一条持续推进的河�
 在 Qore 里, 这两者是同一个 primitive 的两面:
 
 ```js
-import { h, stream, text } from '@qorejs/qore';
+import { createOpenAI, h, stream, text } from '@qorejs/qore';
 
-const answer = stream(openAI.chat('hello'));
+const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const answer = stream(openai.chat('hello'));
 
 return h('div', {}, text(() => answer()));
 ```
@@ -89,7 +90,7 @@ python3 -m http.server 4173
 默认把 chunk 累积成文本 signal:
 
 ```js
-const answer = stream(openAI.chat('hello'));
+const answer = stream(openai.chat('hello'));
 
 answer();           // 当前文本
 answer.status();    // idle | pending | streaming | completed | error | aborted
@@ -108,13 +109,13 @@ const latest = stream.latest(modelEvents);
 如果你需要控速:
 
 ```js
-const answer = stream.paced(openAI.chat('hello'), 16);
+const answer = stream.paced(openai.chat('hello'), 16);
 ```
 
 或者更明确地声明 backpressure:
 
 ```js
-const answer = stream.withBackpressure(openAI.chat('hello'), {
+const answer = stream.withBackpressure(openai.chat('hello'), {
   interval: 16,
   buffer: 8,
   overflow: 'drop-oldest'
@@ -143,9 +144,32 @@ Qore 依旧保留细粒度响应系统, 但现在它最重要的职责是承接�
 ```js
 import { computed, signal, stream } from '@qorejs/qore';
 
-const answer = stream(openAI.chat('hello'));
+const answer = stream(openai.chat('hello'));
 const length = computed(() => answer().length);
 ```
+
+### `createOpenAI(options?)`
+
+Qore 现在自带一个最小 OpenAI Responses adapter, 可以把真实 provider 的 text delta 直接喂给 `stream(...)`:
+
+```js
+import { createOpenAI, stream } from '@qorejs/qore';
+
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  model: 'gpt-5'
+});
+
+const answer = stream(openai.chat('Why should stream be signal?'));
+```
+
+如果你想直接在本地看真实 provider 的输出, 仓库里有一个最小 CLI:
+
+```bash
+OPENAI_API_KEY=... node /Users/xinxintao/workspace/qore/examples/openai-cli.js "Explain Qore in one paragraph"
+```
+
+首页 demo 仍然使用仓库内置的 synthetic stream, 因为官网是静态页, 不应该把真实 provider key 暴露到浏览器里。
 
 ### `response`
 
@@ -180,5 +204,4 @@ npm test
 ## 下一步
 
 - 围绕服务端流式渲染收敛 hydration 模型
-- 为真实 LLM provider 做 adapter, 把对象 chunk 收敛成文本流或结构化流
 - 做公开 benchmark, 把 Qore 和 React/Vercel AI SDK 的差异变成可重复的数据

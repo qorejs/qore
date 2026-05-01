@@ -14,7 +14,8 @@ const presets = [
   'Qore 为什么不做 UI 杂货铺？'
 ];
 
-const qoreCode = `const reply = stream(openAI.chat(prompt));
+const qoreCode = `const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const reply = stream(openai.chat(prompt));
 
 messages.update((items) => [
   ...items,
@@ -41,7 +42,7 @@ function answerText(prompt, run) {
         ? '聊天界面的核心其实很小：一条流进来，一个 signal 推进，一个文本节点更新。'
         : 'stream 负责流动，signal 负责响应。把它们合起来，AI UI 才不需要先拆成一地状态。';
 
-  return `### Stream = Signal\n**Qore** 只抓一件事：流式响应。\n\n${insight}\n\n\`\`\`js\nconst answer = stream(openAI.chat(${JSON.stringify(prompt)}));\nreturn h('div', {}, text(() => answer()));\n\`\`\`\n\n第 ${run} 轮演示：同一条流，同时驱动聊天、Markdown 和纯文本镜像。`;
+  return `### Stream = Signal\n**Qore** 只抓一件事：流式响应。\n\n${insight}\n\n\`\`\`js\nconst openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });\nconst answer = stream(openai.chat(${JSON.stringify(prompt)}));\nreturn h('div', {}, text(() => answer()));\n\`\`\`\n\n第 ${run} 轮演示：同一条流，同时驱动聊天、Markdown 和纯文本镜像。`;
 }
 
 // Push the whole answer rapidly and let Qore's backpressure turn it into a paced UI experience.
@@ -60,7 +61,7 @@ function createAnswerStream(prompt, run) {
 // Apply lightweight highlighting to the static compare snippets.
 function renderCode(code) {
   return escapeHtml(code)
-    .replace(/\b(const|return|await|stream|text|useState|useChat|sendMessage|messages)\b/g, '<span class="kw">$1</span>');
+    .replace(/\b(const|return|await|stream|text|createOpenAI|useState|useChat|sendMessage|messages)\b/g, '<span class="kw">$1</span>');
 }
 
 // Normalize message bodies because assistant entries can be plain text or live streams.
@@ -241,7 +242,9 @@ createApp(() => {
             h('span', { className: 'card-kicker' }, 'Small API'),
             h('pre', { className: 'api-line' },
               h('span', { className: 'kw' }, 'const'),
-              ' answer = stream(openAI.chat(prompt))\n',
+              ' openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })\n',
+              h('span', { className: 'kw' }, 'const'),
+              ' answer = stream(openai.chat(prompt))\n',
               h('span', { className: 'kw' }, 'return'),
               ' h(\'div\', {}, text(() => answer()))'
             )
