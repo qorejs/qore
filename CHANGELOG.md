@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added npm and GitHub Packages links to the public README surface.
+- Added a GitHub Actions workflow for publishing the package to GitHub Packages and linking it back to this repository.
+
 ## 0.7.1 - 2026-05-02
 
 - Rewrote the npm-facing README in English so the package page matches the intended public presentation.

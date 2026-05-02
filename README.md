@@ -1,18 +1,35 @@
 # Qore
 
+[![npm version](https://img.shields.io/npm/v/%40qorejs%2Fqore?color=0f766e&label=npm)](https://www.npmjs.com/package/@qorejs/qore)
+[![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?logo=github)](https://github.com/qorejs/qore/packages)
+
 Qore is a streaming-response framework where `stream = signal`.
 
 Instead of treating data as a snapshot, Qore treats it like a river. Tokens arrive piece by piece, and the UI should respond piece by piece too. No manual string accumulation. No scattered loading state. No partial rendering workaround layered on top of a snapshot-first mental model.
 
 ## Installation
 
+From npm:
+
 ```bash
 npm i @qorejs/qore
 ```
 
+From GitHub Packages:
+
+```bash
+echo "@qorejs:registry=https://npm.pkg.github.com" >> .npmrc
+npm i @qorejs/qore
+```
+
+GitHub Packages installs require an authenticated session against `https://npm.pkg.github.com`.
+
 - Package name: `@qorejs/qore`
 - Module format: `ESM`
 - Supported runtime: `Node >= 18`
+- Registries:
+  - npm: [npmjs.com/package/@qorejs/qore](https://www.npmjs.com/package/@qorejs/qore)
+  - GitHub Packages: [github.com/qorejs/qore/packages](https://github.com/qorejs/qore/packages)
 
 ## Core Idea
 
@@ -197,6 +214,17 @@ python3 -m http.server 4173
 ```
 
 Then open [http://127.0.0.1:4173/](http://127.0.0.1:4173/).
+
+## GitHub Packages
+
+The repository includes a GitHub Actions workflow that can publish the package to GitHub Packages and associate it with this repository.
+
+- Workflow file: `.github/workflows/publish-github-packages.yml`
+- Trigger it manually from the Actions tab, or publish a GitHub Release to trigger it automatically
+- The workflow uses the repository `GITHUB_TOKEN`, which GitHub documents as the recommended way to publish packages from the workflow repository
+- GitHub Packages starts new packages as private by default, so you may want to switch the package visibility to public after the first publish
+
+Because the package already includes the correct `repository` field in `package.json`, GitHub Packages can link the package back to `qorejs/qore` when the workflow publishes it.
 
 ## Package Boundary
 

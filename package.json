@@ -21,6 +21,8 @@
   "scripts": {
     "test": "node --test",
     "release:check": "npm test && npm pack --dry-run",
+    "publish:github": "npm publish --registry=https://npm.pkg.github.com",
+    "publish:npm": "npm publish --access public",
     "prepublishOnly": "npm run release:check"
   },
   "engines": {
