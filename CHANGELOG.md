@@ -3,7 +3,8 @@
 ## Unreleased
 
 - Added npm and GitHub Packages links to the public README surface.
-- Added a GitHub Actions workflow for publishing the package to GitHub Packages and linking it back to this repository.
+- Added release badges and quick links to make the repository homepage read more like a polished package landing page.
+- Added GitHub Actions workflows for release validation and GitHub Packages publishing, including version and changelog checks before publication.
 
 ## 0.7.1 - 2026-05-02
 

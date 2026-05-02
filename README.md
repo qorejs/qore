@@ -1,11 +1,23 @@
 # Qore
 
 [![npm version](https://img.shields.io/npm/v/%40qorejs%2Fqore?color=0f766e&label=npm)](https://www.npmjs.com/package/@qorejs/qore)
+[![release checks](https://github.com/qorejs/qore/actions/workflows/release-check.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/release-check.yml)
+[![publish github packages](https://github.com/qorejs/qore/actions/workflows/publish-github-packages.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/publish-github-packages.yml)
 [![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?logo=github)](https://github.com/qorejs/qore/packages)
+[![node >= 18](https://img.shields.io/badge/node-%3E%3D18-1f6feb)](https://nodejs.org/)
+[![license: MIT](https://img.shields.io/badge/license-MIT-0f766e)](./LICENSE)
 
 Qore is a streaming-response framework where `stream = signal`.
 
 Instead of treating data as a snapshot, Qore treats it like a river. Tokens arrive piece by piece, and the UI should respond piece by piece too. No manual string accumulation. No scattered loading state. No partial rendering workaround layered on top of a snapshot-first mental model.
+
+Quick links:
+
+- [npm package](https://www.npmjs.com/package/@qorejs/qore)
+- [GitHub Packages](https://github.com/qorejs/qore/packages)
+- [landing page source](https://github.com/qorejs/qore/blob/main/index.html)
+- [streaming demo source](https://github.com/qorejs/qore/blob/main/examples/streaming-response.html)
+- [release workflow](https://github.com/qorejs/qore/actions/workflows/release-check.yml)
 
 ## Installation
 
@@ -217,11 +229,14 @@ Then open [http://127.0.0.1:4173/](http://127.0.0.1:4173/).
 
 ## GitHub Packages
 
-The repository includes a GitHub Actions workflow that can publish the package to GitHub Packages and associate it with this repository.
+The repository includes GitHub Actions workflows for both release validation and GitHub Packages publishing.
 
-- Workflow file: `.github/workflows/publish-github-packages.yml`
-- Trigger it manually from the Actions tab, or publish a GitHub Release to trigger it automatically
-- The workflow uses the repository `GITHUB_TOKEN`, which GitHub documents as the recommended way to publish packages from the workflow repository
+- Release validation: `.github/workflows/release-check.yml`
+- GitHub Packages publish: `.github/workflows/publish-github-packages.yml`
+- Both workflows can be triggered manually from the Actions tab
+- Publishing a GitHub Release triggers both the release check and the GitHub Packages publish flow
+- The publish workflow validates the release tag, changelog, test suite, and tarball before it pushes the package
+- The publish workflow uses the repository `GITHUB_TOKEN`, which GitHub documents as the recommended way to publish packages from the workflow repository
 - GitHub Packages starts new packages as private by default, so you may want to switch the package visibility to public after the first publish
 
 Because the package already includes the correct `repository` field in `package.json`, GitHub Packages can link the package back to `qorejs/qore` when the workflow publishes it.
