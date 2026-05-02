@@ -1,6 +1,6 @@
 {
   "name": "@qorejs/qore",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Qore is a streaming-response framework where stream becomes signal.",
   "type": "module",
   "main": "./src/index.js",

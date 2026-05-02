@@ -1,8 +1,8 @@
 # Qore
 
-Qore 的灵魂只有四个字：`流式响应`。
+Qore is a streaming-response framework where `stream = signal`.
 
-它不是把数据当快照，而是把数据当河流。token 一段一段地到来，UI 就应该一段一段地响应，不需要手动拼字符串，不需要到处补 `loading`，也不需要把 partial render 当成特例处理。
+Instead of treating data as a snapshot, Qore treats it like a river. Tokens arrive piece by piece, and the UI should respond piece by piece too. No manual string accumulation. No scattered loading state. No partial rendering workaround layered on top of a snapshot-first mental model.
 
 ## Installation
 
@@ -16,9 +16,10 @@ npm i @qorejs/qore
 
 ## Core Idea
 
-`stream` 是数据流动的方式，`signal` 是 UI 响应变化的方式。
+`stream` is how data flows.
+`signal` is how the UI reacts.
 
-在 Qore 里，这两者是同一个 primitive 的两面：
+In Qore, they are two sides of the same primitive:
 
 ```js
 import { createOpenAI, h, stream, text } from '@qorejs/qore';
@@ -29,18 +30,18 @@ const answer = stream(openai.chat('hello'));
 return h('div', {}, text(() => answer()));
 ```
 
-这里的 `answer` 同时是：
+Here, `answer` is all of the following at once:
 
-- 一个只读 `signal`，`answer()` 拿到当前累积值
-- 一个 `AsyncIterable`，可以继续 `for await...of`
-- 一个带生命周期的流状态，支持 `status()`、`streaming()`、`error()`、`chunks()`
+- A read-only `signal`, so `answer()` returns the current accumulated value
+- An `AsyncIterable`, so you can still use `for await...of`
+- A lifecycle-aware streaming state, with `status()`, `streaming()`, `error()`, and `chunks()`
 
 ## Why Qore
 
-- React 把 stream 当成特殊情况，需要额外心智去补
-- SolidJS 的 signal 很强，但没有原生 stream primitive
-- Vue 的 ref 很顺手，但 stream 依旧是外置概念
-- Qore 直接把 `stream = signal` 做成核心 API
+- React treats streaming as a special case that needs extra machinery
+- SolidJS has excellent signals, but no native stream primitive
+- Vue has ergonomic refs, but stream handling still lives outside the core model
+- Qore makes `stream = signal` the core API from the start
 
 ## Quick Start
 
@@ -48,15 +49,15 @@ return h('div', {}, text(() => answer()));
 import { h, mount, stream, text } from '@qorejs/qore';
 
 const answer = stream(async function* () {
-  yield '流';
-  yield '式';
-  yield '响应';
+  yield 'stream';
+  yield ' = ';
+  yield 'signal';
 }());
 
 mount('#app', () => h('div', { className: 'answer' }, text(() => answer())));
 ```
 
-上面这个例子只会更新那一个 text node，不会 whole tree 重绘。
+This updates only the text node that depends on the stream. It does not re-render the whole tree.
 
 ## Providers
 
@@ -88,7 +89,7 @@ const answer = stream(anthropic.chat('Why should stream be signal?'));
 
 ### `createSSEAdapter(options?)`
 
-如果你的后端本来就已经在吐 SSE，Qore 也可以直接把它收编进同一个 story：
+If your backend already streams `text/event-stream`, Qore can adopt it directly:
 
 ```js
 import { createSSEAdapter, stream } from '@qorejs/qore';
@@ -113,25 +114,25 @@ const provider = createSSEAdapter({
 const answer = stream(provider.chat('hello'));
 ```
 
-这让 `stream(provider.chat(...))` 不再绑定某一家 SDK，而是成为一个通用入口。
+That makes `stream(provider.chat(...))` a general entry point instead of something tied to a single SDK.
 
 ## API Shape
 
 ### `stream(source, options?)`
 
-默认把 chunk 累积成文本 signal：
+By default, `stream(...)` accumulates chunks into a text signal:
 
 ```js
 const answer = stream(openai.chat('hello'));
 
-answer();           // 当前文本
+answer();           // current text
 answer.status();    // idle | pending | streaming | completed | error | aborted
 answer.streaming(); // boolean
-answer.chunks();    // 原始 chunk 列表
-await answer.ready; // 等待结束
+answer.chunks();    // raw chunks
+await answer.ready; // wait for completion
 ```
 
-如果你需要结构化流：
+If you need structured streams:
 
 ```js
 const events = stream.list(eventSource);
@@ -148,17 +149,17 @@ const answer = stream.withBackpressure(openai.chat('hello'), {
 });
 ```
 
-backpressure 现在不只是“睡一下”：
+Backpressure is not just a delay wrapper:
 
-- `interval`：chunk 进入 signal / UI 之间的最小间隔
-- `buffer`：在 UI 前面最多允许排队多少个 chunk
-- `overflow`：缓冲区满了以后怎么办，可选 `wait` / `drop-oldest` / `drop-newest` / `error`
+- `interval`: the minimum spacing between chunk delivery into the signal and UI
+- `buffer`: the maximum number of queued chunks before the UI catches up
+- `overflow`: what to do when the buffer is full: `wait`, `drop-oldest`, `drop-newest`, or `error`
 
-你还可以直接观察压力状态：
+You can also observe stream pressure directly:
 
 ```js
-answer.buffered(); // 当前还有多少 chunk 在排队
-answer.dropped();  // 因 overflow 策略被丢掉了多少 chunk
+answer.buffered(); // how many chunks are queued right now
+answer.dropped();  // how many chunks were dropped by the overflow policy
 ```
 
 ### `signal`, `computed`, `effect`
@@ -172,13 +173,13 @@ const length = computed(() => answer().length);
 
 ### `response`
 
-`response` 仍然保留，但它更像底层状态机 escape hatch，适合复杂 reducer 或自定义聚合。
+`response` still exists, but it is closer to a lower-level state machine escape hatch for custom reducers and aggregators.
 
-如果你的目标是“把流直接接进 UI”，优先使用 `stream(...)`。
+If your goal is to pipe a stream directly into the UI, prefer `stream(...)`.
 
 ## Demos
 
-仓库里带了完整 landing page 和 focused demo：
+The repository includes a landing page and a focused streaming demo:
 
 - [Landing Page Source](https://github.com/qorejs/qore/blob/main/index.html)
 - [Homepage Logic](https://github.com/qorejs/qore/blob/main/examples/showcase.js)
@@ -187,7 +188,7 @@ const length = computed(() => answer().length);
 - [Focused Chat Logic](https://github.com/qorejs/qore/blob/main/examples/qore-chat.js)
 - [React Compare](https://github.com/qorejs/qore/blob/main/examples/react-chat.jsx)
 
-本地预览：
+For a local preview:
 
 ```bash
 git clone git@github.com:qorejs/qore.git
@@ -195,19 +196,19 @@ cd qore
 python3 -m http.server 4173
 ```
 
-然后打开 [http://127.0.0.1:4173/](http://127.0.0.1:4173/)。
+Then open [http://127.0.0.1:4173/](http://127.0.0.1:4173/).
 
 ## Package Boundary
 
-Qore 核心包不内置 Button、Dialog、Tabs 这类 UI primitives。
+Qore does not ship a built-in catalog of buttons, dialogs, tabs, or other UI primitives.
 
-核心包只做三件事：
+The core package does only three things:
 
-- 让流进入状态
-- 让状态进入 UI
-- 让整个过程保持细粒度响应
+- Move streams into state
+- Move state into the UI
+- Keep the whole process finely reactive
 
-一切不服务于 `流式响应` 的东西，都应该放到实验层或者外围仓库。
+Anything that does not serve `streaming response` belongs in an experimental layer or a separate package.
 
 ## Testing
 
@@ -215,14 +216,14 @@ Qore 核心包不内置 Button、Dialog、Tabs 这类 UI primitives。
 npm test
 ```
 
-当前测试覆盖了：
+The current test suite covers:
 
-- signal / computed / effect
-- stream = signal 的核心行为
-- response 与 async iterable 的兼容
-- OpenAI / Anthropic / generic SSE adapters
+- `signal`, `computed`, and `effect`
+- The core `stream = signal` behavior
+- `response` interoperability with async iterables
+- OpenAI, Anthropic, and generic SSE adapters
 
 ## Roadmap
 
-- 围绕服务端流式渲染收敛 hydration 模型
-- 做公开 benchmark，把 Qore 和 React/Vercel AI SDK 的差异变成可重复的数据
+- Tighten the hydration model around server-streamed rendering
+- Publish repeatable benchmarks that compare Qore with React and the Vercel AI SDK

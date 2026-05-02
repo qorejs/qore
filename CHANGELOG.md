@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1 - 2026-05-02
+
+- Rewrote the npm-facing README in English so the package page matches the intended public presentation.
+- Removed Chinese text from core tests so only demos and documentation are allowed to contain localized copy.
+
 ## 0.7.0 - 2026-05-01
 
 - Turned `stream(...)` into a signal-first primitive so streaming values update the UI reactively by default.

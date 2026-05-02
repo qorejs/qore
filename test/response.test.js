@@ -8,14 +8,14 @@ test('text response accumulates chunks and closes as completed', async () => {
   const answer = response.text();
 
   await answer.run(async ({ push }) => {
-    push('流');
-    push('式');
-    push('响应');
+    push('stream');
+    push('ing');
+    push('-first');
   });
 
   assert.equal(answer.status(), 'completed');
-  assert.equal(answer.value(), '流式响应');
-  assert.deepEqual(answer.chunks(), ['流', '式', '响应']);
+  assert.equal(answer.value(), 'streaming-first');
+  assert.deepEqual(answer.chunks(), ['stream', 'ing', '-first']);
   assert.equal(answer.chunkCount(), 3);
 });
 
@@ -37,9 +37,9 @@ test('response abort keeps the chunks received so far', async () => {
   const answer = response.text();
 
   const run = answer.run(async ({ push, signal }) => {
-    push('流');
+    push('stream');
     await sleep(50, signal);
-    push('式');
+    push('ing');
   });
 
   await sleep(10);
@@ -47,7 +47,7 @@ test('response abort keeps the chunks received so far', async () => {
   await run;
 
   assert.equal(answer.status(), 'aborted');
-  assert.equal(answer.value(), '流');
+  assert.equal(answer.value(), 'stream');
 });
 
 // Starting a newer run should supersede the old one at the lifecycle level.

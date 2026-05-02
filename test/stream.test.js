@@ -21,9 +21,9 @@ test('stream is also a signal and accumulates text by default', async () => {
 // Async iteration should still expose every original chunk in order.
 test('stream yields chunks pushed by the producer', async () => {
   const source = stream(async ({ push }) => {
-    push('流');
-    push('式');
-    push('响应');
+    push('stream');
+    push('ing');
+    push('-first');
   });
 
   const chunks = [];
@@ -32,7 +32,7 @@ test('stream yields chunks pushed by the producer', async () => {
     chunks.push(chunk);
   }
 
-  assert.deepEqual(chunks, ['流', '式', '响应']);
+  assert.deepEqual(chunks, ['stream', 'ing', '-first']);
 });
 
 // list streams should keep structured chunks instead of forcing text concatenation.
@@ -50,17 +50,17 @@ test('stream.list keeps structured chunks in signal form', async () => {
 // Wrapping an existing stream should treat it as data, not as a setup callback.
 test('stream can wrap another stream without treating it like a setup function', async () => {
   const source = stream(async ({ push }) => {
-    push('流');
-    push('式');
-    push('响应');
+    push('stream');
+    push('ing');
+    push('-first');
   });
 
   const mirrored = stream(source);
 
   await Promise.all([source.ready, mirrored.ready]);
 
-  assert.equal(mirrored(), '流式响应');
-  assert.deepEqual(mirrored.chunks(), ['流', '式', '响应']);
+  assert.equal(mirrored(), 'streaming-first');
+  assert.deepEqual(mirrored.chunks(), ['stream', 'ing', '-first']);
 });
 
 // Abort should stop future chunks while keeping the partial text visible to the UI.
@@ -134,11 +134,11 @@ test('stream.paced spaces chunk delivery over time', async () => {
 // Iterable sources should honor the same backpressure behavior as manual producers.
 test('stream.withBackpressure applies pacing to iterable sources too', async () => {
   const startedAt = Date.now();
-  const answer = stream.withBackpressure(['流', '式', '响', '应'], 10);
+  const answer = stream.withBackpressure(['stream', 'ing', '-', 'first'], 10);
 
   await answer.ready;
 
-  assert.equal(answer(), '流式响应');
+  assert.equal(answer(), 'streaming-first');
   assert.ok(Date.now() - startedAt >= 30);
 });
 
