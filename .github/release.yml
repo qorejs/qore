@@ -1,0 +1,21 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: Runtime
+      labels:
+        - runtime
+        - streaming
+    - title: Adapters
+      labels:
+        - adapters
+        - providers
+    - title: Demos and Docs
+      labels:
+        - documentation
+        - demo
+    - title: Tooling and Release
+      labels:
+        - tooling
+        - release

@@ -5,6 +5,7 @@
 - Added npm and GitHub Packages links to the public README surface.
 - Added release badges and quick links to make the repository homepage read more like a polished package landing page.
 - Added GitHub Actions workflows for release validation and GitHub Packages publishing, including version and changelog checks before publication.
+- Added contributor-facing project hygiene files, including contributing guidance, security policy, issue templates, a pull request template, and structured GitHub release note categories.
 
 ## 0.7.1 - 2026-05-02
 

@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an improvement that sharpens Qore's streaming-response story
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What limitation are you hitting today?
+      placeholder: It is hard to coordinate...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What would you like Qore to do?
+      placeholder: Introduce a helper that...
+    validations:
+      required: true
+  - type: textarea
+    id: fit
+    attributes:
+      label: Why this fits Qore
+      description: Explain how the idea supports the stream = signal model.
+      placeholder: This improves the core streaming response story by...
+    validations:
+      required: true

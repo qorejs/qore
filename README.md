@@ -5,7 +5,7 @@
 [![publish github packages](https://github.com/qorejs/qore/actions/workflows/publish-github-packages.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/publish-github-packages.yml)
 [![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?logo=github)](https://github.com/qorejs/qore/packages)
 [![node >= 18](https://img.shields.io/badge/node-%3E%3D18-1f6feb)](https://nodejs.org/)
-[![license: MIT](https://img.shields.io/badge/license-MIT-0f766e)](./LICENSE)
+[![license: MIT](https://img.shields.io/badge/license-MIT-0f766e)](https://github.com/qorejs/qore/blob/main/LICENSE)
 
 Qore is a streaming-response framework where `stream = signal`.
 
@@ -18,6 +18,8 @@ Quick links:
 - [landing page source](https://github.com/qorejs/qore/blob/main/index.html)
 - [streaming demo source](https://github.com/qorejs/qore/blob/main/examples/streaming-response.html)
 - [release workflow](https://github.com/qorejs/qore/actions/workflows/release-check.yml)
+- [contributing guide](https://github.com/qorejs/qore/blob/main/CONTRIBUTING.md)
+- [security policy](https://github.com/qorejs/qore/blob/main/SECURITY.md)
 
 ## Installation
 
@@ -240,6 +242,16 @@ The repository includes GitHub Actions workflows for both release validation and
 - GitHub Packages starts new packages as private by default, so you may want to switch the package visibility to public after the first publish
 
 Because the package already includes the correct `repository` field in `package.json`, GitHub Packages can link the package back to `qorejs/qore` when the workflow publishes it.
+
+## Project Hygiene
+
+The repository also includes:
+
+- `CONTRIBUTING.md` for contributor expectations and release flow
+- `SECURITY.md` for responsible disclosure
+- issue templates for bugs and feature requests
+- a pull request template
+- `.github/release.yml` to keep GitHub release notes structured
 
 ## Package Boundary
 

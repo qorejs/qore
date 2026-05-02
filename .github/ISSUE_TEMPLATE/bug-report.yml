@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a runtime, adapter, or demo bug in Qore
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Qore. Please include enough detail for us to reproduce the issue.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+      placeholder: stream.withBackpressure drops chunks unexpectedly when...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Share a minimal reproduction, code sample, or steps.
+      placeholder: |
+        1. Create a stream with...
+        2. Render it with...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: The stream should preserve...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Qore version
+      placeholder: 0.7.1
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime
+      placeholder: Node 20, browser, Bun, etc.
