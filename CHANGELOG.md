@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a reproducible browser benchmark, a dedicated benchmark page, and homepage benchmark surfaces that compare Qore against a snapshot rerender baseline.
 - Added npm and GitHub Packages links to the public README surface.
 - Added release badges and quick links to make the repository homepage read more like a polished package landing page.
 - Added GitHub Actions workflows for release validation and GitHub Packages publishing, including version and changelog checks before publication.

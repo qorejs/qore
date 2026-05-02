@@ -17,6 +17,7 @@ Quick links:
 - [GitHub Packages](https://github.com/qorejs/qore/packages)
 - [landing page source](https://github.com/qorejs/qore/blob/main/index.html)
 - [streaming demo source](https://github.com/qorejs/qore/blob/main/examples/streaming-response.html)
+- [benchmark page](https://github.com/qorejs/qore/blob/main/examples/benchmark.html)
 - [release workflow](https://github.com/qorejs/qore/actions/workflows/release-check.yml)
 - [contributing guide](https://github.com/qorejs/qore/blob/main/CONTRIBUTING.md)
 - [security policy](https://github.com/qorejs/qore/blob/main/SECURITY.md)
@@ -215,6 +216,9 @@ The repository includes a landing page and a focused streaming demo:
 - [Landing Page Source](https://github.com/qorejs/qore/blob/main/index.html)
 - [Homepage Logic](https://github.com/qorejs/qore/blob/main/examples/showcase.js)
 - [Homepage Styles](https://github.com/qorejs/qore/blob/main/examples/showcase.css)
+- [Benchmark Page](https://github.com/qorejs/qore/blob/main/examples/benchmark.html)
+- [Benchmark Logic](https://github.com/qorejs/qore/blob/main/examples/benchmark-page.js)
+- [Benchmark Core](https://github.com/qorejs/qore/blob/main/examples/benchmark-core.js)
 - [Focused Demo](https://github.com/qorejs/qore/blob/main/examples/streaming-response.html)
 - [Focused Chat Logic](https://github.com/qorejs/qore/blob/main/examples/qore-chat.js)
 - [React Compare](https://github.com/qorejs/qore/blob/main/examples/react-chat.jsx)
@@ -228,6 +232,15 @@ python3 -m http.server 4173
 ```
 
 Then open [http://127.0.0.1:4173/](http://127.0.0.1:4173/).
+
+## Benchmark Methodology
+
+Qore now includes a reproducible browser benchmark that compares two rendering paths against the same workload:
+
+- `Qore stream = signal`: mount the transcript shell once and advance the same live text node as chunks arrive
+- `Snapshot rerender baseline`: rebuild the transcript shell from a snapshot string on every chunk
+
+Both paths use the same transcript history, the same chunk list, and the same final answer text. The benchmark reports first paint time, mutation records, node churn, and regenerated markup so the difference is visible instead of rhetorical.
 
 ## GitHub Packages
 

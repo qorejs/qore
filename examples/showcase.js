@@ -1,10 +1,13 @@
 import { createApp, computed, effect, h, list, show, signal, stream, text } from '../src/index.js';
+import { benchmarkScenario, runBenchmarkSuite } from './benchmark-core.js';
 import { renderMarkdown } from './render-markdown.js';
 
 // Slice demo copy into small chunks so the homepage can visibly stream.
 const chunkText = (value) => value.match(/```|`[^`]*`|\*\*[^*]+\*\*|\n|[^\s]{1,5}\s?/g) ?? [value];
 const escapeHtml = (value = '') => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const lineCount = (value) => value.trim().split('\n').length;
+const formatMs = (value) => `${value.toFixed(value >= 10 ? 1 : 2)} ms`;
+const formatCount = (value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(Math.round(value));
 
 // Keep the homepage demo short, punchy, and immediately clickable.
 const presets = [
@@ -96,12 +99,41 @@ function CompareCard({ title, badge, code, note }) {
   );
 }
 
+function BenchmarkCard({ result, leader }) {
+  return h('article', { className: () => ['benchmark-card', { leader }] },
+    h('div', { className: 'compare-head' },
+      h('div', null,
+        h('span', { className: 'card-kicker' }, leader ? 'Winner' : 'Reference'),
+        h('strong', null, result.label)
+      ),
+      h('span', null, text(() => `${formatMs(result.averageDurationMs)}`))
+    ),
+    h('p', { className: 'compare-note' }, result.description),
+    h('div', { className: 'stats-grid benchmark-stats' },
+      Stat({ label: 'first paint', value: () => formatMs(result.averageFirstMutationMs), tone: leader ? 'live' : 'default' }),
+      Stat({ label: 'records', value: () => formatCount(result.averageMutationRecords) }),
+      Stat({ label: 'char data', value: () => formatCount(result.averageCharacterDataMutations) }),
+      Stat({ label: 'added', value: () => formatCount(result.averageAddedNodes), tone: result.averageAddedNodes > 0 ? 'warm' : 'default' }),
+      Stat({ label: 'removed', value: () => formatCount(result.averageRemovedNodes), tone: result.averageRemovedNodes > 0 ? 'warm' : 'default' }),
+      Stat({ label: 'html bytes', value: () => formatCount(result.averageRewrittenBytes) })
+    )
+  );
+}
+
 createApp(() => {
   const draft = signal(presets[0]);
   const selectedPrompt = signal(presets[0]);
   const runCount = signal(0);
   const signalPushes = signal(0);
   const selectedCompare = signal('qore');
+  const benchmarkState = signal('idle');
+  const benchmarkResults = signal([]);
+  const benchmarkMeta = signal({
+    ...benchmarkScenario,
+    methodology: 'Same transcript, same chunks, same final text.'
+  });
+  const benchmarkError = signal('');
+  const benchmarkRuns = signal(0);
   const messages = signal([
     {
       role: 'assistant',
@@ -178,6 +210,32 @@ createApp(() => {
     return response ? response.chunks().slice(-16) : [];
   });
 
+  const benchmarkLeader = computed(() => {
+    const [first] = [...benchmarkResults()].sort((left, right) => left.averageDurationMs - right.averageDurationMs);
+    return first ? first.id : null;
+  });
+
+  const benchmarkHeadline = computed(() => {
+    const results = benchmarkResults();
+
+    if (results.length < 2) {
+      return 'Run the benchmark to compare a fine-grained streaming path against a snapshot rerender loop.';
+    }
+
+    const qoreResult = results.find((entry) => entry.id === 'qore');
+    const snapshotResult = results.find((entry) => entry.id === 'snapshot');
+
+    if (!qoreResult || !snapshotResult) {
+      return 'The benchmark compares two rendering strategies over the same transcript workload.';
+    }
+
+    const durationRatio = snapshotResult.averageDurationMs / qoreResult.averageDurationMs;
+    const savedNodes = snapshotResult.averageAddedNodes - qoreResult.averageAddedNodes;
+    const savedMarkup = snapshotResult.averageRewrittenBytes;
+
+    return `同一份 transcript 下，Qore 平均快 ${durationRatio.toFixed(1)}x，少重建约 ${formatCount(savedNodes)} 个节点，并且避免重写约 ${formatCount(savedMarkup)} 字节的 markup。`;
+  });
+
   const runPrompt = (prompt = draft().trim() || presets[0]) => {
     const textValue = prompt.trim();
 
@@ -199,8 +257,33 @@ createApp(() => {
     ]);
   };
 
+  const runBenchmark = async () => {
+    if (benchmarkState() === 'running') {
+      return;
+    }
+
+    benchmarkState('running');
+    benchmarkError('');
+
+    try {
+      const suite = await runBenchmarkSuite();
+      benchmarkMeta(suite.meta);
+      benchmarkResults(suite.results);
+      benchmarkRuns.update((count) => count + 1);
+      benchmarkState('ready');
+    } catch (error) {
+      benchmarkError(error instanceof Error ? error.message : String(error));
+      benchmarkState('error');
+    }
+  };
+
   return {
-    onMount: () => runPrompt(selectedPrompt.peek()),
+    onMount: () => {
+      runPrompt(selectedPrompt.peek());
+      setTimeout(() => {
+        void runBenchmark();
+      }, 160);
+    },
     // Keep the homepage compact: one headline, one proof, one compare, one closing push.
     view: () => h('main', { className: 'site' },
       h('header', { className: 'nav' },
@@ -214,6 +297,7 @@ createApp(() => {
         h('nav', { className: 'nav-links' },
           h('a', { className: 'nav-link', href: '#demo' }, 'Demo'),
           h('a', { className: 'nav-link', href: '#compare' }, 'Compare'),
+          h('a', { className: 'nav-link', href: '#benchmark' }, 'Benchmark'),
           h('a', { className: 'nav-link', href: './examples/streaming-response.html' }, 'Focused Demo')
         )
       ),
@@ -400,9 +484,51 @@ createApp(() => {
             ),
             h('p', { className: 'closing-line' }, 'Qore 的官网不需要说很多。看一眼，点一下，流起来，就明白了。'),
             h('div', { className: 'footer-actions' },
+              h('a', { className: 'ghost-link', href: '#benchmark' }, 'See Benchmark'),
               h('a', { className: 'ghost-link', href: './examples/streaming-response.html' }, 'Open Focused Demo'),
               h('a', { className: 'ghost-link', href: './examples/react-chat.jsx' }, 'View React Compare')
             )
+          )
+        )
+      ),
+      h('section', { className: 'benchmark-strip', id: 'benchmark' },
+        h('div', { className: 'section-head compact' },
+          h('span', { className: 'section-kicker' }, 'Benchmark'),
+          h('h2', null, '不是口号，是一套可复现的 DOM churn 对照'),
+          h('p', null, '同一份 transcript、同一串 chunk、同样的最终文本。我们只换“UI 怎么接收 token”这一件事。')
+        ),
+        h('div', { className: 'benchmark-meta' },
+          h('span', { className: 'mini-pill subtle' }, text(() => `${benchmarkMeta().historicalMessages} history messages`)),
+          h('span', { className: 'mini-pill subtle' }, text(() => `${benchmarkMeta().chunkCount} chunks`)),
+          h('span', { className: 'mini-pill subtle' }, text(() => `${benchmarkMeta().sampleCount} samples`)),
+          h('span', { className: 'mini-pill subtle' }, text(() => `run ${benchmarkRuns()}`))
+        ),
+        h('div', { className: 'benchmark-actions' },
+          h('button', {
+            className: 'solid-link benchmark-button',
+            onclick: () => {
+              void runBenchmark();
+            },
+            disabled: () => benchmarkState() === 'running'
+          }, text(() => benchmarkState() === 'running' ? 'Running…' : benchmarkRuns() > 0 ? 'Run Again' : 'Run Benchmark')),
+          h('a', { className: 'ghost-link', href: './examples/benchmark.html' }, 'Open Dedicated Benchmark')
+        ),
+        h('article', { className: 'benchmark-callout' },
+          h('span', { className: 'card-kicker' }, 'Methodology'),
+          h('p', null, text(() => benchmarkMeta().methodology)),
+          h('strong', null, text(() => benchmarkHeadline()))
+        ),
+        show(() => benchmarkState() === 'error',
+          () => h('article', { className: 'panel benchmark-error' }, benchmarkError())
+        ),
+        show(() => benchmarkResults().length > 0,
+          () => h('div', { className: 'benchmark-grid' },
+            list(() => benchmarkResults(), (result) => BenchmarkCard({ result, leader: benchmarkLeader() === result.id }))
+          ),
+          () => h('article', { className: 'panel benchmark-placeholder' },
+            h('span', { className: 'card-kicker' }, 'Warm up'),
+            h('p', null, 'Benchmark 会在页面加载后自动跑一次，也可以随时手动重跑。'),
+            h('p', { className: 'compare-note' }, '它现在对比的是 Qore 的细粒度流路径和一个 snapshot-first transcript rerender baseline。')
           )
         )
       )
