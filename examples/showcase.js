@@ -231,9 +231,9 @@ createApp(() => {
             h('a', { className: 'ghost-link', href: './README.md' }, 'Read README')
           ),
           h('div', { className: 'feature-row' },
-            h('span', { className: 'feature-pill' }, 'multi-turn'),
-            h('span', { className: 'feature-pill' }, 'markdown'),
-            h('span', { className: 'feature-pill' }, 'code'),
+            h('span', { className: 'feature-pill' }, 'openai'),
+            h('span', { className: 'feature-pill' }, 'anthropic'),
+            h('span', { className: 'feature-pill' }, 'generic sse'),
             h('span', { className: 'feature-pill' }, 'backpressure')
           )
         ),
@@ -256,7 +256,7 @@ createApp(() => {
               h('span', { className: 'mini-pill' }, text(() => `${chunks()} chunks`)),
               h('span', { className: 'mini-pill' }, text(() => `${signalPushes()} pushes`))
             ),
-            h('p', { className: 'hero-note' }, '同一条流，同时驱动聊天、Markdown 和纯文本镜像。')
+            h('p', { className: 'hero-note' }, '同一个 shape，现在可以接 OpenAI、Anthropic，或者任何会吐 SSE 的后端。')
           )
         )
       ),

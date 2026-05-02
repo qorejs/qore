@@ -1,23 +1,54 @@
 {
   "name": "@qorejs/qore",
-  "version": "0.1.0",
-  "description": "Qore is a streaming-first reactive framework.",
+  "version": "0.7.0",
+  "description": "Qore is a streaming-response framework where stream becomes signal.",
   "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    },
+    "./package.json": "./package.json"
   },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "release:check": "npm test && npm pack --dry-run",
+    "prepublishOnly": "npm run release:check"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=18.0.0"
   },
   "keywords": [
     "qore",
+    "stream",
     "streaming",
+    "signal",
     "reactive",
+    "sse",
+    "ai",
+    "openai",
+    "anthropic",
     "framework",
     "async-iterable"
   ],
+  "homepage": "https://github.com/qorejs/qore#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qorejs/qore.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qorejs/qore/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT"
 }

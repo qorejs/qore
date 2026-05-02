@@ -4,5 +4,7 @@ export { stream, createStream, from, mapStream, scanStream, toAsyncIterable } fr
 export { createResponse, response } from './response.js';
 export { createApp } from './app.js';
 export { dynamic, fragment, h, list, mount, renderResponse, show, text } from './dom.js';
+export { createAnthropic } from './anthropic.js';
 export { createOpenAI } from './openai.js';
+export { createSSEAdapter } from './sse.js';
 export { normalizeError, sleep } from './utils.js';

@@ -1,10 +1,12 @@
 import { createSSEAdapter, readEnv } from './sse.js';
 
-const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
-const DEFAULT_MODEL = 'gpt-5';
+const DEFAULT_BASE_URL = 'https://api.anthropic.com/v1';
+const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
+const DEFAULT_VERSION = '2023-06-01';
+const DEFAULT_MAX_TOKENS = 1024;
 
-// Treat plain chat text as one user message so callers can start from a single string.
-function normalizeChatInput(input) {
+// Normalize single-string prompts into Anthropic's Messages API shape.
+function normalizeMessages(input) {
   if (typeof input === 'string') {
     return [{ role: 'user', content: input }];
   }
@@ -21,26 +23,29 @@ function normalizeChatInput(input) {
 }
 
 // Keep provider setup explicit because real API keys should stay off the client.
-export function createOpenAI(options = {}) {
+export function createAnthropic(options = {}) {
   const {
     apiKey,
     baseURL = DEFAULT_BASE_URL,
     model = DEFAULT_MODEL,
+    version = DEFAULT_VERSION,
+    maxTokens = DEFAULT_MAX_TOKENS,
     headers: defaultHeaders = {},
     fetch: fetchImpl = globalThis.fetch
   } = options;
-  const resolvedApiKey = apiKey ?? readEnv('OPENAI_API_KEY');
+  const resolvedApiKey = apiKey ?? readEnv('ANTHROPIC_API_KEY');
 
   if (!resolvedApiKey) {
-    throw new Error('Qore OpenAI adapter requires an API key. Pass apiKey or set OPENAI_API_KEY.');
+    throw new Error('Qore Anthropic adapter requires an API key. Pass apiKey or set ANTHROPIC_API_KEY.');
   }
 
   const transport = createSSEAdapter({
-    name: 'OpenAI',
-    url: `${baseURL}/responses`,
+    name: 'Anthropic',
+    url: `${baseURL}/messages`,
     headers: {
-      Authorization: `Bearer ${resolvedApiKey}`,
-      'Content-Type': 'application/json',
+      'content-type': 'application/json',
+      'anthropic-version': version,
+      'x-api-key': resolvedApiKey,
       ...defaultHeaders
     },
     fetch: fetchImpl,
@@ -53,6 +58,7 @@ export function createOpenAI(options = {}) {
         headers,
         body: JSON.stringify({
           model,
+          max_tokens: maxTokens,
           stream: true,
           ...request,
           ...overrides
@@ -61,9 +67,13 @@ export function createOpenAI(options = {}) {
     },
     parse: JSON.parse,
     isError: (event) => event.data?.type === 'error',
-    getError: (event) => event.data?.error?.message ?? 'OpenAI streaming error',
-    eventToText: (event) => event.data?.type === 'response.output_text.delta' && typeof event.data.delta === 'string'
-      ? event.data.delta
+    getError: (event) => event.data?.error?.message ?? 'Anthropic streaming error',
+    eventToText: (event) => (
+      event.data?.type === 'content_block_delta'
+      && event.data.delta?.type === 'text_delta'
+      && typeof event.data.delta.text === 'string'
+    )
+      ? event.data.delta.text
       : undefined
   });
 
@@ -73,10 +83,10 @@ export function createOpenAI(options = {}) {
     }
   }
 
-  async function* streamText(input, requestOptions = {}) {
-    const request = input && typeof input === 'object' && 'input' in input
-      ? input
-      : { input };
+  async function* streamText(messages, requestOptions = {}) {
+    const request = messages && typeof messages === 'object' && 'messages' in messages
+      ? messages
+      : { messages };
 
     for await (const chunk of transport.streamText(request, requestOptions)) {
       yield chunk;
@@ -84,17 +94,17 @@ export function createOpenAI(options = {}) {
   }
 
   return {
-    // Stream typed semantic events from the Responses API.
-    responses: {
+    // Stream typed semantic events from the Messages API.
+    messages: {
       stream: streamEvents
     },
 
-    // Stream only text deltas for the common chat-response case.
-    streamText(input, requestOptions = {}) {
-      return streamText(input, requestOptions);
+    // Stream only text delta chunks from assistant content blocks.
+    streamText(messages, requestOptions = {}) {
+      return streamText(messages, requestOptions);
     },
 
-    // Match the Qore narrative directly: stream(openai.chat(prompt)).
+    // Match the Qore narrative directly: stream(anthropic.chat(prompt)).
     chat(input, requestOptions = {}) {
       const {
         signal,
@@ -102,8 +112,8 @@ export function createOpenAI(options = {}) {
         ...request
       } = requestOptions;
 
-      if (!('input' in request)) {
-        request.input = normalizeChatInput(input);
+      if (!('messages' in request)) {
+        request.messages = normalizeMessages(input);
       }
 
       return streamText(request, { signal, headers });
