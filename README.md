@@ -214,20 +214,38 @@ If your goal is to pipe a stream directly into the UI, prefer `stream(...)`.
 The repository includes a landing page and a focused streaming demo:
 
 - [Landing Page Source](https://github.com/qorejs/qore/blob/main/index.html)
-- [Homepage Logic](https://github.com/qorejs/qore/blob/main/examples/showcase.js)
+- [Homepage Logic](https://github.com/qorejs/qore/blob/main/examples/showcase.ts)
 - [Homepage Styles](https://github.com/qorejs/qore/blob/main/examples/showcase.css)
 - [Benchmark Page](https://github.com/qorejs/qore/blob/main/examples/benchmark.html)
-- [Benchmark Logic](https://github.com/qorejs/qore/blob/main/examples/benchmark-page.js)
-- [Benchmark Core](https://github.com/qorejs/qore/blob/main/examples/benchmark-core.js)
+- [Benchmark Logic](https://github.com/qorejs/qore/blob/main/examples/benchmark-page.ts)
+- [Benchmark Core](https://github.com/qorejs/qore/blob/main/examples/benchmark-core.ts)
 - [Focused Demo](https://github.com/qorejs/qore/blob/main/examples/streaming-response.html)
-- [Focused Chat Logic](https://github.com/qorejs/qore/blob/main/examples/qore-chat.js)
-- [React Compare](https://github.com/qorejs/qore/blob/main/examples/react-chat.jsx)
+- [Focused Chat Logic](https://github.com/qorejs/qore/blob/main/examples/qore-chat.ts)
+- [React Compare](https://github.com/qorejs/qore/blob/main/examples/react-chat.ts)
+
+## Project Layout
+
+```text
+src/
+  core/       stream, signal, response, iterable
+  dom/        app mounting and DOM bindings
+  providers/  OpenAI, Anthropic, generic SSE adapters
+  shared/     runtime utilities
+  index.ts    public entrypoint
+
+dist/
+  src/        compiled package output
+  examples/   built showcase scripts for local preview
+  test/       compiled test output
+```
 
 For a local preview:
 
 ```bash
 git clone git@github.com:qorejs/qore.git
 cd qore
+npm install
+npm run build
 python3 -m http.server 4173
 ```
 

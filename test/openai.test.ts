@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createOpenAI } from '../src/openai.js';
+import { createOpenAI } from '../src/index.js';
 
 const encoder = new TextEncoder();
 

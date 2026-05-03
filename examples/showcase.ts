@@ -487,7 +487,7 @@ createApp(() => {
             h('div', { className: 'footer-actions' },
               h('a', { className: 'ghost-link', href: '#benchmark' }, 'See Benchmark'),
               h('a', { className: 'ghost-link', href: './examples/streaming-response.html' }, 'Open Focused Demo'),
-              h('a', { className: 'ghost-link', href: './examples/react-chat.jsx' }, 'View React Compare')
+              h('a', { className: 'ghost-link', href: './examples/react-chat.ts' }, 'View React Compare')
             )
           )
         )

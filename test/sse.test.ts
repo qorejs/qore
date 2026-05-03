@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createSSEAdapter } from '../src/sse.js';
+import { createSSEAdapter } from '../src/index.js';
 
 const encoder = new TextEncoder();
 

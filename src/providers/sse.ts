@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { normalizeError } from './utils.js';
+import { normalizeError } from '../shared/utils.js';
 
 // Read environment variables without assuming a Node-only runtime.
 export function readEnv(name) {

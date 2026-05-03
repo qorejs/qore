@@ -121,7 +121,7 @@ createApp(() => {
               },
               disabled: () => status() === 'running'
             }, text(() => status() === 'running' ? 'Running…' : 'Run Again')),
-            h('a', { className: 'ghost-link', href: 'https://github.com/qorejs/qore/blob/main/examples/benchmark-core.js' }, 'View Methodology')
+            h('a', { className: 'ghost-link', href: 'https://github.com/qorejs/qore/blob/main/examples/benchmark-core.ts' }, 'View Methodology')
           )
         ),
         h('article', { className: 'panel benchmark-callout' },

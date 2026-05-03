@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { effect, isSignal } from './signal.js';
+import { effect, isSignal } from '../core/signal.js';
 
 // Store mount cleanup directly on the root node so remounts can tear down old scopes.
 const ROOT_CLEANUP = Symbol('qore.dom.cleanup');

@@ -3,26 +3,26 @@
   "version": "0.7.1",
   "description": "Qore is a streaming-response framework where stream becomes signal.",
   "type": "module",
-  "main": "./src/index.js",
-  "types": "./src/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "import": "./src/index.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
     "./package.json": "./package.json"
   },
   "files": [
-    "src",
+    "dist/src",
     "README.md",
     "LICENSE"
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/*.test.js",
-    "release:check": "npm test && npm pack --dry-run",
+    "build": "node ./scripts/build.mjs",
+    "typecheck": "node ./scripts/typecheck.mjs",
+    "test": "node ./scripts/test.mjs",
+    "release:check": "node ./scripts/release-check.mjs",
     "publish:github": "npm publish --registry=https://npm.pkg.github.com",
     "publish:npm": "npm publish --access public",
     "prepublishOnly": "npm run release:check"

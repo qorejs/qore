@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAnthropic } from '../src/anthropic.js';
+import { createAnthropic } from '../src/index.js';
 
 const encoder = new TextEncoder();
 

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { batch, computed, signal } from './signal.js';
 import { toAsyncIterable } from './iterable.js';
-import { normalizeError } from './utils.js';
+import { normalizeError } from '../shared/utils.js';
 
 // Treat these states as closed so late writes cannot mutate a finished response.
 function isTerminalStatus(currentStatus) {

@@ -2,7 +2,7 @@
 import { createResponse } from './response.js';
 import { signal } from './signal.js';
 import { toAsyncIterable } from './iterable.js';
-import { normalizeError, sleep } from './utils.js';
+import { normalizeError, sleep } from '../shared/utils.js';
 
 // Bridge producer pushes and async iteration with a minimal internal queue.
 class AsyncQueue {

@@ -9,9 +9,9 @@ import {
   show,
   text
 } from './dom.js';
-import { batch, computed, effect, signal, untrack } from './signal.js';
-import { response } from './response.js';
-import { from, mapStream, scanStream, stream } from './stream.js';
+import { batch, computed, effect, signal, untrack } from '../core/signal.js';
+import { response } from '../core/response.js';
+import { from, mapStream, scanStream, stream } from '../core/stream.js';
 
 // Resolve a CSS selector or direct node into the root mount target.
 function resolveTarget(target) {

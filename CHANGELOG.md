@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Reorganized the source tree into `core`, `dom`, `providers`, and `shared` domains so the framework layout matches its runtime responsibilities.
+- Moved compiled JavaScript out of `src` and into `dist`, keeping the source tree TypeScript-first and the published package focused on `dist/src`.
+- Reworked the local build, test, and release scripts so they no longer depend on nested `npm` calls and remain stable in lean shell environments.
 - Added a reproducible browser benchmark, a dedicated benchmark page, and homepage benchmark surfaces that compare Qore against a snapshot rerender baseline.
 - Added npm and GitHub Packages links to the public README surface.
 - Added release badges and quick links to make the repository homepage read more like a polished package landing page.

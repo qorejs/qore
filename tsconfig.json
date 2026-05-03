@@ -13,7 +13,9 @@
     "moduleDetection": "force",
     "types": ["node"],
     "forceConsistentCasingInFileNames": true,
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "rootDir": ".",
+    "outDir": "dist"
   },
   "include": [
     "src/**/*.ts",
