@@ -1,13 +1,29 @@
-// @ts-nocheck
 import { batch } from './signal.js';
 import { toAsyncIterable } from './iterable.js';
 import { createResponseState, isTerminalStatus } from './response-state.js';
+import type {
+  CreateResponseOptions,
+  ResponseExecutorContext,
+  ResponseRunOptions,
+  ResponseSnapshot,
+  ResponseSource,
+  ResponseSourceFactory,
+  ResponseState
+} from './response-types.js';
 import { normalizeError } from '../shared/utils.js';
 
+function isResponseSourceFactory<TChunk, TValue>(
+  source: ResponseSource<TChunk, TValue>
+): source is ResponseSourceFactory<TChunk, TValue> {
+  return typeof source === 'function'
+    && typeof source[Symbol.asyncIterator] !== 'function'
+    && typeof (source as { peek?: unknown }).peek !== 'function';
+}
+
 // Build a response state machine that accumulates chunks into a reactive value.
-export function createResponse(options) {
+export function createResponse<TChunk, TValue>(options: CreateResponseOptions<TChunk, TValue>): ResponseState<TChunk, TValue> {
   const { seed, reduce } = options;
-  const state = createResponseState(seed);
+  const state = createResponseState<TChunk, TValue>(seed);
   const {
     status,
     value,
@@ -23,11 +39,12 @@ export function createResponse(options) {
     chunkCount
   } = state;
 
-  let activeController = null;
+  let activeController: AbortController | null = null;
   let runId = 0;
+  let api!: ResponseState<TChunk, TValue>;
 
   // Abort the active executor when a new run supersedes it.
-  function supersedeActiveRun(reason = 'Response superseded by a new run') {
+  function supersedeActiveRun(reason = 'Response superseded by a new run'): void {
     if (!activeController) {
       return;
     }
@@ -37,7 +54,7 @@ export function createResponse(options) {
   }
 
   // Reset the response to its initial seed and clear all lifecycle markers.
-  function reset(nextSeed = seed) {
+  function reset(nextSeed: TValue = seed): TValue {
     supersedeActiveRun('Response reset');
 
     batch(() => {
@@ -53,7 +70,7 @@ export function createResponse(options) {
   }
 
   // Push a chunk through the reducer and advance the response into streaming state.
-  function push(chunk) {
+  function push(chunk: TChunk): TValue {
     const currentStatus = status.peek();
 
     if (isTerminalStatus(currentStatus)) {
@@ -76,7 +93,7 @@ export function createResponse(options) {
   }
 
   // Mark the response as completed and freeze the current accumulated value.
-  function complete() {
+  function complete(): TValue {
     const currentStatus = status.peek();
 
     if (isTerminalStatus(currentStatus)) {
@@ -94,7 +111,7 @@ export function createResponse(options) {
   }
 
   // Capture an error unless the response is already closed.
-  function fail(reason) {
+  function fail(reason: unknown): Error | TValue {
     const currentStatus = status.peek();
     const normalizedError = normalizeError(reason);
 
@@ -114,7 +131,7 @@ export function createResponse(options) {
   }
 
   // Abort an in-flight response while keeping the value accumulated so far.
-  function abort(reason = 'Response aborted') {
+  function abort(reason: unknown = 'Response aborted'): TValue {
     const currentStatus = status.peek();
 
     if (currentStatus !== 'pending' && currentStatus !== 'streaming') {
@@ -133,7 +150,10 @@ export function createResponse(options) {
   }
 
   // Run an async executor and guard every lifecycle method to the active run only.
-  async function run(executor, options = {}) {
+  async function run(
+    executor: (context: ResponseExecutorContext<TChunk, TValue>) => unknown | Promise<unknown>,
+    options: ResponseRunOptions<TValue> = {}
+  ): Promise<TValue> {
     const { resetValue = true, nextSeed = seed } = options;
 
     supersedeActiveRun();
@@ -164,7 +184,7 @@ export function createResponse(options) {
     });
 
     // Expose guarded lifecycle helpers so stale executors cannot leak writes into the latest run.
-    const context = {
+    const context: ResponseExecutorContext<TChunk, TValue> = {
       get signal() {
         return controller.signal;
       },
@@ -222,11 +242,12 @@ export function createResponse(options) {
   }
 
   // Consume any async iterable-like source and route each chunk through the guarded writer.
-  async function consume(source, options = {}) {
+  async function consume(
+    source: ResponseSource<TChunk, TValue>,
+    options: ResponseRunOptions<TValue> = {}
+  ): Promise<TValue> {
     return run(async ({ signal: abortSignal, push: write }) => {
-      const resolvedSource = typeof source === 'function'
-        && typeof source[Symbol.asyncIterator] !== 'function'
-        && typeof source.peek !== 'function'
+      const resolvedSource = isResponseSourceFactory(source)
         ? await source({ signal: abortSignal, response: api })
         : await source;
 
@@ -241,7 +262,7 @@ export function createResponse(options) {
   }
 
   // Return a plain snapshot suitable for inspection without exposing mutable internals.
-  function snapshot() {
+  function snapshot(): ResponseSnapshot<TChunk, TValue> {
     return {
       status: status.peek(),
       value: value.peek(),
@@ -253,7 +274,7 @@ export function createResponse(options) {
     };
   }
 
-  const api = {
+  api = {
     status,
     value,
     error,

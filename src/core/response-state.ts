@@ -1,19 +1,19 @@
-// @ts-nocheck
 import { computed, signal } from './signal.js';
+import type { ResponseReactiveState, ResponseStatus } from './response-types.js';
 
 // Treat these states as closed so late writes cannot mutate a finished response.
-export function isTerminalStatus(currentStatus) {
+export function isTerminalStatus(currentStatus: ResponseStatus): boolean {
   return currentStatus === 'completed' || currentStatus === 'error' || currentStatus === 'aborted';
 }
 
 // Create the reactive state bundle that powers a response lifecycle.
-export function createResponseState(seed) {
-  const status = signal('idle');
+export function createResponseState<TChunk, TValue>(seed: TValue): ResponseReactiveState<TChunk, TValue> {
+  const status = signal<ResponseStatus>('idle');
   const value = signal(seed);
-  const error = signal(null);
-  const chunks = signal([]);
-  const startedAt = signal(null);
-  const finishedAt = signal(null);
+  const error = signal<Error | null>(null);
+  const chunks = signal<TChunk[]>([]);
+  const startedAt = signal<number | null>(null);
+  const finishedAt = signal<number | null>(null);
 
   const pending = computed(() => {
     const currentStatus = status();

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -22,7 +21,7 @@ test('text response accumulates chunks and closes as completed', async () => {
 
 // A response should be able to consume a stream without flattening structured chunks.
 test('response can consume any async iterable stream', async () => {
-  const answer = response.list();
+  const answer = response.list<{ step: number }>();
 
   await answer.consume(stream(async ({ push }) => {
     push({ step: 1 });
@@ -74,10 +73,10 @@ test('a new run supersedes the previous one', async () => {
 // Even stale executors should be prevented from leaking late writes into the latest run.
 test('superseded runs cannot leak stale chunks into the latest response', async () => {
   const answer = response.text();
-  let releaseFirstRun;
+  let releaseFirstRun!: () => void;
 
   const firstRun = answer.run(async ({ push }) => {
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       releaseFirstRun = () => {
         push('stale');
         resolve();
@@ -116,7 +115,7 @@ test('fail cannot override a completed response', () => {
 
 // Snapshots should be safe to inspect without exposing the live internal chunk array.
 test('snapshot returns a defensive copy of chunks', () => {
-  const answer = response.list();
+  const answer = response.list<{ step: number }>();
 
   answer.push({ step: 1 });
 
@@ -125,4 +124,28 @@ test('snapshot returns a defensive copy of chunks', () => {
 
   assert.deepEqual(answer.chunks(), [{ step: 1 }]);
   assert.equal(answer.chunkCount(), 1);
+});
+
+// Reset should clear lifecycle markers and supersede any in-flight executor.
+test('reset clears response lifecycle state and supersedes the active run', async () => {
+  const answer = response.text();
+
+  const run = answer.run(async ({ push, signal }) => {
+    push('stream');
+    await sleep(50, signal);
+    push('ing');
+  });
+
+  await sleep(10);
+  const resetValue = answer.reset('fresh');
+  const settled = await run;
+
+  assert.equal(resetValue, 'fresh');
+  assert.equal(settled, 'fresh');
+  assert.equal(answer.status(), 'idle');
+  assert.equal(answer.value(), 'fresh');
+  assert.deepEqual(answer.chunks(), []);
+  assert.equal(answer.startedAt(), null);
+  assert.equal(answer.finishedAt(), null);
+  assert.equal(answer.error(), null);
 });
