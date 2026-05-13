@@ -1,20 +1,21 @@
-// @ts-nocheck
+import type { ReactiveObserver } from './signal-types.js';
+
 // Use a sentinel so signals can still store undefined as a real value.
 export const READ = Symbol('qore.signal.read');
 
-let activeObserver = null;
+let activeObserver: ReactiveObserver | null = null;
 let batchDepth = 0;
-const pendingObservers = new Set();
+const pendingObservers = new Set<ReactiveObserver>();
 
-export function getActiveObserver() {
+export function getActiveObserver(): ReactiveObserver | null {
   return activeObserver;
 }
 
-export function setActiveObserver(observer) {
+export function setActiveObserver(observer: ReactiveObserver | null): void {
   activeObserver = observer;
 }
 
-export function withActiveObserver(observer, fn) {
+export function withActiveObserver<T>(observer: ReactiveObserver | null, fn: () => T): T {
   const previousObserver = activeObserver;
   activeObserver = observer;
 
@@ -26,7 +27,7 @@ export function withActiveObserver(observer, fn) {
 }
 
 // Remove this observer from every dependency it tracked during the last run.
-export function cleanupObserver(observer) {
+export function cleanupObserver(observer: ReactiveObserver): void {
   for (const dep of observer.deps) {
     dep.subscribers.delete(observer);
   }
@@ -35,7 +36,7 @@ export function cleanupObserver(observer) {
 }
 
 // Queue observer work during batching, otherwise notify immediately.
-export function scheduleObserver(observer) {
+export function scheduleObserver(observer: ReactiveObserver): void {
   if (!observer.active) {
     return;
   }
@@ -48,12 +49,12 @@ export function scheduleObserver(observer) {
   observer.notify();
 }
 
-export function removePendingObserver(observer) {
+export function removePendingObserver(observer: ReactiveObserver): void {
   pendingObservers.delete(observer);
 }
 
 // Flush batched observer work in FIFO-like waves until the queue is empty.
-function flushObservers() {
+function flushObservers(): void {
   while (pendingObservers.size > 0) {
     const queue = Array.from(pendingObservers);
     pendingObservers.clear();
@@ -65,7 +66,7 @@ function flushObservers() {
 }
 
 // Batch synchronous updates so dependent observers only re-run once afterward.
-export function batch(fn) {
+export function batch<T>(fn: () => T): T {
   batchDepth += 1;
 
   try {
@@ -80,6 +81,6 @@ export function batch(fn) {
 }
 
 // Read signals without subscribing the current observer to them.
-export function untrack(fn) {
+export function untrack<T>(fn: () => T): T {
   return withActiveObserver(null, fn);
 }

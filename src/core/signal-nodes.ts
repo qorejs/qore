@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   cleanupObserver,
   getActiveObserver,
@@ -6,16 +5,26 @@ import {
   scheduleObserver,
   withActiveObserver
 } from './signal-context.js';
+import type {
+  Cleanup,
+  EffectCallback,
+  ObserverDependency,
+  ReactiveObserver,
+  SignalListener,
+  SubscribeOptions
+} from './signal-types.js';
 
 // A mutable signal node stores a value and fan-outs updates to listeners and observers.
-export class SignalNode {
-  constructor(initialValue) {
+export class SignalNode<T> implements ObserverDependency {
+  value: T;
+  subscribers = new Set<ReactiveObserver>();
+  listeners = new Set<SignalListener<T>>();
+
+  constructor(initialValue: T) {
     this.value = initialValue;
-    this.subscribers = new Set();
-    this.listeners = new Set();
   }
 
-  get() {
+  get(): T {
     const activeObserver = getActiveObserver();
 
     if (activeObserver) {
@@ -26,11 +35,11 @@ export class SignalNode {
     return this.value;
   }
 
-  peek() {
+  peek(): T {
     return this.value;
   }
 
-  set(nextValue) {
+  set(nextValue: T): T {
     if (Object.is(this.value, nextValue)) {
       return this.value;
     }
@@ -40,11 +49,11 @@ export class SignalNode {
     return this.value;
   }
 
-  update(updater) {
+  update(updater: (currentValue: T) => T): T {
     return this.set(updater(this.value));
   }
 
-  subscribe(listener, options = {}) {
+  subscribe(listener: SignalListener<T>, options: SubscribeOptions = {}): Cleanup {
     const { immediate = true } = options;
 
     this.listeners.add(listener);
@@ -59,7 +68,7 @@ export class SignalNode {
   }
 
   // Snapshot listeners first so resubscription during notification cannot loop forever.
-  emit() {
+  emit(): void {
     for (const listener of Array.from(this.listeners)) {
       listener(this.value);
     }
@@ -71,20 +80,21 @@ export class SignalNode {
 }
 
 // A computed node re-runs its getter whenever one of its dependencies changes.
-export class ComputedNode {
-  constructor(getter) {
-    this.getter = getter;
-    this.subscribers = new Set();
-    this.listeners = new Set();
-    this.deps = new Set();
-    this.active = true;
-    this.initialized = false;
-    this.value = undefined;
+export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
+  getter: () => T;
+  subscribers = new Set<ReactiveObserver>();
+  listeners = new Set<SignalListener<T>>();
+  deps = new Set<ObserverDependency>();
+  active = true;
+  initialized = false;
+  value!: T;
 
+  constructor(getter: () => T) {
+    this.getter = getter;
     this.recompute();
   }
 
-  get() {
+  get(): T {
     const activeObserver = getActiveObserver();
 
     if (activeObserver) {
@@ -95,15 +105,15 @@ export class ComputedNode {
     return this.value;
   }
 
-  peek() {
+  peek(): T {
     return this.value;
   }
 
-  notify() {
+  notify(): void {
     this.recompute();
   }
 
-  subscribe(listener, options = {}) {
+  subscribe(listener: SignalListener<T>, options: SubscribeOptions = {}): Cleanup {
     const { immediate = true } = options;
 
     this.listeners.add(listener);
@@ -118,7 +128,7 @@ export class ComputedNode {
   }
 
   // Recompute under dependency tracking and notify downstream observers only on change.
-  recompute() {
+  recompute(): void {
     if (!this.active) {
       return;
     }
@@ -148,7 +158,7 @@ export class ComputedNode {
     });
   }
 
-  stop() {
+  stop(): void {
     if (!this.active) {
       return;
     }
@@ -162,22 +172,23 @@ export class ComputedNode {
 }
 
 // Effects are observers with optional cleanup that re-run when dependencies change.
-export class EffectNode {
-  constructor(fn) {
-    this.fn = fn;
-    this.deps = new Set();
-    this.active = true;
-    this.cleanup = null;
+export class EffectNode implements ReactiveObserver {
+  fn: EffectCallback;
+  deps = new Set<ObserverDependency>();
+  active = true;
+  cleanup: Cleanup | null = null;
 
+  constructor(fn: EffectCallback) {
+    this.fn = fn;
     this.run();
   }
 
-  notify() {
+  notify(): void {
     this.run();
   }
 
   // Execute the effect under tracking and remember any returned cleanup callback.
-  run() {
+  run(): void {
     if (!this.active) {
       return;
     }
@@ -195,7 +206,7 @@ export class EffectNode {
     });
   }
 
-  stop() {
+  stop(): void {
     if (!this.active) {
       return;
     }

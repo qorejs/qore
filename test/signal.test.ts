@@ -1,4 +1,3 @@
-// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -6,7 +5,7 @@ import { batch, computed, effect, signal, untrack } from '../src/index.js';
 
 // Cover the core signal API surface from raw writes through observer semantics.
 test('signal supports undefined and direct updates', () => {
-  const value = signal(undefined);
+  const value = signal<string | undefined>(undefined);
 
   assert.equal(value(), undefined);
 
@@ -30,7 +29,7 @@ test('computed reacts to upstream signals', () => {
 // Verify that effects clean up old resources before re-running with new dependencies.
 test('effect tracks dependencies and runs cleanup before re-run', () => {
   const count = signal(0);
-  const events = [];
+  const events: string[] = [];
 
   const stop = effect(() => {
     const current = count();
@@ -55,7 +54,7 @@ test('effect tracks dependencies and runs cleanup before re-run', () => {
 // A batch should collapse multiple synchronous writes into one downstream observer pass.
 test('batch collapses synchronous churn into one observer pass', () => {
   const count = signal(0);
-  const seen = [];
+  const seen: number[] = [];
 
   effect(() => {
     seen.push(count());
@@ -73,7 +72,7 @@ test('batch collapses synchronous churn into one observer pass', () => {
 // Subscriptions should be able to start silently and stop receiving updates after unsubscribe.
 test('signal subscribe can skip the immediate emission and unsubscribe cleanly', () => {
   const value = signal(1);
-  const seen = [];
+  const seen: number[] = [];
 
   const unsubscribe = value.subscribe((nextValue) => {
     seen.push(nextValue);
@@ -102,7 +101,7 @@ test('computed stop freezes its current value', () => {
 // untrack should allow one-off reads without wiring them into reactive dependencies.
 test('untrack reads without subscribing to future updates', () => {
   const count = signal(1);
-  const seen = [];
+  const seen: number[] = [];
 
   effect(() => {
     seen.push(untrack(() => count()));
@@ -111,4 +110,43 @@ test('untrack reads without subscribing to future updates', () => {
   count.set(2);
 
   assert.deepEqual(seen, [1]);
+});
+
+// Dynamic computed dependencies should unsubscribe from stale branches when the selector flips.
+test('computed drops stale dependencies when its branch changes', () => {
+  const useLeft = signal(true);
+  const left = signal(1);
+  const right = signal(10);
+  const selected = computed(() => useLeft() ? left() : right());
+  const seen: number[] = [];
+
+  effect(() => {
+    seen.push(selected());
+  });
+
+  left.set(2);
+  useLeft.set(false);
+  left.set(3);
+  right.set(11);
+
+  assert.deepEqual(seen, [1, 2, 10, 11]);
+});
+
+// Batched writes across multiple inputs should still trigger a dependent computed only once.
+test('computed observers flush once per batch across multiple dependencies', () => {
+  const left = signal(1);
+  const right = signal(2);
+  const total = computed(() => left() + right());
+  const seen: number[] = [];
+
+  effect(() => {
+    seen.push(total());
+  });
+
+  batch(() => {
+    left.set(5);
+    right.set(9);
+  });
+
+  assert.deepEqual(seen, [3, 14]);
 });
