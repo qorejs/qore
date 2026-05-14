@@ -82,11 +82,11 @@ test('createAnthropic chat streams text deltas from the Messages API', async () 
   const headers = call.headers as Record<string, string>;
   assert.equal(headers['x-api-key'], 'test-key');
   assert.equal(headers['anthropic-version'], '2023-06-01');
-  assert.equal(call.body.model, 'claude-sonnet-4-20250514');
-  assert.equal(call.body.stream, true);
-  assert.equal(call.body.max_tokens, 256);
-  assert.equal(call.body.system, 'Keep it short.');
-  assert.deepEqual(call.body.messages, [{ role: 'user', content: 'Why stream should be signal?' }]);
+  assert.equal(call.body['model'], 'claude-sonnet-4-20250514');
+  assert.equal(call.body['stream'], true);
+  assert.equal(call.body['max_tokens'], 256);
+  assert.equal(call.body['system'], 'Keep it short.');
+  assert.deepEqual(call.body['messages'], [{ role: 'user', content: 'Why stream should be signal?' }]);
 });
 
 test('createAnthropic messages.stream yields typed events', async () => {

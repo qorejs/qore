@@ -92,7 +92,7 @@ test('createSSEAdapter can map a custom chat endpoint into stream(provider.chat(
   assert.equal(call.url, 'https://example.com/stream');
   assert.equal(call.method, 'POST');
   const headers = call.headers as Record<string, string>;
-  assert.equal(headers.Authorization, 'Bearer generic-key');
+  assert.equal(headers['Authorization'], 'Bearer generic-key');
   assert.deepEqual(call.body, { prompt: 'hello world' });
 });
 

@@ -14,7 +14,7 @@ class FakeElement extends FakeNode {
   style: Record<string, unknown> & { cssText?: string } = {};
   className = '';
   childNodes: FakeNode[] = [];
-  parentNode: FakeElement | null = null;
+  override parentNode: FakeElement | null = null;
 
   constructor(tagName: string) {
     super();

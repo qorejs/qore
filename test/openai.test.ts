@@ -80,11 +80,11 @@ test('createOpenAI chat streams text deltas from the Responses API', async () =>
   assert.equal(call.url, 'https://api.openai.com/v1/responses');
   assert.equal(call.method, 'POST');
   const headers = call.headers as Record<string, string>;
-  assert.equal(headers.Authorization, 'Bearer test-key');
-  assert.equal(call.body.model, 'gpt-5');
-  assert.equal(call.body.stream, true);
-  assert.equal(call.body.instructions, 'Keep it short.');
-  assert.deepEqual(call.body.input, [{ role: 'user', content: 'Why stream should be signal?' }]);
+  assert.equal(headers['Authorization'], 'Bearer test-key');
+  assert.equal(call.body['model'], 'gpt-5');
+  assert.equal(call.body['stream'], true);
+  assert.equal(call.body['instructions'], 'Keep it short.');
+  assert.deepEqual(call.body['input'], [{ role: 'user', content: 'Why stream should be signal?' }]);
 });
 
 test('createOpenAI responses.stream yields typed events', async () => {

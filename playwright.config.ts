@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const isCI = Boolean(process.env.CI);
-const localChannel = process.env.QORE_BROWSER_CHANNEL ?? 'chrome';
-const baseURL = process.env.QORE_TEST_BASE_URL ?? 'http://127.0.0.1:4173/';
+const isCI = Boolean(process.env['CI']);
+const localChannel = process.env['QORE_BROWSER_CHANNEL'] ?? 'chrome';
+const baseURL = process.env['QORE_TEST_BASE_URL'] ?? 'http://127.0.0.1:4173/';
 
 export default defineConfig({
   testDir: './e2e',
