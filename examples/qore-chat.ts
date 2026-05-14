@@ -46,9 +46,9 @@ createApp(() => {
   return {
     onMount: send,
     // Render the focused demo around one central idea: a message body can literally be a stream.
-    view: () => h('main', { className: 'shell' },
+    view: () => h('main', { className: 'shell', 'data-testid': 'focused-demo' },
       h('div', { className: 'masthead' },
-        h('a', { className: 'home-link', href: '../index.html' }, 'Back To Landing'),
+        h('a', { className: 'home-link', href: '../index.html', 'data-testid': 'focused-home-link' }, 'Back To Landing'),
         h('span', { className: 'demo-badge' }, 'Focused Demo')
       ),
       h('section', { className: 'hero' },
@@ -57,15 +57,15 @@ createApp(() => {
         h('p', { className: 'lede' }, 'stream 是数据流动的方式, signal 是 UI 响应变化的方式。在 Qore 里, 它们是同一个 primitive。')
       ),
       h('section', { className: 'panel' },
-        h('div', { className: 'feed' },
+        h('div', { className: 'feed', 'data-testid': 'focused-feed' },
           list(messages, (message) => {
             // Assistant entries may still be streaming, so resolve body and status lazily.
             const body = (): string => typeof message.body === 'function' ? message.body() : message.body;
             const live = (): boolean => typeof message.body === 'function' && message.body.streaming();
-            return h('article', { className: `message ${message.role}` },
+            return h('article', { className: `message ${message.role}`, 'data-testid': `focused-message-${message.role}` },
               h('div', { className: 'meta' },
                 h('strong', null, message.role === 'assistant' ? 'Qore' : 'You'),
-                h('span', { className: 'state' }, text(() => live() ? 'typing...' : message.role === 'assistant' ? 'done' : 'sent'))
+                h('span', { className: 'state', 'data-testid': `focused-state-${message.role}` }, text(() => live() ? 'typing...' : message.role === 'assistant' ? 'done' : 'sent'))
               ),
               h('div', { className: 'markdown', innerHTML: () => renderMarkdown(body()) })
             );
@@ -74,6 +74,7 @@ createApp(() => {
         h('label', { className: 'composer' },
           h('span', null, 'Prompt'),
           h('input', {
+            'data-testid': 'focused-input',
             value: draft,
             oninput: (event: Event) => draft((event as InputLikeEvent).target.value),
             onkeydown: (event: KeyboardEvent) => {
@@ -85,7 +86,7 @@ createApp(() => {
             },
             placeholder: '问一个需要流式回答的问题...'
           }),
-          h('button', { onclick: send }, 'Send')
+          h('button', { onclick: send, 'data-testid': 'focused-send' }, 'Send')
         )
       )
     )

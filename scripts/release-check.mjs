@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 const root = new URL('../', import.meta.url);
 const typecheckScript = new URL('./typecheck.mjs', import.meta.url);
 const testScript = new URL('./test.mjs', import.meta.url);
+const browserSmokeScript = new URL('./browser-smoke.mjs', import.meta.url);
 const distSyncScript = new URL('./check-dist-sync.mjs', import.meta.url);
 const packageTypeSmokeScript = new URL('./package-type-smoke.mjs', import.meta.url);
 const packageRuntimeSmokeScript = new URL('./package-runtime-smoke.mjs', import.meta.url);
@@ -24,6 +25,15 @@ const testRun = spawnSync(process.execPath, [fileURLToPath(testScript)], {
 
 if (testRun.status !== 0) {
   process.exit(testRun.status ?? 1);
+}
+
+const browserSmokeRun = spawnSync(process.execPath, [fileURLToPath(browserSmokeScript)], {
+  stdio: 'inherit',
+  cwd: fileURLToPath(root)
+});
+
+if (browserSmokeRun.status !== 0) {
+  process.exit(browserSmokeRun.status ?? 1);
 }
 
 const distSyncRun = spawnSync(process.execPath, [fileURLToPath(distSyncScript)], {

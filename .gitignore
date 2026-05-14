@@ -2,3 +2,5 @@ node_modules
 coverage
 *.tgz
 dist
+test-results
+playwright-report

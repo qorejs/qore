@@ -107,13 +107,14 @@ function Stat({ label, value, tone = 'default' }: {
 }
 
 // Reusable compare card so the home page stays terse.
-function CompareCard({ title, badge, code, note }: {
+function CompareCard({ title, badge, code, note, testId }: {
   title: string;
   badge: string;
   code: string;
   note: string;
+  testId?: string;
 }): QoreChild {
-  return h('article', { className: 'compare-card' },
+  return h('article', { className: 'compare-card', 'data-testid': testId },
     h('div', { className: 'compare-head' },
       h('strong', null, title),
       h('span', null, badge)
@@ -126,7 +127,10 @@ function CompareCard({ title, badge, code, note }: {
 }
 
 function BenchmarkCard({ result, leader }: { result: BenchmarkSummary; leader: boolean }): QoreChild {
-  return h('article', { className: () => ['benchmark-card', { leader }] },
+  return h('article', {
+    className: () => ['benchmark-card', { leader }],
+    'data-testid': `benchmark-card-${result.id}`
+  },
     h('div', { className: 'compare-head' },
       h('div', null,
         h('span', { className: 'card-kicker' }, leader ? 'Winner' : 'Reference'),
@@ -311,7 +315,7 @@ createApp(() => {
       }, 160);
     },
     // Keep the homepage compact: one headline, one proof, one compare, one closing push.
-    view: () => h('main', { className: 'site' },
+    view: () => h('main', { className: 'site', 'data-testid': 'home-page' },
       h('header', { className: 'nav' },
         h('a', { className: 'brand', href: '#top' },
           h('span', { className: 'brand-mark' }, 'Q'),
@@ -362,9 +366,12 @@ createApp(() => {
           h('article', { className: 'hero-card hero-status' },
             h('span', { className: 'card-kicker' }, 'Live Proof'),
             h('div', { className: 'status-row' },
-              h('span', { className: () => ['status-pill', `status-${status()}`] }, text(() => status())),
+              h('span', {
+                className: () => ['status-pill', `status-${status()}`],
+                'data-testid': 'home-stream-status'
+              }, text(() => status())),
               h('span', { className: 'mini-pill' }, text(() => `${chunks()} chunks`)),
-              h('span', { className: 'mini-pill' }, text(() => `${signalPushes()} pushes`))
+              h('span', { className: 'mini-pill', 'data-testid': 'home-live-pushes' }, text(() => `${signalPushes()} pushes`))
             ),
             h('p', { className: 'hero-note' }, '同一个 shape，现在可以接 OpenAI、Anthropic，或者任何会吐 SSE 的后端。')
           )
@@ -383,31 +390,37 @@ createApp(() => {
                 h('span', { className: 'card-kicker' }, 'Live Chat'),
                 h('strong', null, 'One stream, one transcript')
               ),
-              h('span', { className: 'mini-pill subtle' }, text(() => `run ${runCount()}`))
+              h('span', { className: 'mini-pill subtle', 'data-testid': 'home-run-count' }, text(() => `run ${runCount()}`))
             ),
             h('div', {
               className: 'feed',
+              'data-testid': 'home-feed',
               ref: (node: Element) => {
                 feedElement = node as HTMLDivElement;
               }
             },
-              list(messages, (message) => h('article', { className: () => ['message', message.role] },
+              list(messages, (message) => h('article', {
+                className: () => ['message', message.role],
+                'data-testid': `home-message-${message.role}`
+              },
                 h('div', { className: 'message-meta' },
                   h('strong', null, message.role === 'assistant' ? 'Qore' : 'You'),
-                  h('span', { className: 'message-state' }, text(() => currentMessageLive(message.body) ? 'streaming' : message.role === 'assistant' ? 'ready' : 'sent'))
+                  h('span', { className: 'message-state', 'data-testid': `home-message-state-${message.role}` }, text(() => currentMessageLive(message.body) ? 'streaming' : message.role === 'assistant' ? 'ready' : 'sent'))
                 ),
                 h('div', { className: 'markdown', innerHTML: () => renderMarkdown(currentMessageBody(message.body)) })
               ))
             ),
             h('div', { className: 'composer' },
               h('div', { className: 'preset-row' },
-                presets.map((prompt) => h('button', {
+                presets.map((prompt, index) => h('button', {
                   className: () => ['preset', { active: selectedPrompt() === prompt }],
+                  'data-testid': `home-preset-${index + 1}`,
                   onclick: () => runPrompt(prompt)
                 }, prompt))
               ),
               h('div', { className: 'composer-row' },
                 h('input', {
+                  'data-testid': 'home-input',
                   value: draft,
                   oninput: (event: Event) => draft((event as InputLikeEvent).target.value),
                   onkeydown: (event: KeyboardEvent) => {
@@ -419,7 +432,7 @@ createApp(() => {
                   },
                   placeholder: '问一个会流动的问题...'
                 }),
-                h('button', { onclick: () => runPrompt() }, 'Push')
+                h('button', { onclick: () => runPrompt(), 'data-testid': 'home-send' }, 'Push')
               )
             )
           ),
@@ -443,15 +456,15 @@ createApp(() => {
               h('div', { className: 'lens-stack' },
                 h('section', { className: 'lens-card' },
                   h('span', { className: 'lens-label' }, 'Raw text node'),
-                  h('pre', { className: 'raw-preview' }, text(() => currentAnswer()))
+                  h('pre', { className: 'raw-preview', 'data-testid': 'home-raw-preview' }, text(() => currentAnswer()))
                 ),
                 h('section', { className: 'lens-card' },
                   h('span', { className: 'lens-label' }, 'Rendered markdown'),
-                  h('div', { className: 'markdown compact-markdown', innerHTML: () => currentMarkdown() })
+                  h('div', { className: 'markdown compact-markdown', 'data-testid': 'home-rendered-markdown', innerHTML: () => currentMarkdown() })
                 ),
                 h('section', { className: 'lens-card' },
                   h('span', { className: 'lens-label' }, 'Recent tokens'),
-                  h('div', { className: 'token-river' },
+                  h('div', { className: 'token-river', 'data-testid': 'home-token-river' },
                     show(() => latestTokens().length > 0,
                       () => list(() => latestTokens(), (token) => h('span', { className: 'token' }, typeof token === 'string' ? token.trim() || '↵' : JSON.stringify(token))),
                       () => h('span', { className: 'placeholder' }, '触发一次流，token 会在这里排成一条河。')
@@ -472,10 +485,12 @@ createApp(() => {
         h('div', { className: 'compare-toggle' },
           h('button', {
             className: () => ['toggle', { active: selectedCompare() === 'qore' }],
+            'data-testid': 'home-compare-qore',
             onclick: () => selectedCompare('qore')
           }, 'Qore'),
           h('button', {
             className: () => ['toggle', { active: selectedCompare() === 'react' }],
+            'data-testid': 'home-compare-react',
             onclick: () => selectedCompare('react')
           }, 'React')
         ),
@@ -485,13 +500,15 @@ createApp(() => {
               title: 'Qore',
               badge: `${lineCount(qoreCode)} lines`,
               code: qoreCode,
-              note: 'stream = signal。一个对象里同时拿当前值、状态和异步流。'
+              note: 'stream = signal。一个对象里同时拿当前值、状态和异步流。',
+              testId: 'home-compare-card'
             }),
             () => CompareCard({
               title: 'React + AI SDK',
               badge: `${lineCount(reactCode)} lines`,
               code: reactCode,
-              note: '依旧分成 input、messages、send、status 多个心智块。'
+              note: '依旧分成 input、messages、send、status 多个心智块。',
+              testId: 'home-compare-card'
             })
           ),
           h('article', { className: 'mini-manifesto' },
@@ -533,6 +550,7 @@ createApp(() => {
         h('div', { className: 'benchmark-actions' },
           h('button', {
             className: 'solid-link benchmark-button',
+            'data-testid': 'home-benchmark-run',
             onclick: () => {
               void runBenchmark();
             },
@@ -540,19 +558,19 @@ createApp(() => {
           }, text(() => benchmarkState() === 'running' ? 'Running…' : benchmarkRuns() > 0 ? 'Run Again' : 'Run Benchmark')),
           h('a', { className: 'ghost-link', href: './examples/benchmark.html' }, 'Open Dedicated Benchmark')
         ),
-        h('article', { className: 'benchmark-callout' },
+        h('article', { className: 'benchmark-callout', 'data-testid': 'home-benchmark-summary' },
           h('span', { className: 'card-kicker' }, 'Methodology'),
           h('p', null, text(() => benchmarkMeta().methodology)),
           h('strong', null, text(() => benchmarkHeadline()))
         ),
         show(() => benchmarkState() === 'error',
-          () => h('article', { className: 'panel benchmark-error' }, benchmarkError())
+          () => h('article', { className: 'panel benchmark-error', 'data-testid': 'home-benchmark-error' }, benchmarkError())
         ),
         show(() => benchmarkResults().length > 0,
-          () => h('div', { className: 'benchmark-grid' },
+          () => h('div', { className: 'benchmark-grid', 'data-testid': 'home-benchmark-grid' },
             list(() => benchmarkResults(), (result) => BenchmarkCard({ result, leader: benchmarkLeader() === result.id }))
           ),
-          () => h('article', { className: 'panel benchmark-placeholder' },
+          () => h('article', { className: 'panel benchmark-placeholder', 'data-testid': 'home-benchmark-placeholder' },
             h('span', { className: 'card-kicker' }, 'Warm up'),
             h('p', null, 'Benchmark 会在页面加载后自动跑一次，也可以随时手动重跑。'),
             h('p', { className: 'compare-note' }, '它现在对比的是 Qore 的细粒度流路径和一个 snapshot-first transcript rerender baseline。')

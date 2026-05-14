@@ -11,3 +11,11 @@ const result = spawnSync(process.execPath, [fileURLToPath(tscEntry), '-p', 'tsco
 if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
+
+const e2eResult = spawnSync(process.execPath, [fileURLToPath(tscEntry), '-p', 'tsconfig.e2e.json', '--noEmit'], {
+  stdio: 'inherit'
+});
+
+if (e2eResult.status !== 0) {
+  process.exit(e2eResult.status ?? 1);
+}

@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Chromium for browser regression
+        run: npx playwright install --with-deps chromium
+
       - name: Verify release tag and changelog
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.release_tag }}

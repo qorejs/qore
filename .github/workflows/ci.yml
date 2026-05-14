@@ -44,6 +44,14 @@ jobs:
       - name: Run the test suite
         run: npm test
 
+      - name: Install Chromium for browser regression
+        if: matrix.node-version == 20
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the browser smoke suite
+        if: matrix.node-version == 20
+        run: npm run test:browser
+
       - name: Verify committed dist artifacts are current
         run: npm run check:dist
 

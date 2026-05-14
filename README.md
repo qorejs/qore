@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/%40qorejs%2Fqore?color=0f766e&label=npm)](https://www.npmjs.com/package/@qorejs/qore)
 [![ci](https://github.com/qorejs/qore/actions/workflows/ci.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/ci.yml)
+[![browser smoke](https://img.shields.io/badge/browser-smoke-playwright-45ba63)](#browser-regression)
 [![release checks](https://github.com/qorejs/qore/actions/workflows/release-check.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/release-check.yml)
 [![publish github packages](https://github.com/qorejs/qore/actions/workflows/publish-github-packages.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/publish-github-packages.yml)
 [![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?logo=github)](https://github.com/qorejs/qore/packages)
@@ -45,6 +46,7 @@ GitHub Packages installs require an authenticated session against `https://npm.p
 - Module format: `ESM`
 - Supported runtime: `Node >= 18`
 - CI coverage: `Node 18`, `20`, and `22`
+- Browser regression: Playwright desktop + mobile smoke coverage for the homepage, focused demo, and benchmark page
 - Registries:
   - npm: [npmjs.com/package/@qorejs/qore](https://www.npmjs.com/package/@qorejs/qore)
   - GitHub Packages: [github.com/qorejs/qore/packages](https://github.com/qorejs/qore/packages)
@@ -253,6 +255,30 @@ python3 -m http.server 4173
 ```
 
 Then open [http://127.0.0.1:4173/](http://127.0.0.1:4173/).
+
+## Browser Regression
+
+Install the browser binary once:
+
+```bash
+npm run browsers:install
+```
+
+Then run the browser smoke suite:
+
+```bash
+npm run test:browser
+```
+
+It validates:
+
+- the homepage stream demo
+- the focused streaming chat demo
+- the dedicated benchmark page
+
+The suite checks desktop and mobile layouts, watches for runtime console errors, exercises the primary interactions, and runs inside `release:check`.
+
+If a locked-down local shell cannot launch a supported headless browser, the script will defer to CI unless you force a hard local failure with `QORE_BROWSER_SMOKE_REQUIRED=1`.
 
 ## Benchmark Methodology
 

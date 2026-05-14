@@ -18,7 +18,10 @@ function Stat({ label, value, tone = 'default' }: {
 }
 
 function ResultCard({ result, leader }: { result: BenchmarkSummary; leader: boolean }): QoreChild {
-  return h('article', { className: () => ['benchmark-card', { leader }] },
+  return h('article', {
+    className: () => ['benchmark-card', { leader }],
+    'data-testid': `benchmark-card-${result.id}`
+  },
     h('div', { className: 'compare-head' },
       h('div', null,
         h('span', { className: 'card-kicker' }, leader ? 'Winner' : 'Reference'),
@@ -93,7 +96,7 @@ createApp(() => {
     onMount: () => {
       void run();
     },
-    view: () => h('main', { className: 'site benchmark-page' },
+    view: () => h('main', { className: 'site benchmark-page', 'data-testid': 'benchmark-page' },
       h('header', { className: 'nav' },
         h('a', { className: 'brand', href: '../index.html' },
           h('span', { className: 'brand-mark' }, 'Q'),
@@ -121,6 +124,7 @@ createApp(() => {
           h('div', { className: 'hero-actions' },
             h('button', {
               className: 'solid-link benchmark-button',
+              'data-testid': 'benchmark-run',
               onclick: () => {
                 void run();
               },
@@ -129,21 +133,21 @@ createApp(() => {
             h('a', { className: 'ghost-link', href: 'https://github.com/qorejs/qore/blob/main/examples/benchmark-core.ts' }, 'View Methodology')
           )
         ),
-        h('article', { className: 'panel benchmark-callout' },
+        h('article', { className: 'panel benchmark-callout', 'data-testid': 'benchmark-summary' },
           h('span', { className: 'card-kicker' }, 'Summary'),
           h('p', null, text(() => suite().meta.methodology)),
           h('strong', null, text(() => summary()))
         )
       ),
       show(() => status() === 'error',
-        () => h('article', { className: 'panel benchmark-error' }, error())
+        () => h('article', { className: 'panel benchmark-error', 'data-testid': 'benchmark-error' }, error())
       ),
       h('section', { className: 'benchmark-strip benchmark-page-grid' },
         show(() => suite().results.length > 0,
-          () => h('div', { className: 'benchmark-grid' },
+          () => h('div', { className: 'benchmark-grid', 'data-testid': 'benchmark-grid' },
             list(() => suite().results, (result) => ResultCard({ result, leader: leader() === result.id }))
           ),
-          () => h('article', { className: 'panel benchmark-placeholder' },
+          () => h('article', { className: 'panel benchmark-placeholder', 'data-testid': 'benchmark-placeholder' },
             h('span', { className: 'card-kicker' }, 'Waiting'),
             h('p', null, 'The benchmark runs automatically on load and can be re-run at any time.')
           )

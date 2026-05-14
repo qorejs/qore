@@ -10,6 +10,7 @@
 - Added release badges and quick links to make the repository homepage read more like a polished package landing page.
 - Added GitHub Actions workflows for release validation and GitHub Packages publishing, including version and changelog checks before publication.
 - Added a push and pull-request CI workflow that validates Qore across Node 18, 20, and 22.
+- Added Playwright-based browser regression coverage for the homepage, focused demo, and benchmark page, and wired it into CI plus the release pipeline.
 - Added packed-package runtime smoke coverage so release validation now checks real consumer execution, not just type compatibility.
 - Added a dist-sync check so committed build artifacts stay aligned with the TypeScript source before a release ships.
 - Enabled `strictNullChecks`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes`, then tightened the core runtime, provider layer, demos, and tests to satisfy the stricter compiler guarantees.

@@ -20,8 +20,10 @@
   "sideEffects": false,
   "scripts": {
     "build": "node ./scripts/build.mjs",
+    "browsers:install": "playwright install chromium",
     "typecheck": "node ./scripts/typecheck.mjs",
     "check:dist": "node ./scripts/check-dist-sync.mjs",
+    "test:browser": "node ./scripts/browser-smoke.mjs",
     "smoke:package-types": "node ./scripts/package-type-smoke.mjs",
     "smoke:package-runtime": "node ./scripts/package-runtime-smoke.mjs",
     "test": "node ./scripts/test.mjs",
@@ -59,6 +61,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^25.6.0",
     "typescript": "^6.0.3"
   }
