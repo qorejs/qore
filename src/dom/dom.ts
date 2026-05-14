@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { effect } from '../core/signal.js';
 import { bindProp } from './properties.js';
 import { isReactiveValue, resolveAccessor, resolveTemplate } from './reactive.js';
@@ -11,9 +10,25 @@ import {
   registerCleanup,
   withScope
 } from './scope.js';
+import type { ResponseState } from '../core/response.js';
+import type {
+  MountTarget,
+  MountView,
+  QoreChild,
+  QoreComponent,
+  ReactiveValue,
+  ResponseViews
+} from './types.js';
+
+type MountCleanup = () => Element;
+type MountedElement = Element & { [ROOT_CLEANUP]?: MountCleanup };
+
+function isDomNode(value: unknown): value is Node {
+  return typeof Node !== 'undefined' && value instanceof Node;
+}
 
 // Convert supported child types into concrete nodes that can be inserted into the DOM.
-function materializeChild(buffer, child) {
+function materializeChild(buffer: Node[], child: QoreChild): void {
   if (Array.isArray(child)) {
     for (const entry of child) {
       materializeChild(buffer, entry);
@@ -31,7 +46,7 @@ function materializeChild(buffer, child) {
     return;
   }
 
-  if (child instanceof Node) {
+  if (isDomNode(child)) {
     buffer.push(child);
     return;
   }
@@ -47,21 +62,21 @@ function materializeChild(buffer, child) {
 }
 
 // Flatten any child payload into a linear list of nodes.
-function materialize(value) {
-  const nodes = [];
+function materialize(value: QoreChild): Node[] {
+  const nodes: Node[] = [];
   materializeChild(nodes, value);
   return nodes;
 }
 
 // Append normalized child content to a parent node or fragment.
-function appendChild(parent, child) {
+function appendChild(parent: Node, child: QoreChild): void {
   for (const node of materialize(child)) {
     parent.appendChild(node);
   }
 }
 
 // Remove every node between the two markers of a dynamic region.
-function clearRange(start, end) {
+function clearRange(start: Comment, end: Comment): void {
   let current = start.nextSibling;
 
   while (current && current !== end) {
@@ -72,7 +87,7 @@ function clearRange(start, end) {
 }
 
 // Replace a dynamic region without recreating its boundary markers.
-function replaceRange(start, end, nextValue) {
+function replaceRange(start: Comment, end: Comment, nextValue: QoreChild): void {
   const parent = end.parentNode;
 
   if (!parent) {
@@ -87,7 +102,7 @@ function replaceRange(start, end, nextValue) {
 }
 
 // Allow mount targets to be passed as selectors or direct nodes.
-function resolveRoot(root) {
+function resolveRoot(root: MountTarget): Element {
   if (typeof root === 'string') {
     const element = document.querySelector(root);
 
@@ -102,7 +117,7 @@ function resolveRoot(root) {
 }
 
 // Build a fragment from a variadic list of children.
-export function fragment(...children) {
+export function fragment(...children: QoreChild[]): DocumentFragment {
   assertDocument();
 
   const node = document.createDocumentFragment();
@@ -115,7 +130,10 @@ export function fragment(...children) {
 }
 
 // Render a live region between comment markers and refresh it when the source changes.
-export function dynamic(source, render = (value) => value) {
+export function dynamic<T>(
+  source: ReactiveValue<T>,
+  render: (value: T) => QoreChild = (value) => value as QoreChild
+): DocumentFragment {
   assertDocument();
 
   const start = document.createComment('qore-dynamic-start');
@@ -124,7 +142,7 @@ export function dynamic(source, render = (value) => value) {
 
   node.append(start, end);
 
-  let childScope = null;
+  let childScope: ReturnType<typeof createScope> | null = null;
   const stop = effect(() => {
     const nextValue = resolveAccessor(source);
 
@@ -144,7 +162,11 @@ export function dynamic(source, render = (value) => value) {
 }
 
 // Conditionally render one branch or a fallback from a truthy source.
-export function show(source, render, fallback = null) {
+export function show<T>(
+  source: ReactiveValue<T>,
+  render?: (value: T) => QoreChild,
+  fallback: QoreChild | ((value: T) => QoreChild) = null
+): DocumentFragment {
   const truthyView = render === undefined ? (value) => value : render;
   return dynamic(source, (value) => value
     ? resolveTemplate(truthyView, value)
@@ -152,11 +174,15 @@ export function show(source, render, fallback = null) {
 }
 
 // Render a list reactively, or a fallback when the collection is empty.
-export function list(source, render, options = {}) {
+export function list<T>(
+  source: ReactiveValue<Iterable<T> | ArrayLike<T> | null | undefined>,
+  render: (item: T, index: number) => QoreChild,
+  options: { fallback?: QoreChild | ((items: T[]) => QoreChild) } = {}
+): DocumentFragment {
   const { fallback = null } = options;
 
   return dynamic(source, (value) => {
-    const items = value == null
+    const items: T[] = value == null
       ? []
       : Array.isArray(value)
         ? value
@@ -171,7 +197,10 @@ export function list(source, render, options = {}) {
 }
 
 // Render response state through status-aware template overrides.
-export function renderResponse(responseState, views = {}) {
+export function renderResponse<TChunk, TValue>(
+  responseState: ResponseState<TChunk, TValue>,
+  views: ResponseViews<TChunk, TValue> = {}
+): DocumentFragment {
   return dynamic(() => readResponseState(responseState), (state) => {
     const template = pickResponseTemplate(state.status, views);
 
@@ -188,12 +217,22 @@ export function renderResponse(responseState, views = {}) {
 }
 
 // Create a DOM element or invoke a component function with normalized children.
-export function h(tag, props = null, ...children) {
+export function h(tag: string, props?: Record<string, unknown> | null, ...children: QoreChild[]): HTMLElement;
+export function h<TProps extends Record<string, unknown>>(
+  tag: QoreComponent<TProps>,
+  props?: TProps | null,
+  ...children: QoreChild[]
+): QoreChild;
+export function h<TProps extends Record<string, unknown>>(
+  tag: string | QoreComponent<TProps>,
+  props: TProps | Record<string, unknown> | null = null,
+  ...children: QoreChild[]
+): HTMLElement | QoreChild {
   assertDocument();
 
   if (typeof tag === 'function') {
     return tag({
-      ...(props ?? {}),
+      ...((props ?? {}) as TProps),
       children
     });
   }
@@ -214,7 +253,7 @@ export function h(tag, props = null, ...children) {
 }
 
 // Create a text node and keep it in sync with a reactive getter when necessary.
-export function text(valueOrGetter) {
+export function text(valueOrGetter: ReactiveValue<unknown>): Text {
   assertDocument();
 
   const node = document.createTextNode('');
@@ -234,10 +273,10 @@ export function text(valueOrGetter) {
 }
 
 // Mount a view into a root element and return a disposer for its reactive scope.
-export function mount(root, view) {
+export function mount(root: MountTarget, view: MountView): () => Element {
   assertDocument();
 
-  const target = resolveRoot(root);
+  const target = resolveRoot(root) as MountedElement;
   target[ROOT_CLEANUP]?.();
 
   const scope = createScope();

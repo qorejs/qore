@@ -1,6 +1,10 @@
-// @ts-nocheck
+import type { ResponseState, ResponseStatus } from '../core/response.js';
+import type { ResponseRenderState, ResponseViews } from './types.js';
+
 // Read a response into one plain object so templates can branch on status cleanly.
-export function readResponseState(responseState) {
+export function readResponseState<TChunk, TValue>(
+  responseState: ResponseState<TChunk, TValue>
+): ResponseRenderState<TChunk, TValue> {
   return {
     response: responseState,
     status: responseState.status(),
@@ -19,7 +23,10 @@ export function readResponseState(responseState) {
 }
 
 // Pick the best matching view override for the current response lifecycle state.
-export function pickResponseTemplate(status, views) {
+export function pickResponseTemplate<TChunk, TValue>(
+  status: ResponseStatus,
+  views: ResponseViews<TChunk, TValue>
+) {
   switch (status) {
     case 'idle':
       return views.idle ?? views.pending ?? views.default;

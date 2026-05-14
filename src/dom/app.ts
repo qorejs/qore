@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   dynamic,
   fragment,
@@ -12,9 +11,52 @@ import {
 import { batch, computed, effect, signal, untrack } from '../core/signal.js';
 import { response } from '../core/response.js';
 import { from, mapStream, scanStream, stream } from '../core/stream.js';
+import type { MountTarget, MountView, QoreChild } from './types.js';
+
+interface AppContext<Props extends Record<string, unknown>> {
+  app: QoreApp<Props>;
+  root: Element;
+  props: Props;
+  signal: typeof signal;
+  computed: typeof computed;
+  effect: typeof effect;
+  batch: typeof batch;
+  untrack: typeof untrack;
+  stream: typeof stream;
+  from: typeof from;
+  mapStream: typeof mapStream;
+  scanStream: typeof scanStream;
+  response: typeof response;
+  h: typeof h;
+  text: typeof text;
+  dynamic: typeof dynamic;
+  show: typeof show;
+  list: typeof list;
+  fragment: typeof fragment;
+  renderResponse: typeof renderResponse;
+  onCleanup(handler: (() => void) | null | undefined): (() => void) | null | undefined;
+}
+
+type AppSetupResult =
+  | QoreChild
+  | {
+      view?: MountView;
+      onMount?: (root: Element) => void;
+    };
+
+type AppLifecycleResult = {
+  view?: MountView;
+  onMount?: (root: Element) => void;
+};
+
+interface QoreApp<Props extends Record<string, unknown>> {
+  mount(target: MountTarget, props?: Props): Element;
+  unmount(): QoreApp<Props>;
+  readonly root: Element | null;
+}
 
 // Resolve a CSS selector or direct node into the root mount target.
-function resolveTarget(target) {
+function resolveTarget(target: MountTarget): Element {
   if (typeof document === 'undefined') {
     throw new Error('Qore app mounting requires a browser-like environment');
   }
@@ -33,14 +75,16 @@ function resolveTarget(target) {
 }
 
 // Create a tiny application shell around Qore's lower-level primitives.
-export function createApp(setup) {
-  let dispose = null;
-  let mountedRoot = null;
-  let cleanupHandlers = [];
+export function createApp<Props extends Record<string, unknown> = Record<string, unknown>>(
+  setup: (context: AppContext<Props>) => AppSetupResult
+): QoreApp<Props> {
+  let dispose: (() => Element) | null = null;
+  let mountedRoot: Element | null = null;
+  let cleanupHandlers: Array<() => void> = [];
 
-  const app = {
+  const app: QoreApp<Props> = {
     // Mount the app, provide framework primitives to setup, and render the resulting view.
-    mount(target, props = {}) {
+    mount(target, props = {} as Props) {
       const root = resolveTarget(target);
       app.unmount();
 
@@ -48,7 +92,7 @@ export function createApp(setup) {
       mountedRoot = root;
 
       // Expose the core runtime pieces so an app can stay entirely within Qore primitives.
-      const context = {
+      const context: AppContext<Props> = {
         app,
         root,
         props,
@@ -80,10 +124,13 @@ export function createApp(setup) {
 
       // Allow setup to return either a raw view or an object with lifecycle hooks.
       const result = setup(context);
-      const view = result && typeof result === 'object' && 'view' in result
-        ? result.view
+      const lifecycleResult = result && typeof result === 'object'
+        ? result as AppLifecycleResult
+        : null;
+      const view = lifecycleResult && 'view' in lifecycleResult
+        ? lifecycleResult.view
         : result;
-      const onMount = result && typeof result === 'object' ? result.onMount : null;
+      const onMount = lifecycleResult?.onMount ?? null;
 
       dispose = mount(root, view);
 

@@ -1,10 +1,14 @@
-// @ts-nocheck
 import { effect, isSignal } from '../core/signal.js';
 import { isReactiveValue, resolveAccessor } from './reactive.js';
 import { registerCleanup } from './scope.js';
 
+type ClassValue = string | number | bigint | boolean | null | undefined | ClassValue[] | Record<string, unknown>;
+type StyleValue = string | null | undefined | false | Record<string, unknown>;
+type DomPropertyTarget = HTMLElement;
+type EventHandler = ((event: Event) => void) | null;
+
 // Normalize class payloads so callers can pass strings, arrays, or object maps.
-function normalizeClassName(value) {
+function normalizeClassName(value: ClassValue | unknown): string {
   if (Array.isArray(value)) {
     return value
       .map((entry) => normalizeClassName(entry))
@@ -27,7 +31,7 @@ function normalizeClassName(value) {
 }
 
 // Apply styles from either a raw string or a property map.
-function setStyleValue(element, value) {
+function setStyleValue(element: DomPropertyTarget, value: StyleValue | unknown): void {
   element.style.cssText = '';
 
   if (typeof value === 'string') {
@@ -43,16 +47,19 @@ function setStyleValue(element, value) {
     return;
   }
 
+  const styleRecord = element.style as CSSStyleDeclaration & Record<string, string>;
+
   for (const [property, propertyValue] of Object.entries(value)) {
-    element.style[property] = propertyValue == null || propertyValue === false
+    styleRecord[property] = propertyValue == null || propertyValue === false
       ? ''
       : String(propertyValue);
   }
 }
 
 // Centralize DOM property and attribute writes behind one compatibility layer.
-function setDomProperty(element, key, value) {
+function setDomProperty(element: DomPropertyTarget, key: string, value: unknown): void {
   const attributeName = key === 'className' ? 'class' : key;
+  const domRecord = element as unknown as Record<string, unknown>;
 
   if (key === 'className' || key === 'class') {
     element.className = normalizeClassName(value);
@@ -67,12 +74,12 @@ function setDomProperty(element, key, value) {
   if (value == null || value === false) {
     if (key in element && key !== 'list' && key !== 'form') {
       try {
-        if (typeof element[key] === 'boolean') {
-          element[key] = false;
+        if (typeof domRecord[key] === 'boolean') {
+          domRecord[key] = false;
         } else if (key === 'value') {
-          element[key] = '';
+          domRecord[key] = '';
         } else {
-          element[key] = '';
+          domRecord[key] = '';
         }
       } catch {
         // Ignore readonly DOM properties and fall back to attribute cleanup.
@@ -86,7 +93,7 @@ function setDomProperty(element, key, value) {
   if (value === true) {
     if (key in element && key !== 'list' && key !== 'form') {
       try {
-        element[key] = true;
+        domRecord[key] = true;
       } catch {
         // Fall through to attribute mode.
       }
@@ -98,7 +105,7 @@ function setDomProperty(element, key, value) {
 
   if (key in element && key !== 'list' && key !== 'form') {
     try {
-      element[key] = value;
+      domRecord[key] = value;
       return;
     } catch {
       // Fall back to setAttribute for readonly DOM properties.
@@ -109,22 +116,22 @@ function setDomProperty(element, key, value) {
 }
 
 // Bind events and only treat signal-like values as reactive handler containers.
-function bindEvent(element, key, handler) {
+function bindEvent(element: DomPropertyTarget, key: string, handler: unknown): void {
   const eventName = key.slice(2).toLowerCase();
 
   if (isSignal(handler)) {
-    let activeHandler = null;
+    let activeHandler: EventHandler = null;
     const stop = effect(() => {
       const nextHandler = handler();
 
       if (activeHandler) {
-        element.removeEventListener(eventName, activeHandler);
+        element.removeEventListener(eventName, activeHandler as EventListener);
       }
 
-      activeHandler = typeof nextHandler === 'function' ? nextHandler : null;
+      activeHandler = typeof nextHandler === 'function' ? nextHandler as (event: Event) => void : null;
 
       if (activeHandler) {
-        element.addEventListener(eventName, activeHandler);
+        element.addEventListener(eventName, activeHandler as EventListener);
       }
     });
 
@@ -132,7 +139,7 @@ function bindEvent(element, key, handler) {
       stop();
 
       if (activeHandler) {
-        element.removeEventListener(eventName, activeHandler);
+        element.removeEventListener(eventName, activeHandler as EventListener);
       }
     });
 
@@ -140,16 +147,17 @@ function bindEvent(element, key, handler) {
   }
 
   if (typeof handler === 'function') {
-    element.addEventListener(eventName, handler);
-    registerCleanup(() => element.removeEventListener(eventName, handler));
+    const listener = handler as EventListener;
+    element.addEventListener(eventName, listener);
+    registerCleanup(() => element.removeEventListener(eventName, listener));
   }
 }
 
 // Bind a prop key, upgrading reactive values into tracked effects when needed.
-export function bindProp(element, key, value) {
+export function bindProp(element: DomPropertyTarget, key: string, value: unknown): void {
   if (key === 'ref') {
     if (typeof value === 'function') {
-      value(element);
+      (value as (node: DomPropertyTarget) => void)(element);
     }
 
     return;
