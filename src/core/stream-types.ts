@@ -1,4 +1,4 @@
-import type { ReadonlySignal, Signal } from './signal.js';
+import type { ReadonlySignal } from './signal.js';
 import type {
   GlobalAbortSignal,
   MaybePromise,
@@ -49,11 +49,11 @@ export type StreamSetup<TChunk, TValue> = (
 export type StreamInput<TChunk, TValue> = SourceLike<TChunk> | StreamSetup<TChunk, TValue>;
 
 export interface QoreStream<TChunk = unknown, TValue = string> extends ReadonlySignal<TValue>, AsyncIterable<TChunk> {
-  status: Signal<ResponseStatus>;
-  error: Signal<Error | null>;
-  chunks: Signal<TChunk[]>;
-  startedAt: Signal<number | null>;
-  finishedAt: Signal<number | null>;
+  status: ReadonlySignal<ResponseStatus>;
+  error: ReadonlySignal<Error | null>;
+  chunks: ReadonlySignal<TChunk[]>;
+  startedAt: ReadonlySignal<number | null>;
+  finishedAt: ReadonlySignal<number | null>;
   pending: ReadonlySignal<boolean>;
   streaming: ReadonlySignal<boolean>;
   completed: ReadonlySignal<boolean>;

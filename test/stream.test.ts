@@ -63,6 +63,25 @@ test('stream can wrap another stream without treating it like a setup function',
   assert.deepEqual(mirrored.chunks(), ['stream', 'ing', '-first']);
 });
 
+// Public stream lifecycle signals are read-only wrappers around the internal state machine.
+test('stream exposes read-only lifecycle signals', async () => {
+  const answer = stream(['safe', ' state']);
+
+  await answer.ready;
+
+  const writableStatus = answer.status as unknown as (nextValue: string) => string;
+  const writableChunks = answer.chunks as unknown as (nextValue: string[]) => string[];
+  const exposedChunks = answer.chunks();
+
+  writableStatus('pending');
+  writableChunks([]);
+  exposedChunks.push(' mutation');
+
+  assert.equal(answer.status(), 'completed');
+  assert.deepEqual(answer.chunks(), ['safe', ' state']);
+  assert.equal(answer(), 'safe state');
+});
+
 // Abort should stop future chunks while keeping the partial text visible to the UI.
 test('stream abort preserves the partial value collected so far', async () => {
   const answer = stream(async ({ push, signal }) => {

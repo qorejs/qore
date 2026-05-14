@@ -14,6 +14,9 @@
 - Added browser regression artifacts for CI runs, including viewport screenshots, page-surface screenshots, Playwright reports, and benchmark JSON output.
 - Added packed-package runtime smoke coverage so release validation now checks real consumer execution, not just type compatibility.
 - Added a dist-sync check so committed build artifacts stay aligned with the TypeScript source before a release ships.
+- Hardened the public `QoreStream` lifecycle surface so stream status, errors, chunks, and timestamps are exposed as read-only signals.
+- Split stream buffering, lifecycle, and async-iterator internals into focused modules so the stream runtime is easier to extend.
+- Added package-level type coverage for stream inference and read-only stream state boundaries.
 - Enabled `strictNullChecks`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes`, then tightened the core runtime, provider layer, demos, and tests to satisfy the stricter compiler guarantees.
 - Enabled full TypeScript `strict` mode plus `noImplicitOverride` and `noPropertyAccessFromIndexSignature`, then tightened demos and tests so the stricter surface is enforced end to end.
 - Fixed the release workflows so they install dependencies before running checks, and build the package before publishing to GitHub Packages.
