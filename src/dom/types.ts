@@ -1,10 +1,31 @@
 import type { ResponseState, ResponseStatus } from '../core/response.js';
 import type { ReadonlySignal } from '../core/signal.js';
 
+export type GlobalNode = typeof globalThis extends { Node: infer T }
+  ? T extends { prototype: infer P }
+    ? P
+    : unknown
+  : unknown;
+export type GlobalElement = typeof globalThis extends { Element: infer T }
+  ? T extends { prototype: infer P }
+    ? P
+    : unknown
+  : unknown;
+export type GlobalText = typeof globalThis extends { Text: infer T }
+  ? T extends { prototype: infer P }
+    ? P
+    : unknown
+  : unknown;
+export type GlobalDocumentFragment = typeof globalThis extends { DocumentFragment: infer T }
+  ? T extends { prototype: infer P }
+    ? P
+    : unknown
+  : unknown;
+
 export type ReactiveValue<T> = T | ReadonlySignal<T> | (() => T);
 
 export type QoreChild =
-  | Node
+  | GlobalNode
   | string
   | number
   | bigint
@@ -40,5 +61,5 @@ export type QoreComponent<Props extends Record<string, unknown> = Record<string,
   props: Props & { children: QoreChild[] }
 ) => QoreChild;
 
-export type MountTarget = string | Element;
+export type MountTarget = string | GlobalElement;
 export type MountView = QoreChild | (() => QoreChild);

@@ -219,7 +219,7 @@ function renderSnapshotShell(answer: string): string {
   return `<section class="bench-frame"><header class="bench-head"><span>stream = signal</span><span>${benchmarkChunks.length} chunks</span></header><div class="bench-feed">${benchmarkHistory.map(renderStaticMessage).join('')}<article class="bench-msg assistant live"><strong>Qore</strong><p>${escapeHtml(answer)}</p></article></div><footer class="bench-foot"><span>composer</span><span>one transcript</span></footer></section>`;
 }
 
-function renderQoreShell(answer: QoreStream<string, string>): HTMLElement {
+function renderQoreShell(answer: QoreStream<string, string>): Element {
   return h('section', { className: 'bench-frame' },
     h('header', { className: 'bench-head' },
       h('span', null, 'stream = signal'),

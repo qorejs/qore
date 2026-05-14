@@ -1,9 +1,9 @@
-import type { MaybePromise } from '../core/response.js';
+import type { GlobalAbortSignal, MaybePromise } from '../core/response.js';
 
 export type ProviderHeaders = Record<string, string>;
 
 export interface ProviderRequestOptions {
-  signal?: AbortSignal;
+  signal?: GlobalAbortSignal;
   headers?: ProviderHeaders;
   [key: string]: unknown;
 }
@@ -21,7 +21,7 @@ export interface SSERequestConfig {
   url?: string;
   method?: string;
   headers?: ProviderHeaders;
-  signal?: AbortSignal;
+  signal?: GlobalAbortSignal;
   body?: BodyInit | null;
   [key: string]: unknown;
 }

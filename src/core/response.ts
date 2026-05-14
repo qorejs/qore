@@ -5,6 +5,7 @@ import type { CreateResponseOptions, ResponseFactory, ResponseState } from './re
 export { createResponse } from './response-runtime.js';
 export type {
   CreateResponseOptions,
+  GlobalAbortSignal,
   MaybePromise,
   ResponseConsumeContext,
   ResponseExecutorContext,

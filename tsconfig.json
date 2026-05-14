@@ -5,7 +5,7 @@
     "moduleResolution": "NodeNext",
     "lib": ["ES2022", "DOM"],
     "strict": false,
-    "declaration": false,
+    "declaration": true,
     "sourceMap": false,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,

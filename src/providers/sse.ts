@@ -5,6 +5,7 @@ export type {
   AnthropicAdapter,
   AnthropicChatInput,
   AnthropicEvent,
+  AnthropicMessage,
   AnthropicOptions,
   AnthropicRequest,
   FetchLike,

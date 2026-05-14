@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -15,6 +15,3 @@ const tsc = spawnSync(process.execPath, [fileURLToPath(tscEntry), '-p', 'tsconfi
 if (tsc.status !== 0) {
   process.exit(tsc.status ?? 1);
 }
-
-mkdirSync(new URL('./src/', dist), { recursive: true });
-cpSync(new URL('./src/index.d.ts', root), new URL('./src/index.d.ts', dist));

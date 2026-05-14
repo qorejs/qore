@@ -2,6 +2,11 @@ import type { ComputedSignal, Signal } from './signal.js';
 
 export type MaybePromise<T> = T | Promise<T>;
 export type ResponseStatus = 'idle' | 'pending' | 'streaming' | 'completed' | 'error' | 'aborted';
+export type GlobalAbortSignal = typeof globalThis extends { AbortSignal: infer T }
+  ? T extends { prototype: infer P }
+    ? P
+    : unknown
+  : { aborted: boolean; reason?: unknown };
 
 export interface ResponseSnapshot<TChunk = unknown, TValue = unknown> {
   status: ResponseStatus;
@@ -36,12 +41,12 @@ export interface ResponseReactiveState<TChunk, TValue> {
 }
 
 export interface ResponseConsumeContext<TChunk, TValue> {
-  signal: AbortSignal;
+  signal: GlobalAbortSignal;
   response: ResponseState<TChunk, TValue>;
 }
 
 export interface ResponseExecutorContext<TChunk, TValue> {
-  readonly signal: AbortSignal;
+  readonly signal: GlobalAbortSignal;
   response: ResponseState<TChunk, TValue>;
   push(chunk: TChunk): TValue;
   complete(): TValue;

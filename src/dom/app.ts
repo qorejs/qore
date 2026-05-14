@@ -11,11 +11,11 @@ import {
 import { batch, computed, effect, signal, untrack } from '../core/signal.js';
 import { response } from '../core/response.js';
 import { from, mapStream, scanStream, stream } from '../core/stream.js';
-import type { MountTarget, MountView, QoreChild } from './types.js';
+import type { GlobalElement, MountTarget, MountView, QoreChild } from './types.js';
 
-interface AppContext<Props extends Record<string, unknown>> {
+export interface AppContext<Props extends Record<string, unknown>> {
   app: QoreApp<Props>;
-  root: Element;
+  root: GlobalElement;
   props: Props;
   signal: typeof signal;
   computed: typeof computed;
@@ -37,22 +37,22 @@ interface AppContext<Props extends Record<string, unknown>> {
   onCleanup(handler: (() => void) | null | undefined): (() => void) | null | undefined;
 }
 
-type AppSetupResult =
+export type AppSetupResult =
   | QoreChild
   | {
       view?: MountView;
-      onMount?: (root: Element) => void;
+      onMount?: (root: GlobalElement) => void;
     };
 
 type AppLifecycleResult = {
   view?: MountView;
-  onMount?: (root: Element) => void;
+  onMount?: (root: GlobalElement) => void;
 };
 
-interface QoreApp<Props extends Record<string, unknown>> {
-  mount(target: MountTarget, props?: Props): Element;
+export interface QoreApp<Props extends Record<string, unknown>> {
+  mount(target: MountTarget, props?: Props): GlobalElement;
   unmount(): QoreApp<Props>;
-  readonly root: Element | null;
+  readonly root: GlobalElement | null;
 }
 
 // Resolve a CSS selector or direct node into the root mount target.
@@ -78,8 +78,8 @@ function resolveTarget(target: MountTarget): Element {
 export function createApp<Props extends Record<string, unknown> = Record<string, unknown>>(
   setup: (context: AppContext<Props>) => AppSetupResult
 ): QoreApp<Props> {
-  let dispose: (() => Element) | null = null;
-  let mountedRoot: Element | null = null;
+  let dispose: (() => GlobalElement) | null = null;
+  let mountedRoot: GlobalElement | null = null;
   let cleanupHandlers: Array<() => void> = [];
 
   const app: QoreApp<Props> = {

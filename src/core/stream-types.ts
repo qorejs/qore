@@ -1,5 +1,6 @@
 import type { ReadonlySignal, Signal } from './signal.js';
 import type {
+  GlobalAbortSignal,
   MaybePromise,
   ResponseSnapshot,
   ResponseState,
@@ -34,7 +35,7 @@ export interface StreamOptions<TChunk = unknown, TValue = string> {
 }
 
 export interface StreamController<TChunk = unknown, TValue = string> {
-  readonly signal: AbortSignal;
+  readonly signal: GlobalAbortSignal;
   push(chunk: TChunk): Promise<TValue>;
   done(): TValue;
   fail(error?: unknown): Error | TValue;
@@ -64,7 +65,7 @@ export interface QoreStream<TChunk = unknown, TValue = string> extends ReadonlyS
   snapshot(): ResponseSnapshot<TChunk, TValue>;
   ready: Promise<TValue>;
   abort(reason?: unknown): TValue;
-  readonly signal?: AbortSignal | null;
+  readonly signal?: GlobalAbortSignal | null;
 }
 
 export interface StreamFactory {

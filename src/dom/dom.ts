@@ -12,6 +12,9 @@ import {
 } from './scope.js';
 import type { ResponseState } from '../core/response.js';
 import type {
+  GlobalDocumentFragment,
+  GlobalElement,
+  GlobalText,
   MountTarget,
   MountView,
   QoreChild,
@@ -20,7 +23,7 @@ import type {
   ResponseViews
 } from './types.js';
 
-type MountCleanup = () => Element;
+type MountCleanup = () => GlobalElement;
 type MountedElement = Element & { [ROOT_CLEANUP]?: MountCleanup };
 
 function isDomNode(value: unknown): value is Node {
@@ -117,7 +120,7 @@ function resolveRoot(root: MountTarget): Element {
 }
 
 // Build a fragment from a variadic list of children.
-export function fragment(...children: QoreChild[]): DocumentFragment {
+export function fragment(...children: QoreChild[]): GlobalDocumentFragment {
   assertDocument();
 
   const node = document.createDocumentFragment();
@@ -126,14 +129,14 @@ export function fragment(...children: QoreChild[]): DocumentFragment {
     appendChild(node, child);
   }
 
-  return node;
+  return node as GlobalDocumentFragment;
 }
 
 // Render a live region between comment markers and refresh it when the source changes.
 export function dynamic<T>(
   source: ReactiveValue<T>,
   render: (value: T) => QoreChild = (value) => value as QoreChild
-): DocumentFragment {
+): GlobalDocumentFragment {
   assertDocument();
 
   const start = document.createComment('qore-dynamic-start');
@@ -158,7 +161,7 @@ export function dynamic<T>(
     disposeScope(childScope);
   });
 
-  return node;
+  return node as GlobalDocumentFragment;
 }
 
 // Conditionally render one branch or a fallback from a truthy source.
@@ -166,7 +169,7 @@ export function show<T>(
   source: ReactiveValue<T>,
   render?: (value: T) => QoreChild,
   fallback: QoreChild | ((value: T) => QoreChild) = null
-): DocumentFragment {
+): GlobalDocumentFragment {
   const truthyView = render === undefined ? (value) => value : render;
   return dynamic(source, (value) => value
     ? resolveTemplate(truthyView, value)
@@ -178,7 +181,7 @@ export function list<T>(
   source: ReactiveValue<Iterable<T> | ArrayLike<T> | null | undefined>,
   render: (item: T, index: number) => QoreChild,
   options: { fallback?: QoreChild | ((items: T[]) => QoreChild) } = {}
-): DocumentFragment {
+): GlobalDocumentFragment {
   const { fallback = null } = options;
 
   return dynamic(source, (value) => {
@@ -200,7 +203,7 @@ export function list<T>(
 export function renderResponse<TChunk, TValue>(
   responseState: ResponseState<TChunk, TValue>,
   views: ResponseViews<TChunk, TValue> = {}
-): DocumentFragment {
+): GlobalDocumentFragment {
   return dynamic(() => readResponseState(responseState), (state) => {
     const template = pickResponseTemplate(state.status, views);
 
@@ -217,7 +220,7 @@ export function renderResponse<TChunk, TValue>(
 }
 
 // Create a DOM element or invoke a component function with normalized children.
-export function h(tag: string, props?: Record<string, unknown> | null, ...children: QoreChild[]): HTMLElement;
+export function h(tag: string, props?: Record<string, unknown> | null, ...children: QoreChild[]): GlobalElement;
 export function h<TProps extends Record<string, unknown>>(
   tag: QoreComponent<TProps>,
   props?: TProps | null,
@@ -227,7 +230,7 @@ export function h<TProps extends Record<string, unknown>>(
   tag: string | QoreComponent<TProps>,
   props: TProps | Record<string, unknown> | null = null,
   ...children: QoreChild[]
-): HTMLElement | QoreChild {
+): GlobalElement | QoreChild {
   assertDocument();
 
   if (typeof tag === 'function') {
@@ -249,11 +252,11 @@ export function h<TProps extends Record<string, unknown>>(
     appendChild(element, child);
   }
 
-  return element;
+  return element as GlobalElement;
 }
 
 // Create a text node and keep it in sync with a reactive getter when necessary.
-export function text(valueOrGetter: ReactiveValue<unknown>): Text {
+export function text(valueOrGetter: ReactiveValue<unknown>): GlobalText {
   assertDocument();
 
   const node = document.createTextNode('');
@@ -265,15 +268,15 @@ export function text(valueOrGetter: ReactiveValue<unknown>): Text {
     });
 
     registerCleanup(stop);
-    return node;
+    return node as GlobalText;
   }
 
   node.textContent = valueOrGetter == null ? '' : String(valueOrGetter);
-  return node;
+  return node as GlobalText;
 }
 
 // Mount a view into a root element and return a disposer for its reactive scope.
-export function mount(root: MountTarget, view: MountView): () => Element {
+export function mount(root: MountTarget, view: MountView): () => GlobalElement {
   assertDocument();
 
   const target = resolveRoot(root) as MountedElement;
@@ -292,7 +295,7 @@ export function mount(root: MountTarget, view: MountView): () => Element {
 
     disposeScope(scope);
     target.replaceChildren();
-    return target;
+    return target as GlobalElement;
   };
 
   target[ROOT_CLEANUP] = dispose;
