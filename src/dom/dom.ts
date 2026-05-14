@@ -170,7 +170,9 @@ export function show<T>(
   render?: (value: T) => QoreChild,
   fallback: QoreChild | ((value: T) => QoreChild) = null
 ): GlobalDocumentFragment {
-  const truthyView = render === undefined ? (value) => value : render;
+  const truthyView: (value: T) => QoreChild = render === undefined
+    ? (value: T) => value as QoreChild
+    : render;
   return dynamic(source, (value) => value
     ? resolveTemplate(truthyView, value)
     : resolveTemplate(fallback, value));

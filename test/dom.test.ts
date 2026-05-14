@@ -93,10 +93,10 @@ function withFakeDom(run: () => void): void {
 
   globalDom.Node = FakeNode;
   globalDom.document = {
-    createElement(tagName) {
+    createElement(tagName: string) {
       return new FakeElement(tagName);
     },
-    createTextNode(textContent) {
+    createTextNode(textContent?: string) {
       return new FakeTextNode(textContent);
     }
   };
@@ -114,8 +114,8 @@ test('plain event handlers are registered without being invoked during render', 
 
   withFakeDom(() => {
     const input = h('input', {
-      oninput: (event) => {
-        seen = (event.target as { value: string }).value;
+      oninput: (event: Event) => {
+        seen = ((event.target as unknown) as { value: string }).value;
       }
     }) as unknown as FakeElement;
 

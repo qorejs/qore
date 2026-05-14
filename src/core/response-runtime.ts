@@ -15,9 +15,14 @@ import { normalizeError } from '../shared/utils.js';
 function isResponseSourceFactory<TChunk, TValue>(
   source: ResponseSource<TChunk, TValue>
 ): source is ResponseSourceFactory<TChunk, TValue> {
+  const callableSource = source as ((...args: unknown[]) => unknown) & {
+    [Symbol.asyncIterator]?: unknown;
+    peek?: unknown;
+  };
+
   return typeof source === 'function'
-    && typeof source[Symbol.asyncIterator] !== 'function'
-    && typeof (source as { peek?: unknown }).peek !== 'function';
+    && typeof callableSource[Symbol.asyncIterator] !== 'function'
+    && typeof callableSource.peek !== 'function';
 }
 
 // Build a response state machine that accumulates chunks into a reactive value.

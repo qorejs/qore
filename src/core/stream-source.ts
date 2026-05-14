@@ -6,9 +6,14 @@ import type { StreamController, StreamInput, StreamSetup } from './stream-types.
 function isSetupFunction<TChunk, TValue>(
   sourceOrSetup: StreamInput<TChunk, TValue>
 ): sourceOrSetup is StreamSetup<TChunk, TValue> {
+  const callableSource = sourceOrSetup as ((...args: unknown[]) => unknown) & {
+    [Symbol.asyncIterator]?: unknown;
+    peek?: unknown;
+  };
+
   return typeof sourceOrSetup === 'function'
-    && typeof sourceOrSetup[Symbol.asyncIterator] !== 'function'
-    && typeof (sourceOrSetup as { peek?: unknown }).peek !== 'function';
+    && typeof callableSource[Symbol.asyncIterator] !== 'function'
+    && typeof callableSource.peek !== 'function';
 }
 
 // Pipe any async iterable-like source into the controller, honoring aborts and pacing.
