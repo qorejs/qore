@@ -9,6 +9,10 @@
 - Added npm and GitHub Packages links to the public README surface.
 - Added release badges and quick links to make the repository homepage read more like a polished package landing page.
 - Added GitHub Actions workflows for release validation and GitHub Packages publishing, including version and changelog checks before publication.
+- Added a push and pull-request CI workflow that validates Qore across Node 18, 20, and 22.
+- Added packed-package runtime smoke coverage so release validation now checks real consumer execution, not just type compatibility.
+- Added a dist-sync check so committed build artifacts stay aligned with the TypeScript source before a release ships.
+- Fixed the release workflows so they install dependencies before running checks, and build the package before publishing to GitHub Packages.
 - Added contributor-facing project hygiene files, including contributing guidance, security policy, issue templates, a pull request template, and structured GitHub release note categories.
 
 ## 0.7.1 - 2026-05-02

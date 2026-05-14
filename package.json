@@ -21,7 +21,9 @@
   "scripts": {
     "build": "node ./scripts/build.mjs",
     "typecheck": "node ./scripts/typecheck.mjs",
+    "check:dist": "node ./scripts/check-dist-sync.mjs",
     "smoke:package-types": "node ./scripts/package-type-smoke.mjs",
+    "smoke:package-runtime": "node ./scripts/package-runtime-smoke.mjs",
     "test": "node ./scripts/test.mjs",
     "release:check": "node ./scripts/release-check.mjs",
     "publish:github": "npm publish --registry=https://npm.pkg.github.com",

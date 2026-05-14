@@ -1,6 +1,7 @@
 # Qore
 
 [![npm version](https://img.shields.io/npm/v/%40qorejs%2Fqore?color=0f766e&label=npm)](https://www.npmjs.com/package/@qorejs/qore)
+[![ci](https://github.com/qorejs/qore/actions/workflows/ci.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/ci.yml)
 [![release checks](https://github.com/qorejs/qore/actions/workflows/release-check.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/release-check.yml)
 [![publish github packages](https://github.com/qorejs/qore/actions/workflows/publish-github-packages.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/publish-github-packages.yml)
 [![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?logo=github)](https://github.com/qorejs/qore/packages)
@@ -18,6 +19,7 @@ Quick links:
 - [landing page source](https://github.com/qorejs/qore/blob/main/index.html)
 - [streaming demo source](https://github.com/qorejs/qore/blob/main/examples/streaming-response.html)
 - [benchmark page](https://github.com/qorejs/qore/blob/main/examples/benchmark.html)
+- [continuous integration](https://github.com/qorejs/qore/actions/workflows/ci.yml)
 - [release workflow](https://github.com/qorejs/qore/actions/workflows/release-check.yml)
 - [contributing guide](https://github.com/qorejs/qore/blob/main/CONTRIBUTING.md)
 - [security policy](https://github.com/qorejs/qore/blob/main/SECURITY.md)
@@ -42,6 +44,7 @@ GitHub Packages installs require an authenticated session against `https://npm.p
 - Package name: `@qorejs/qore`
 - Module format: `ESM`
 - Supported runtime: `Node >= 18`
+- CI coverage: `Node 18`, `20`, and `22`
 - Registries:
   - npm: [npmjs.com/package/@qorejs/qore](https://www.npmjs.com/package/@qorejs/qore)
   - GitHub Packages: [github.com/qorejs/qore/packages](https://github.com/qorejs/qore/packages)

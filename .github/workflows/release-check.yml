@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release-check-${{ github.workflow }}-${{ github.ref || github.event.release.tag_name || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   release-check:
     runs-on: ubuntu-latest
@@ -26,6 +30,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Verify release tag and changelog
         env:
@@ -52,8 +60,5 @@ jobs:
           console.log(`Validated package.json version ${pkg.version}.`);
           EOF
 
-      - name: Run the test suite
-        run: npm test
-
-      - name: Verify the published tarball
-        run: npm pack --dry-run
+      - name: Run the release validation suite
+        run: npm run release:check

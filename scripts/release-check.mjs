@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 const root = new URL('../', import.meta.url);
 const typecheckScript = new URL('./typecheck.mjs', import.meta.url);
 const testScript = new URL('./test.mjs', import.meta.url);
+const distSyncScript = new URL('./check-dist-sync.mjs', import.meta.url);
 const packageTypeSmokeScript = new URL('./package-type-smoke.mjs', import.meta.url);
+const packageRuntimeSmokeScript = new URL('./package-runtime-smoke.mjs', import.meta.url);
 
 const typecheckRun = spawnSync(process.execPath, [fileURLToPath(typecheckScript)], {
   stdio: 'inherit',
@@ -24,6 +26,15 @@ if (testRun.status !== 0) {
   process.exit(testRun.status ?? 1);
 }
 
+const distSyncRun = spawnSync(process.execPath, [fileURLToPath(distSyncScript)], {
+  stdio: 'inherit',
+  cwd: fileURLToPath(root)
+});
+
+if (distSyncRun.status !== 0) {
+  process.exit(distSyncRun.status ?? 1);
+}
+
 const packageTypeSmokeRun = spawnSync(process.execPath, [fileURLToPath(packageTypeSmokeScript)], {
   stdio: 'inherit',
   cwd: fileURLToPath(root)
@@ -31,6 +42,15 @@ const packageTypeSmokeRun = spawnSync(process.execPath, [fileURLToPath(packageTy
 
 if (packageTypeSmokeRun.status !== 0) {
   process.exit(packageTypeSmokeRun.status ?? 1);
+}
+
+const packageRuntimeSmokeRun = spawnSync(process.execPath, [fileURLToPath(packageRuntimeSmokeScript)], {
+  stdio: 'inherit',
+  cwd: fileURLToPath(root)
+});
+
+if (packageRuntimeSmokeRun.status !== 0) {
+  process.exit(packageRuntimeSmokeRun.status ?? 1);
 }
 
 const npmCli = process.env.npm_execpath;
