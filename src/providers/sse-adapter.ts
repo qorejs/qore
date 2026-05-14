@@ -57,17 +57,23 @@ export function createSSEAdapter<TRequest = Record<string, unknown>, TChatInput 
       signal: overrideSignal,
       headers: overrideHeaders = {}
     } = requestOptions;
+    const signal = requestSignal ?? overrideSignal;
 
     if (!url) {
       throw new Error(`Qore ${name} adapter requires a request URL`);
     }
 
-    const response = await fetchImpl(url, {
+    const initConfig = {
       method,
-      signal: requestSignal ?? overrideSignal,
       headers: mergeHeaders(defaultHeaders, mergeHeaders(requestHeaders, overrideHeaders)),
       ...init
-    });
+    } as RequestInit;
+
+    if (signal) {
+      initConfig.signal = signal as AbortSignal;
+    }
+
+    const response = await fetchImpl(url, initConfig);
 
     if (!response.ok) {
       throw new Error(await readErrorBody(response));

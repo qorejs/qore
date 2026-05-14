@@ -23,19 +23,32 @@ function createSSEBody(events: AnthropicEvent[]): ReadableStream<Uint8Array> {
 test('createAnthropic chat streams text deltas from the Messages API', async () => {
   const calls: Array<{
     url: string | URL | Request;
+    body: Record<string, unknown>;
     method?: string;
     headers?: HeadersInit;
-    body: Record<string, unknown>;
   }> = [];
   const anthropic = createAnthropic({
     apiKey: 'test-key',
     fetch: async (url, init) => {
-      calls.push({
+      const call = {
         url,
-        method: init?.method,
-        headers: init?.headers,
         body: JSON.parse(String(init?.body))
-      });
+      } as {
+        url: string | URL | Request;
+        body: Record<string, unknown>;
+        method?: string;
+        headers?: HeadersInit;
+      };
+
+      if (init?.method) {
+        call.method = init.method;
+      }
+
+      if (init?.headers) {
+        call.headers = init.headers;
+      }
+
+      calls.push(call);
 
       return new Response(createSSEBody([
         { type: 'message_start', message: { id: 'msg_1' } },

@@ -60,10 +60,8 @@ export function createAnthropic(options: AnthropicOptions = {}): AnthropicAdapte
     fetch: fetchImpl,
     buildRequest(request, requestOptions: ProviderRequestOptions = {}) {
       const { signal, headers = {}, ...overrides } = requestOptions;
-
-      return {
+      const config = {
         method: 'POST',
-        signal,
         headers,
         body: JSON.stringify({
           model,
@@ -72,7 +70,18 @@ export function createAnthropic(options: AnthropicOptions = {}): AnthropicAdapte
           ...request,
           ...overrides
         })
+      } as {
+        method: 'POST';
+        headers: Record<string, string>;
+        body: string;
+        signal?: ProviderRequestOptions['signal'];
       };
+
+      if (signal) {
+        config.signal = signal;
+      }
+
+      return config;
     },
     parse: (data) => JSON.parse(data) as AnthropicEvent,
     isError: (event) => event.data?.type === 'error',
@@ -136,7 +145,10 @@ export function createAnthropic(options: AnthropicOptions = {}): AnthropicAdapte
         request.messages = normalizeMessages(input);
       }
 
-      return streamText(request, { signal, headers });
+      return streamText(request, {
+        ...(signal ? { signal } : {}),
+        ...(headers ? { headers } : {})
+      });
     }
   };
 }

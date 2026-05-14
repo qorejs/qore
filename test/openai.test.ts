@@ -23,19 +23,32 @@ function createSSEBody(events: OpenAIEvent[]): ReadableStream<Uint8Array> {
 test('createOpenAI chat streams text deltas from the Responses API', async () => {
   const calls: Array<{
     url: string | URL | Request;
+    body: Record<string, unknown>;
     method?: string;
     headers?: HeadersInit;
-    body: Record<string, unknown>;
   }> = [];
   const openai = createOpenAI({
     apiKey: 'test-key',
     fetch: async (url, init) => {
-      calls.push({
+      const call = {
         url,
-        method: init?.method,
-        headers: init?.headers,
         body: JSON.parse(String(init?.body))
-      });
+      } as {
+        url: string | URL | Request;
+        body: Record<string, unknown>;
+        method?: string;
+        headers?: HeadersInit;
+      };
+
+      if (init?.method) {
+        call.method = init.method;
+      }
+
+      if (init?.headers) {
+        call.headers = init.headers;
+      }
+
+      calls.push(call);
 
       return new Response(createSSEBody([
         { type: 'response.created', response: { id: 'resp_1' } },
