@@ -1,14 +1,29 @@
-// @ts-nocheck
 import { createApp, computed, effect, h, list, show, signal, stream, text } from '../src/index.js';
 import { benchmarkScenario, runBenchmarkSuite } from './benchmark-core.js';
 import { renderMarkdown } from './render-markdown.js';
+import type { BenchmarkMeta, BenchmarkSummary, BenchmarkSuite } from './benchmark-core.js';
+import type { QoreChild } from '../src/dom/types.js';
+import type { QoreStream } from '../src/core/stream-types.js';
+
+type DemoMessage = {
+  role: 'assistant' | 'user';
+  body: string | QoreStream<string, string>;
+};
+
+type InputLikeEvent = Event & {
+  target: HTMLInputElement;
+};
+
+type KeyLikeEvent = KeyboardEvent & {
+  target: HTMLInputElement;
+};
 
 // Slice demo copy into small chunks so the homepage can visibly stream.
-const chunkText = (value) => value.match(/```|`[^`]*`|\*\*[^*]+\*\*|\n|[^\s]{1,5}\s?/g) ?? [value];
-const escapeHtml = (value = '') => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const lineCount = (value) => value.trim().split('\n').length;
-const formatMs = (value) => `${value.toFixed(value >= 10 ? 1 : 2)} ms`;
-const formatCount = (value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(Math.round(value));
+const chunkText = (value: string): string[] => value.match(/```|`[^`]*`|\*\*[^*]+\*\*|\n|[^\s]{1,5}\s?/g) ?? [value];
+const escapeHtml = (value = ''): string => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const lineCount = (value: string): number => value.trim().split('\n').length;
+const formatMs = (value: number): string => `${value.toFixed(value >= 10 ? 1 : 2)} ms`;
+const formatCount = (value: number): string => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(Math.round(value));
 
 // Keep the homepage demo short, punchy, and immediately clickable.
 const presets = [
@@ -37,7 +52,7 @@ setInput('');
 return messages.map(renderMessage);`;
 
 // Generate one compact markdown answer so the demo shows streaming, code, and structure at once.
-function answerText(prompt, run) {
+function answerText(prompt: string, run: number): string {
   const insight = prompt.includes('背压')
     ? '当 token 太快时，Qore 不把它当边缘 case，而是把节奏、排队和溢出策略放进同一个 stream primitive。'
     : prompt.includes('UI 杂货铺')
@@ -50,7 +65,7 @@ function answerText(prompt, run) {
 }
 
 // Push the whole answer rapidly and let Qore's backpressure turn it into a paced UI experience.
-function createAnswerStream(prompt, run) {
+function createAnswerStream(prompt: string, run: number): QoreStream<string, string> {
   return stream.withBackpressure(async ({ push }) => {
     for (const chunk of chunkText(answerText(prompt, run))) {
       push(chunk);
@@ -63,23 +78,27 @@ function createAnswerStream(prompt, run) {
 }
 
 // Apply lightweight highlighting to the static compare snippets.
-function renderCode(code) {
+function renderCode(code: string): string {
   return escapeHtml(code)
     .replace(/\b(const|return|await|stream|text|createOpenAI|useState|useChat|sendMessage|messages)\b/g, '<span class="kw">$1</span>');
 }
 
 // Normalize message bodies because assistant entries can be plain text or live streams.
-function currentMessageBody(body) {
+function currentMessageBody(body: DemoMessage['body']): string {
   return typeof body === 'function' ? body() : body;
 }
 
 // Surface whether a message is still streaming so the transcript can label it.
-function currentMessageLive(body) {
+function currentMessageLive(body: DemoMessage['body']): boolean {
   return typeof body === 'function' && typeof body.streaming === 'function' && body.streaming();
 }
 
 // Small reusable stat tile for the runtime rail.
-function Stat({ label, value, tone = 'default' }) {
+function Stat({ label, value, tone = 'default' }: {
+  label: string;
+  value: () => string;
+  tone?: 'default' | 'live' | 'warm';
+}): QoreChild {
   return h('article', { className: () => ['stat', { [`tone-${tone}`]: true }] },
     h('span', { className: 'stat-label' }, label),
     h('strong', { className: 'stat-value' }, text(value))
@@ -87,7 +106,12 @@ function Stat({ label, value, tone = 'default' }) {
 }
 
 // Reusable compare card so the home page stays terse.
-function CompareCard({ title, badge, code, note }) {
+function CompareCard({ title, badge, code, note }: {
+  title: string;
+  badge: string;
+  code: string;
+  note: string;
+}): QoreChild {
   return h('article', { className: 'compare-card' },
     h('div', { className: 'compare-head' },
       h('strong', null, title),
@@ -100,7 +124,7 @@ function CompareCard({ title, badge, code, note }) {
   );
 }
 
-function BenchmarkCard({ result, leader }) {
+function BenchmarkCard({ result, leader }: { result: BenchmarkSummary; leader: boolean }): QoreChild {
   return h('article', { className: () => ['benchmark-card', { leader }] },
     h('div', { className: 'compare-head' },
       h('div', null,
@@ -126,23 +150,23 @@ createApp(() => {
   const selectedPrompt = signal(presets[0]);
   const runCount = signal(0);
   const signalPushes = signal(0);
-  const selectedCompare = signal('qore');
-  const benchmarkState = signal('idle');
-  const benchmarkResults = signal([]);
-  const benchmarkMeta = signal({
+  const selectedCompare = signal<'qore' | 'react'>('qore');
+  const benchmarkState = signal<'idle' | 'running' | 'ready' | 'error'>('idle');
+  const benchmarkResults = signal<BenchmarkSummary[]>([]);
+  const benchmarkMeta = signal<BenchmarkMeta>({
     ...benchmarkScenario,
     methodology: 'Same transcript, same chunks, same final text.'
   });
   const benchmarkError = signal('');
   const benchmarkRuns = signal(0);
-  const messages = signal([
+  const messages = signal<DemoMessage[]>([
     {
       role: 'assistant',
       body: '### Qore\n这里没有“等结果回来再渲染”。只有 stream 继续推进，UI 继续响应。'
     }
   ]);
-  const activeResponse = signal(null);
-  let feedElement = null;
+  const activeResponse = signal<QoreStream<string, string> | null>(null);
+  let feedElement: HTMLDivElement | null = null;
 
   // Count actual signal updates so the homepage can prove the stream is alive.
   effect(() => {
@@ -237,7 +261,7 @@ createApp(() => {
     return `同一份 transcript 下，Qore 平均快 ${durationRatio.toFixed(1)}x，少重建约 ${formatCount(savedNodes)} 个节点，并且避免重写约 ${formatCount(savedMarkup)} 字节的 markup。`;
   });
 
-  const runPrompt = (prompt = draft().trim() || presets[0]) => {
+  const runPrompt = (prompt = draft().trim() || presets[0]): void => {
     const textValue = prompt.trim();
 
     if (!textValue) {
@@ -258,7 +282,7 @@ createApp(() => {
     ]);
   };
 
-  const runBenchmark = async () => {
+  const runBenchmark = async (): Promise<void> => {
     if (benchmarkState() === 'running') {
       return;
     }
@@ -267,7 +291,7 @@ createApp(() => {
     benchmarkError('');
 
     try {
-      const suite = await runBenchmarkSuite();
+      const suite: BenchmarkSuite = await runBenchmarkSuite();
       benchmarkMeta(suite.meta);
       benchmarkResults(suite.results);
       benchmarkRuns.update((count) => count + 1);
@@ -362,8 +386,8 @@ createApp(() => {
             ),
             h('div', {
               className: 'feed',
-              ref: (node) => {
-                feedElement = node;
+              ref: (node: Element) => {
+                feedElement = node as HTMLDivElement;
               }
             },
               list(messages, (message) => h('article', { className: () => ['message', message.role] },
@@ -384,10 +408,11 @@ createApp(() => {
               h('div', { className: 'composer-row' },
                 h('input', {
                   value: draft,
-                  oninput: (event) => draft(event.target.value),
-                  onkeydown: (event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault();
+                  oninput: (event: Event) => draft((event as InputLikeEvent).target.value),
+                  onkeydown: (event: KeyboardEvent) => {
+                    const keyboardEvent = event as KeyLikeEvent;
+                    if (keyboardEvent.key === 'Enter' && !keyboardEvent.shiftKey) {
+                      keyboardEvent.preventDefault();
                       runPrompt();
                     }
                   },

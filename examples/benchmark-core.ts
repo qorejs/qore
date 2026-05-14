@@ -1,8 +1,77 @@
-// @ts-nocheck
 import { h, mount, stream, text } from '../src/index.js';
+import type { QoreStream } from '../src/core/stream-types.js';
+
+interface TranscriptMessage {
+  role: 'assistant' | 'user';
+  body: string;
+}
+
+interface TreeLikeNode {
+  childNodes?: Iterable<TreeLikeNode>;
+}
+
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve(value: T | PromiseLike<T>): void;
+  reject(reason?: unknown): void;
+}
+
+interface MutationMetrics {
+  mutationRecords: number;
+  childListMutations: number;
+  characterDataMutations: number;
+  addedNodes: number;
+  removedNodes: number;
+  firstMutationMs: number | null;
+  lastMutationMs: number;
+}
+
+interface ObservedMutationMetrics extends Omit<MutationMetrics, 'firstMutationMs' | 'lastMutationMs'> {
+  firstMutationMs: number;
+  activeDurationMs: number;
+}
+
+interface BenchmarkRun extends ObservedMutationMetrics {
+  mode: 'qore' | 'snapshot';
+  commits: number;
+  rewrittenBytes: number;
+  totalDurationMs: number;
+}
+
+export interface BenchmarkSummary {
+  id: 'qore' | 'snapshot';
+  label: string;
+  description: string;
+  samples: number;
+  chunkCount: number;
+  characterCount: number;
+  averageDurationMs: number;
+  averageFirstMutationMs: number;
+  averageMutationRecords: number;
+  averageCharacterDataMutations: number;
+  averageAddedNodes: number;
+  averageRemovedNodes: number;
+  averageRewrittenBytes: number;
+  averageCommits: number;
+  averageActiveDurationMs: number;
+  relativeToFastest?: number;
+}
+
+export interface BenchmarkMeta {
+  historicalMessages: number;
+  chunkCount: number;
+  characterCount: number;
+  sampleCount: number;
+  methodology?: string;
+}
+
+export interface BenchmarkSuite {
+  meta: BenchmarkMeta;
+  results: BenchmarkSummary[];
+}
 
 // Use a consistent transcript shell so every benchmark run measures the same DOM workload.
-const benchmarkHistory = [
+const benchmarkHistory: TranscriptMessage[] = [
   { role: 'assistant', body: 'Qore keeps the UI attached to the stream instead of waiting for a final snapshot.' },
   { role: 'user', body: 'Show me a minimal chat loop.' },
   { role: 'assistant', body: 'One stream, one signal, one text node that keeps updating.' },
@@ -17,21 +86,21 @@ const benchmarkAnswer = `### Stream = Signal\nQore lets the same value act as li
 
 const benchmarkChunks = benchmarkAnswer.match(/```|`[^`]*`|\*\*[^*]+\*\*|\n|[^\s]{1,6}\s?/g) ?? [benchmarkAnswer];
 
-export const benchmarkScenario = {
+export const benchmarkScenario: BenchmarkMeta = {
   historicalMessages: benchmarkHistory.length,
   chunkCount: benchmarkChunks.length,
   characterCount: benchmarkAnswer.length,
   sampleCount: 7
 };
 
-function escapeHtml(value = '') {
+function escapeHtml(value = ''): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
 
-function countTreeNodes(node) {
+function countTreeNodes(node: TreeLikeNode | null | undefined): number {
   if (!node) {
     return 0;
   }
@@ -45,10 +114,10 @@ function countTreeNodes(node) {
   return count;
 }
 
-function createDeferred() {
-  let resolve;
-  let reject;
-  const promise = new Promise((nextResolve, nextReject) => {
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: Deferred<T>['resolve'];
+  let reject!: Deferred<T>['reject'];
+  const promise = new Promise<T>((nextResolve, nextReject) => {
     resolve = nextResolve;
     reject = nextReject;
   });
@@ -56,11 +125,11 @@ function createDeferred() {
   return { promise, resolve, reject };
 }
 
-function nextMicrotask() {
+function nextMicrotask(): Promise<void> {
   return Promise.resolve();
 }
 
-function average(values) {
+function average(values: number[]): number {
   if (values.length === 0) {
     return 0;
   }
@@ -68,7 +137,7 @@ function average(values) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function createSandbox(host = document.body) {
+function createSandbox(host: HTMLElement = document.body): HTMLDivElement {
   const sandbox = document.createElement('div');
   sandbox.setAttribute('aria-hidden', 'true');
   sandbox.style.position = 'fixed';
@@ -82,8 +151,8 @@ function createSandbox(host = document.body) {
   return sandbox;
 }
 
-function createMutationTracker(target) {
-  const metrics = {
+function createMutationTracker(target: Node): { stop(): Promise<ObservedMutationMetrics> } {
+  const metrics: MutationMetrics = {
     mutationRecords: 0,
     childListMutations: 0,
     characterDataMutations: 0,
@@ -94,7 +163,7 @@ function createMutationTracker(target) {
   };
 
   const startedAt = performance.now();
-  const observer = new MutationObserver((records) => {
+  const observer = new MutationObserver((records: MutationRecord[]) => {
     const now = performance.now() - startedAt;
 
     if (metrics.firstMutationMs == null) {
@@ -142,15 +211,15 @@ function createMutationTracker(target) {
   };
 }
 
-function renderStaticMessage(message) {
+function renderStaticMessage(message: TranscriptMessage): string {
   return `<article class="bench-msg ${message.role}"><strong>${message.role === 'assistant' ? 'Qore' : 'You'}</strong><p>${escapeHtml(message.body)}</p></article>`;
 }
 
-function renderSnapshotShell(answer) {
+function renderSnapshotShell(answer: string): string {
   return `<section class="bench-frame"><header class="bench-head"><span>stream = signal</span><span>${benchmarkChunks.length} chunks</span></header><div class="bench-feed">${benchmarkHistory.map(renderStaticMessage).join('')}<article class="bench-msg assistant live"><strong>Qore</strong><p>${escapeHtml(answer)}</p></article></div><footer class="bench-foot"><span>composer</span><span>one transcript</span></footer></section>`;
 }
 
-function renderQoreShell(answer) {
+function renderQoreShell(answer: QoreStream<string, string>): HTMLElement {
   return h('section', { className: 'bench-frame' },
     h('header', { className: 'bench-head' },
       h('span', null, 'stream = signal'),
@@ -173,10 +242,10 @@ function renderQoreShell(answer) {
   );
 }
 
-async function runQoreSample() {
+async function runQoreSample(): Promise<BenchmarkRun> {
   const sandbox = createSandbox();
-  const gate = createDeferred();
-  const answer = stream(async ({ push }) => {
+  const gate = createDeferred<void>();
+  const answer = stream<string>(async ({ push }) => {
     await gate.promise;
 
     for (const chunk of benchmarkChunks) {
@@ -207,7 +276,7 @@ async function runQoreSample() {
   };
 }
 
-async function runSnapshotSample() {
+async function runSnapshotSample(): Promise<BenchmarkRun> {
   const sandbox = createSandbox();
   let answer = '';
   let rewrittenBytes = 0;
@@ -240,7 +309,12 @@ async function runSnapshotSample() {
   };
 }
 
-function summarizeRuns(id, label, description, runs) {
+function summarizeRuns(
+  id: BenchmarkSummary['id'],
+  label: string,
+  description: string,
+  runs: BenchmarkRun[]
+): BenchmarkSummary {
   return {
     id,
     label,
@@ -260,10 +334,10 @@ function summarizeRuns(id, label, description, runs) {
   };
 }
 
-export async function runBenchmarkSuite(options = {}) {
+export async function runBenchmarkSuite(options: { samples?: number } = {}): Promise<BenchmarkSuite> {
   const samples = Math.max(1, options.samples ?? benchmarkScenario.sampleCount);
-  const qoreRuns = [];
-  const snapshotRuns = [];
+  const qoreRuns: BenchmarkRun[] = [];
+  const snapshotRuns: BenchmarkRun[] = [];
 
   for (let index = 0; index < samples; index += 1) {
     qoreRuns.push(await runQoreSample());

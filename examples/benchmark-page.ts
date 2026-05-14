@@ -1,18 +1,23 @@
-// @ts-nocheck
 import { createApp, computed, h, list, show, signal, text } from '../src/index.js';
 import { benchmarkScenario, runBenchmarkSuite } from './benchmark-core.js';
+import type { BenchmarkMeta, BenchmarkSummary, BenchmarkSuite } from './benchmark-core.js';
+import type { QoreChild } from '../src/dom/types.js';
 
-const formatMs = (value) => `${value.toFixed(value >= 10 ? 1 : 2)} ms`;
-const formatCount = (value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(Math.round(value));
+const formatMs = (value: number): string => `${value.toFixed(value >= 10 ? 1 : 2)} ms`;
+const formatCount = (value: number): string => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(Math.round(value));
 
-function Stat({ label, value, tone = 'default' }) {
+function Stat({ label, value, tone = 'default' }: {
+  label: string;
+  value: () => string;
+  tone?: 'default' | 'live' | 'warm';
+}): QoreChild {
   return h('article', { className: ['stat', `tone-${tone}`] },
     h('span', { className: 'stat-label' }, label),
     h('strong', { className: 'stat-value' }, text(value))
   );
 }
 
-function ResultCard({ result, leader }) {
+function ResultCard({ result, leader }: { result: BenchmarkSummary; leader: boolean }): QoreChild {
   return h('article', { className: () => ['benchmark-card', { leader }] },
     h('div', { className: 'compare-head' },
       h('div', null,
@@ -34,14 +39,14 @@ function ResultCard({ result, leader }) {
 }
 
 createApp(() => {
-  const suite = signal({
+  const suite = signal<BenchmarkSuite>({
     meta: {
       ...benchmarkScenario,
       methodology: 'Same transcript, same chunks, same final text. The only difference is how the UI path handles each token.'
     },
     results: []
   });
-  const status = signal('idle');
+  const status = signal<'idle' | 'running' | 'ready' | 'error'>('idle');
   const error = signal('');
   const runs = signal(0);
 
@@ -66,7 +71,7 @@ createApp(() => {
     return `Qore finishes ${durationRatio.toFixed(1)}x faster, avoids about ${formatCount(savedNodes)} rebuilt nodes, and skips roughly ${formatCount(savedMarkup)} regenerated HTML bytes per run.`;
   });
 
-  const run = async () => {
+  const run = async (): Promise<void> => {
     if (status() === 'running') {
       return;
     }

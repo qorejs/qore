@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createOpenAI, stream } from '../src/index.js';
 
 // Keep the first real-provider example tiny: stream tokens to stdout from one prompt.

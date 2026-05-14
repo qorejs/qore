@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { renderMarkdown } from './render-markdown.js';
 
 // Keep the same prompts as the Qore demo so the comparison stays apples-to-apples.
