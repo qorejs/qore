@@ -171,6 +171,18 @@ export function createResponse<TChunk, TValue>(options: CreateResponseOptions<TC
       && !controller.signal.aborted
     );
 
+    const settleExitedRun = (): TValue => {
+      if (currentRunId !== runId) {
+        return value.peek();
+      }
+
+      if (status.peek() === 'error') {
+        throw error.peek() ?? new Error('Response failed');
+      }
+
+      return value.peek();
+    };
+
     batch(() => {
       if (resetValue) {
         value(nextSeed);
@@ -224,13 +236,13 @@ export function createResponse<TChunk, TValue>(options: CreateResponseOptions<TC
       await executor(context);
 
       if (!isCurrentRun()) {
-        return value.peek();
+        return settleExitedRun();
       }
 
       return complete();
     } catch (reason) {
       if (!isCurrentRun()) {
-        return value.peek();
+        return settleExitedRun();
       }
 
       throw fail(reason);

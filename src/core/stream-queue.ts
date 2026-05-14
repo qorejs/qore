@@ -1,16 +1,18 @@
-// @ts-nocheck
 import { normalizeError } from '../shared/utils.js';
 
-// Bridge producer pushes and async iteration with a minimal internal queue.
-export class AsyncQueue {
-  constructor() {
-    this.values = [];
-    this.waiters = [];
-    this.closed = false;
-    this.error = null;
-  }
+interface QueueWaiter<T> {
+  resolve(result: IteratorResult<T>): void;
+  reject(reason?: unknown): void;
+}
 
-  push(value) {
+// Bridge producer pushes and async iteration with a minimal internal queue.
+export class AsyncQueue<T> implements AsyncIterableIterator<T> {
+  values: T[] = [];
+  waiters: QueueWaiter<T>[] = [];
+  closed = false;
+  error: Error | null = null;
+
+  push(value: T): void {
     if (this.closed) {
       return;
     }
@@ -25,7 +27,7 @@ export class AsyncQueue {
     this.values.push(value);
   }
 
-  close() {
+  close(): void {
     if (this.closed) {
       return;
     }
@@ -34,11 +36,11 @@ export class AsyncQueue {
 
     while (this.waiters.length > 0) {
       const waiter = this.waiters.shift();
-      waiter.resolve({ value: undefined, done: true });
+      waiter?.resolve({ value: undefined, done: true });
     }
   }
 
-  fail(error) {
+  fail(error: unknown): void {
     if (this.closed) {
       return;
     }
@@ -48,13 +50,14 @@ export class AsyncQueue {
 
     while (this.waiters.length > 0) {
       const waiter = this.waiters.shift();
-      waiter.reject(this.error);
+      waiter?.reject(this.error);
     }
   }
 
-  next() {
+  next(): Promise<IteratorResult<T>> {
     if (this.values.length > 0) {
-      return Promise.resolve({ value: this.values.shift(), done: false });
+      const value = this.values.shift() as T;
+      return Promise.resolve({ value, done: false });
     }
 
     if (this.closed) {
@@ -65,17 +68,17 @@ export class AsyncQueue {
       return Promise.resolve({ value: undefined, done: true });
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<IteratorResult<T>>((resolve, reject) => {
       this.waiters.push({ resolve, reject });
     });
   }
 
-  return() {
+  return(): Promise<IteratorResult<T>> {
     this.close();
     return Promise.resolve({ value: undefined, done: true });
   }
 
-  [Symbol.asyncIterator]() {
+  [Symbol.asyncIterator](): AsyncIterableIterator<T> {
     return this;
   }
 }

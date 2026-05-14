@@ -113,6 +113,20 @@ test('fail cannot override a completed response', () => {
   assert.equal(answer.error(), null);
 });
 
+// Explicit lifecycle failures should reject the run promise, not silently resolve.
+test('run rejects when the executor fails the active response explicitly', async () => {
+  const answer = response.text();
+
+  await assert.rejects(answer.run(async ({ push, fail }) => {
+    push('partial');
+    fail(new Error('boom'));
+  }), /boom/);
+
+  assert.equal(answer.status(), 'error');
+  assert.equal(answer.value(), 'partial');
+  assert.equal(answer.error()?.message, 'boom');
+});
+
 // Snapshots should be safe to inspect without exposing the live internal chunk array.
 test('snapshot returns a defensive copy of chunks', () => {
   const answer = response.list<{ step: number }>();

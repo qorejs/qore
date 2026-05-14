@@ -1,4 +1,3 @@
-// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -21,13 +20,13 @@ test('stream is also a signal and accumulates text by default', async () => {
 
 // Async iteration should still expose every original chunk in order.
 test('stream yields chunks pushed by the producer', async () => {
-  const source = stream(async ({ push }) => {
+  const source = stream<string>(async ({ push }) => {
     push('stream');
     push('ing');
     push('-first');
   });
 
-  const chunks = [];
+  const chunks: string[] = [];
 
   for await (const chunk of source) {
     chunks.push(chunk);
@@ -50,7 +49,7 @@ test('stream.list keeps structured chunks in signal form', async () => {
 
 // Wrapping an existing stream should treat it as data, not as a setup callback.
 test('stream can wrap another stream without treating it like a setup function', async () => {
-  const source = stream(async ({ push }) => {
+  const source = stream<string>(async ({ push }) => {
     push('stream');
     push('ing');
     push('-first');
@@ -109,7 +108,7 @@ test('stream.latest keeps only the newest chunk as its signal value', async () =
 
 // paced streams should visibly space out chunk delivery for streaming UIs.
 test('stream.paced spaces chunk delivery over time', async () => {
-  const timestamps = [];
+  const timestamps: number[] = [];
   const answer = stream.paced(async ({ push }) => {
     await sleep(0);
     await push('Q');
@@ -128,8 +127,8 @@ test('stream.paced spaces chunk delivery over time', async () => {
   assert.equal(answer(), 'Qore');
   assert.equal(timestamps.length, 3);
   assert.ok(elapsed >= 24);
-  assert.ok(timestamps[1] - timestamps[0] >= 8);
-  assert.ok(timestamps[2] - timestamps[1] >= 8);
+  assert.ok(timestamps[1]! - timestamps[0]! >= 8);
+  assert.ok(timestamps[2]! - timestamps[1]! >= 8);
 });
 
 // Iterable sources should honor the same backpressure behavior as manual producers.
@@ -145,7 +144,7 @@ test('stream.withBackpressure applies pacing to iterable sources too', async () 
 
 // Unawaited producer writes should still enter the UI one chunk at a time under pacing.
 test('stream.withBackpressure serializes manual pushes even without awaiting push', async () => {
-  const timestamps = [];
+  const timestamps: number[] = [];
   const answer = stream.withBackpressure(async ({ push }) => {
     push('Q');
     push('o');
@@ -162,8 +161,8 @@ test('stream.withBackpressure serializes manual pushes even without awaiting pus
   assert.equal(answer(), 'Qore');
   assert.equal(timestamps.length, 3);
   assert.ok(Date.now() - startedAt >= 20);
-  assert.ok(timestamps[1] - timestamps[0] >= 8);
-  assert.ok(timestamps[2] - timestamps[1] >= 8);
+  assert.ok(timestamps[1]! - timestamps[0]! >= 8);
+  assert.ok(timestamps[2]! - timestamps[1]! >= 8);
 });
 
 // Overflow strategies should be able to trim buffered chunks while exposing what was dropped.
@@ -202,16 +201,35 @@ test('stream abort flushes queued writes created by unawaited producers', async 
   assert.equal(answer(), 'A');
 });
 
+// Overflow errors should reject ready and expose the lifecycle failure cleanly.
+test('stream.withBackpressure surfaces overflow errors through ready and status', async () => {
+  const answer = stream.withBackpressure(async ({ push }) => {
+    push('A');
+    push('B');
+    push('C');
+  }, {
+    interval: 18,
+    buffer: 1,
+    overflow: 'error'
+  });
+
+  await assert.rejects(answer.ready, /buffer overflow/);
+
+  assert.equal(answer.status(), 'error');
+  assert.equal(answer.error()?.message, 'Qore stream backpressure buffer overflow');
+  assert.equal(answer.buffered(), 0);
+});
+
 // Derived streams should preserve the chunk-by-chunk composition model.
 test('mapStream transforms a source stream', async () => {
-  const source = stream(async ({ push }) => {
+  const source = stream<number>(async ({ push }) => {
     push(1);
     push(2);
     push(3);
   });
 
   const mapped = mapStream(source, (value) => value * 10);
-  const chunks = [];
+  const chunks: number[] = [];
 
   for await (const chunk of mapped) {
     chunks.push(chunk);
@@ -222,14 +240,14 @@ test('mapStream transforms a source stream', async () => {
 
 // scanStream should emit the running reduction after each source chunk.
 test('scanStream turns a stream into a running reduction', async () => {
-  const source = stream(async ({ push }) => {
+  const source = stream<number>(async ({ push }) => {
     push(1);
     push(2);
     push(3);
   });
 
   const scanned = scanStream(source, (total, value) => total + value, 0);
-  const totals = [];
+  const totals: number[] = [];
 
   for await (const total of scanned) {
     totals.push(total);

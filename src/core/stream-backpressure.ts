@@ -1,6 +1,9 @@
-// @ts-nocheck
+import type { BackpressureOptions, Deferred, NormalizedBackpressure } from './stream-types.js';
+
 // Normalize backpressure into one consistent shape the runtime can enforce.
-export function normalizeBackpressure(backpressure) {
+export function normalizeBackpressure(
+  backpressure: number | BackpressureOptions | null | undefined
+): NormalizedBackpressure {
   if (backpressure == null) {
     return {
       interval: 0,
@@ -34,10 +37,10 @@ export function normalizeBackpressure(backpressure) {
 }
 
 // Build a deferred promise so queue operations can wait for capacity or completion.
-export function createDeferred() {
-  let resolve = null;
-  let reject = null;
-  const promise = new Promise((nextResolve, nextReject) => {
+export function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
     resolve = nextResolve;
     reject = nextReject;
   });
