@@ -12,7 +12,10 @@ export default defineConfig({
   expect: {
     timeout: 15_000
   },
-  reporter: isCI ? [['dot']] : [['list']],
+  reporter: isCI
+    ? [['dot'], ['html', { outputFolder: 'playwright-report', open: 'never' }], ['json', { outputFile: 'test-results/browser-smoke.json' }]]
+    : [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
+  preserveOutput: 'always',
   use: {
     baseURL,
     trace: 'on-first-retry',

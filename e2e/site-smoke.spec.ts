@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
+import type { BenchmarkSuite } from '../examples/benchmark-core.js';
 
-function installConsoleGuards(page: import('@playwright/test').Page): string[] {
+function installConsoleGuards(page: Page): string[] {
   const issues: string[] = [];
 
   page.on('console', (message) => {
@@ -16,13 +18,56 @@ function installConsoleGuards(page: import('@playwright/test').Page): string[] {
   return issues;
 }
 
-async function expectHealthyPage(page: import('@playwright/test').Page, issues: string[]): Promise<void> {
+async function expectHealthyPage(page: Page, issues: string[]): Promise<void> {
   await expect(page.locator('body')).not.toBeEmpty();
   await expect(page.locator('[data-nextjs-dialog-overlay], vite-error-overlay, #webpack-dev-server-client-overlay')).toHaveCount(0);
   expect(issues).toEqual([]);
 }
 
-test('homepage stream demo and benchmark stay interactive', async ({ page }) => {
+async function attachViewportScreenshot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
+  await testInfo.attach(name, {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
+}
+
+async function attachLocatorScreenshot(page: Page, testInfo: TestInfo, testId: string, name: string): Promise<void> {
+  await testInfo.attach(name, {
+    body: await page.getByTestId(testId).screenshot(),
+    contentType: 'image/png'
+  });
+}
+
+async function readBenchmarkSuite(page: Page): Promise<BenchmarkSuite> {
+  const suite = await page.evaluate(() => {
+    const benchmarkWindow = window as Window & { __QORE_BENCHMARK__?: BenchmarkSuite };
+    return benchmarkWindow.__QORE_BENCHMARK__ ?? null;
+  });
+
+  expect(suite).not.toBeNull();
+  return suite as BenchmarkSuite;
+}
+
+function expectBenchmarkSuiteShape(suite: BenchmarkSuite): void {
+  const qore = suite.results.find((result) => result.id === 'qore');
+  const snapshot = suite.results.find((result) => result.id === 'snapshot');
+
+  expect(suite.meta.chunkCount).toBeGreaterThan(0);
+  expect(suite.meta.characterCount).toBeGreaterThan(0);
+  expect(qore).toBeTruthy();
+  expect(snapshot).toBeTruthy();
+  expect(qore?.averageCharacterDataMutations).toBeGreaterThan(0);
+  expect(snapshot?.averageRewrittenBytes).toBeGreaterThan(0);
+}
+
+async function attachBenchmarkSuite(testInfo: TestInfo, suite: BenchmarkSuite): Promise<void> {
+  await testInfo.attach('benchmark-suite.json', {
+    body: JSON.stringify(suite, null, 2),
+    contentType: 'application/json'
+  });
+}
+
+test('homepage stream demo and benchmark stay interactive', async ({ page }, testInfo) => {
   const issues = installConsoleGuards(page);
 
   await page.goto('index.html');
@@ -52,10 +97,12 @@ test('homepage stream demo and benchmark stay interactive', async ({ page }) => 
   await expect(page.getByTestId('home-benchmark-run')).toContainText(/Running|Run Again/);
   await expect(page.getByTestId('home-benchmark-summary')).toBeVisible();
 
+  await attachViewportScreenshot(page, testInfo, 'homepage-viewport.png');
+  await attachLocatorScreenshot(page, testInfo, 'home-page', 'homepage-full-surface.png');
   await expectHealthyPage(page, issues);
 });
 
-test('focused streaming demo supports multi-turn chat', async ({ page }) => {
+test('focused streaming demo supports multi-turn chat', async ({ page }, testInfo) => {
   const issues = installConsoleGuards(page);
 
   await page.goto('examples/streaming-response.html');
@@ -72,10 +119,12 @@ test('focused streaming demo supports multi-turn chat', async ({ page }) => {
   await expect.poll(async () => (await page.getByTestId('focused-state-assistant').last().textContent())?.trim()).toBe('done');
   await expect(page.getByTestId('focused-message-assistant').last()).toContainText('Stream = Signal');
 
+  await attachViewportScreenshot(page, testInfo, 'focused-demo-viewport.png');
+  await attachLocatorScreenshot(page, testInfo, 'focused-demo', 'focused-demo-surface.png');
   await expectHealthyPage(page, issues);
 });
 
-test('dedicated benchmark page renders both rendering-path cards', async ({ page }) => {
+test('dedicated benchmark page renders both rendering-path cards', async ({ page }, testInfo) => {
   const issues = installConsoleGuards(page);
 
   await page.goto('examples/benchmark.html');
@@ -89,5 +138,10 @@ test('dedicated benchmark page renders both rendering-path cards', async ({ page
   await page.getByTestId('benchmark-run').click();
   await expect(page.getByTestId('benchmark-summary')).toContainText(/Qore|Run the benchmark/i);
 
+  const suite = await readBenchmarkSuite(page);
+  expectBenchmarkSuiteShape(suite);
+  await attachBenchmarkSuite(testInfo, suite);
+  await attachViewportScreenshot(page, testInfo, 'benchmark-viewport.png');
+  await attachLocatorScreenshot(page, testInfo, 'benchmark-page', 'benchmark-page-surface.png');
   await expectHealthyPage(page, issues);
 });

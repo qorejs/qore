@@ -3,6 +3,12 @@ import { benchmarkScenario, runBenchmarkSuite } from './benchmark-core.js';
 import type { BenchmarkMeta, BenchmarkSummary, BenchmarkSuite } from './benchmark-core.js';
 import type { QoreChild } from '../src/dom/types.js';
 
+declare global {
+  interface Window {
+    __QORE_BENCHMARK__?: BenchmarkSuite;
+  }
+}
+
 const formatMs = (value: number): string => `${value.toFixed(value >= 10 ? 1 : 2)} ms`;
 const formatCount = (value: number): string => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(Math.round(value));
 
@@ -83,7 +89,9 @@ createApp(() => {
     error('');
 
     try {
-      suite(await runBenchmarkSuite());
+      const nextSuite = await runBenchmarkSuite();
+      suite(nextSuite);
+      window.__QORE_BENCHMARK__ = nextSuite;
       runs.update((count) => count + 1);
       status('ready');
     } catch (reason) {

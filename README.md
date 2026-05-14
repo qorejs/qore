@@ -278,6 +278,8 @@ It validates:
 
 The suite checks desktop and mobile layouts, watches for runtime console errors, exercises the primary interactions, and runs inside `release:check`.
 
+CI also uploads the browser regression evidence as workflow artifacts. The bundle includes viewport screenshots, focused page-surface screenshots, the Playwright HTML report, and a `benchmark-suite.json` attachment from the dedicated benchmark page.
+
 If a locked-down local shell cannot launch a supported headless browser, the script will defer to CI unless you force a hard local failure with `QORE_BROWSER_SMOKE_REQUIRED=1`.
 
 ## Benchmark Methodology

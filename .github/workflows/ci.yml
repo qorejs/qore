@@ -52,6 +52,17 @@ jobs:
         if: matrix.node-version == 20
         run: npm run test:browser
 
+      - name: Upload browser regression artifacts
+        if: matrix.node-version == 20 && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qore-browser-regression-node-20
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Verify committed dist artifacts are current
         run: npm run check:dist
 
