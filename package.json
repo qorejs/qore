@@ -48,7 +48,7 @@
     "framework",
     "async-iterable"
   ],
-  "homepage": "https://github.com/qorejs/qore#readme",
+  "homepage": "https://qorejs.dev/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/qorejs/qore.git"
