@@ -1,11 +1,19 @@
-// @ts-nocheck
 import { createSSEAdapter, readEnv } from './sse.js';
+import type {
+  OpenAIAdapter,
+  OpenAIChatInput,
+  OpenAIEvent,
+  OpenAIMessage,
+  OpenAIOptions,
+  OpenAIRequest,
+  ProviderRequestOptions
+} from './types.js';
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_MODEL = 'gpt-5';
 
 // Treat plain chat text as one user message so callers can start from a single string.
-function normalizeChatInput(input) {
+function normalizeChatInput(input: OpenAIChatInput): OpenAIMessage[] | Record<string, unknown> {
   if (typeof input === 'string') {
     return [{ role: 'user', content: input }];
   }
@@ -22,7 +30,7 @@ function normalizeChatInput(input) {
 }
 
 // Keep provider setup explicit because real API keys should stay off the client.
-export function createOpenAI(options = {}) {
+export function createOpenAI(options: OpenAIOptions = {}): OpenAIAdapter {
   const {
     apiKey,
     baseURL = DEFAULT_BASE_URL,
@@ -36,7 +44,7 @@ export function createOpenAI(options = {}) {
     throw new Error('Qore OpenAI adapter requires an API key. Pass apiKey or set OPENAI_API_KEY.');
   }
 
-  const transport = createSSEAdapter({
+  const transport = createSSEAdapter<OpenAIRequest, OpenAIChatInput, OpenAIEvent>({
     name: 'OpenAI',
     url: `${baseURL}/responses`,
     headers: {
@@ -45,7 +53,7 @@ export function createOpenAI(options = {}) {
       ...defaultHeaders
     },
     fetch: fetchImpl,
-    buildRequest(request, requestOptions = {}) {
+    buildRequest(request, requestOptions: ProviderRequestOptions = {}) {
       const { signal, headers = {}, ...overrides } = requestOptions;
 
       return {
@@ -60,21 +68,31 @@ export function createOpenAI(options = {}) {
         })
       };
     },
-    parse: JSON.parse,
+    parse: (data) => JSON.parse(data) as OpenAIEvent,
     isError: (event) => event.data?.type === 'error',
-    getError: (event) => event.data?.error?.message ?? 'OpenAI streaming error',
-    eventToText: (event) => event.data?.type === 'response.output_text.delta' && typeof event.data.delta === 'string'
-      ? event.data.delta
+    getError: (event) => {
+      const errorEvent = event.data as { error?: { message?: string } };
+      return errorEvent.error?.message ?? 'OpenAI streaming error';
+    },
+    eventToText: (event) => event.data?.type === 'response.output_text.delta'
+      && typeof (event.data as { delta?: unknown }).delta === 'string'
+      ? (event.data as unknown as { delta: string }).delta
       : undefined
   });
 
-  async function* streamEvents(request, requestOptions = {}) {
+  async function* streamEvents(
+    request: OpenAIRequest,
+    requestOptions: ProviderRequestOptions = {}
+  ): AsyncIterable<OpenAIEvent> {
     for await (const event of transport.stream(request, requestOptions)) {
       yield event.data;
     }
   }
 
-  async function* streamText(input, requestOptions = {}) {
+  async function* streamText(
+    input: string | OpenAIRequest,
+    requestOptions: ProviderRequestOptions = {}
+  ): AsyncIterable<string> {
     const request = input && typeof input === 'object' && 'input' in input
       ? input
       : { input };
@@ -91,17 +109,18 @@ export function createOpenAI(options = {}) {
     },
 
     // Stream only text deltas for the common chat-response case.
-    streamText(input, requestOptions = {}) {
+    streamText(input: string | OpenAIRequest, requestOptions: ProviderRequestOptions = {}) {
       return streamText(input, requestOptions);
     },
 
     // Match the Qore narrative directly: stream(openai.chat(prompt)).
-    chat(input, requestOptions = {}) {
+    chat(input: OpenAIChatInput, requestOptions: ProviderRequestOptions = {}) {
       const {
         signal,
         headers,
-        ...request
+        ...rest
       } = requestOptions;
+      const request = { ...rest } as OpenAIRequest;
 
       if (!('input' in request)) {
         request.input = normalizeChatInput(input);

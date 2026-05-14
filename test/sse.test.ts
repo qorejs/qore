@@ -1,13 +1,13 @@
-// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createSSEAdapter } from '../src/index.js';
+import type { SSEEvent } from '../src/providers/types.js';
 
 const encoder = new TextEncoder();
 
 // Turn event payloads into a tiny text/event-stream body for adapter tests.
-function createSSEBody(chunks) {
+function createSSEBody(chunks: string[]): ReadableStream<Uint8Array> {
   return new ReadableStream({
     start(controller) {
       for (const chunk of chunks) {
@@ -20,8 +20,13 @@ function createSSEBody(chunks) {
 }
 
 test('createSSEAdapter can map a custom chat endpoint into stream(provider.chat(...))', async () => {
-  const calls = [];
-  const provider = createSSEAdapter({
+  const calls: Array<{
+    url: string | URL | Request;
+    method?: string;
+    headers?: HeadersInit;
+    body: Record<string, unknown>;
+  }> = [];
+  const provider = createSSEAdapter<{ prompt: string }, string, { type?: string; text?: string }>({
     name: 'Generic Chat',
     url: 'https://example.com/stream',
     headers: {
@@ -30,9 +35,9 @@ test('createSSEAdapter can map a custom chat endpoint into stream(provider.chat(
     fetch: async (url, init) => {
       calls.push({
         url,
-        method: init.method,
-        headers: init.headers,
-        body: JSON.parse(init.body)
+        method: init?.method,
+        headers: init?.headers,
+        body: JSON.parse(String(init?.body))
       });
 
       return new Response(createSSEBody([
@@ -61,7 +66,7 @@ test('createSSEAdapter can map a custom chat endpoint into stream(provider.chat(
     eventToText: (event) => event.data?.type === 'token' ? event.data.text : undefined
   });
 
-  const chunks = [];
+  const chunks: string[] = [];
 
   for await (const chunk of provider.chat('hello world')) {
     chunks.push(chunk);
@@ -71,12 +76,13 @@ test('createSSEAdapter can map a custom chat endpoint into stream(provider.chat(
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://example.com/stream');
   assert.equal(calls[0].method, 'POST');
-  assert.equal(calls[0].headers.Authorization, 'Bearer generic-key');
+  const headers = calls[0].headers as Record<string, string>;
+  assert.equal(headers.Authorization, 'Bearer generic-key');
   assert.deepEqual(calls[0].body, { prompt: 'hello world' });
 });
 
 test('createSSEAdapter stream preserves raw SSE metadata alongside parsed data', async () => {
-  const provider = createSSEAdapter({
+  const provider = createSSEAdapter<Record<string, unknown>, unknown, { text: string }>({
     name: 'Generic Events',
     url: 'https://example.com/events',
     fetch: async () => new Response(createSSEBody([
@@ -92,7 +98,7 @@ test('createSSEAdapter stream preserves raw SSE metadata alongside parsed data',
     buildRequest: () => ({ method: 'GET' })
   });
 
-  const seen = [];
+  const seen: Array<SSEEvent<{ text: string }>> = [];
 
   for await (const event of provider.stream()) {
     seen.push(event);
@@ -107,7 +113,7 @@ test('createSSEAdapter stream preserves raw SSE metadata alongside parsed data',
 });
 
 test('createSSEAdapter surfaces SSE error events through the adapter hook', async () => {
-  const provider = createSSEAdapter({
+  const provider = createSSEAdapter<Record<string, unknown>, unknown, { type?: string; message?: string }>({
     name: 'Generic Errors',
     url: 'https://example.com/errors',
     fetch: async () => new Response(createSSEBody([

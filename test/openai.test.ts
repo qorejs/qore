@@ -1,13 +1,13 @@
-// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createOpenAI } from '../src/index.js';
+import type { OpenAIEvent } from '../src/providers/types.js';
 
 const encoder = new TextEncoder();
 
 // Turn event payloads into a tiny text/event-stream body for adapter tests.
-function createSSEBody(events) {
+function createSSEBody(events: OpenAIEvent[]): ReadableStream<Uint8Array> {
   return new ReadableStream({
     start(controller) {
       for (const event of events) {
@@ -21,15 +21,20 @@ function createSSEBody(events) {
 }
 
 test('createOpenAI chat streams text deltas from the Responses API', async () => {
-  const calls = [];
+  const calls: Array<{
+    url: string | URL | Request;
+    method?: string;
+    headers?: HeadersInit;
+    body: Record<string, unknown>;
+  }> = [];
   const openai = createOpenAI({
     apiKey: 'test-key',
     fetch: async (url, init) => {
       calls.push({
         url,
-        method: init.method,
-        headers: init.headers,
-        body: JSON.parse(init.body)
+        method: init?.method,
+        headers: init?.headers,
+        body: JSON.parse(String(init?.body))
       });
 
       return new Response(createSSEBody([
@@ -46,7 +51,7 @@ test('createOpenAI chat streams text deltas from the Responses API', async () =>
     }
   });
 
-  const chunks = [];
+  const chunks: string[] = [];
 
   for await (const chunk of openai.chat('Why stream should be signal?', {
     model: 'gpt-5',
@@ -59,7 +64,8 @@ test('createOpenAI chat streams text deltas from the Responses API', async () =>
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://api.openai.com/v1/responses');
   assert.equal(calls[0].method, 'POST');
-  assert.equal(calls[0].headers.Authorization, 'Bearer test-key');
+  const headers = calls[0].headers as Record<string, string>;
+  assert.equal(headers.Authorization, 'Bearer test-key');
   assert.equal(calls[0].body.model, 'gpt-5');
   assert.equal(calls[0].body.stream, true);
   assert.equal(calls[0].body.instructions, 'Keep it short.');
@@ -81,7 +87,7 @@ test('createOpenAI responses.stream yields typed events', async () => {
     })
   });
 
-  const seen = [];
+  const seen: string[] = [];
 
   for await (const event of openai.responses.stream({ input: 'hello' })) {
     seen.push(event.type);
@@ -114,13 +120,13 @@ test('createOpenAI does not assume process exists when API keys are missing', ()
   const originalProcess = globalThis.process;
 
   try {
-    globalThis.process = undefined;
+    (globalThis as typeof globalThis & { process?: typeof process }).process = undefined;
 
     assert.throws(
       () => createOpenAI({ fetch: async () => new Response(null) }),
       /requires an API key/
     );
   } finally {
-    globalThis.process = originalProcess;
+    (globalThis as typeof globalThis & { process?: typeof process }).process = originalProcess;
   }
 });

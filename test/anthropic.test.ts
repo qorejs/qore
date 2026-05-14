@@ -1,13 +1,13 @@
-// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createAnthropic } from '../src/index.js';
+import type { AnthropicEvent } from '../src/providers/types.js';
 
 const encoder = new TextEncoder();
 
 // Turn event payloads into a tiny text/event-stream body for adapter tests.
-function createSSEBody(events) {
+function createSSEBody(events: AnthropicEvent[]): ReadableStream<Uint8Array> {
   return new ReadableStream({
     start(controller) {
       for (const event of events) {
@@ -21,15 +21,20 @@ function createSSEBody(events) {
 }
 
 test('createAnthropic chat streams text deltas from the Messages API', async () => {
-  const calls = [];
+  const calls: Array<{
+    url: string | URL | Request;
+    method?: string;
+    headers?: HeadersInit;
+    body: Record<string, unknown>;
+  }> = [];
   const anthropic = createAnthropic({
     apiKey: 'test-key',
     fetch: async (url, init) => {
       calls.push({
         url,
-        method: init.method,
-        headers: init.headers,
-        body: JSON.parse(init.body)
+        method: init?.method,
+        headers: init?.headers,
+        body: JSON.parse(String(init?.body))
       });
 
       return new Response(createSSEBody([
@@ -46,7 +51,7 @@ test('createAnthropic chat streams text deltas from the Messages API', async () 
     }
   });
 
-  const chunks = [];
+  const chunks: string[] = [];
 
   for await (const chunk of anthropic.chat('Why stream should be signal?', {
     system: 'Keep it short.',
@@ -59,8 +64,9 @@ test('createAnthropic chat streams text deltas from the Messages API', async () 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://api.anthropic.com/v1/messages');
   assert.equal(calls[0].method, 'POST');
-  assert.equal(calls[0].headers['x-api-key'], 'test-key');
-  assert.equal(calls[0].headers['anthropic-version'], '2023-06-01');
+  const headers = calls[0].headers as Record<string, string>;
+  assert.equal(headers['x-api-key'], 'test-key');
+  assert.equal(headers['anthropic-version'], '2023-06-01');
   assert.equal(calls[0].body.model, 'claude-sonnet-4-20250514');
   assert.equal(calls[0].body.stream, true);
   assert.equal(calls[0].body.max_tokens, 256);
@@ -83,7 +89,7 @@ test('createAnthropic messages.stream yields typed events', async () => {
     })
   });
 
-  const seen = [];
+  const seen: string[] = [];
 
   for await (const event of anthropic.messages.stream({ messages: [{ role: 'user', content: 'hello' }] })) {
     seen.push(event.type);

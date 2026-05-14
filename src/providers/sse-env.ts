@@ -1,14 +1,14 @@
-// @ts-nocheck
+import type { ProviderHeaders } from './types.js';
 
 // Read environment variables without assuming a Node-only runtime.
-export function readEnv(name) {
+export function readEnv(name: string): string | undefined {
   return typeof process !== 'undefined' && process?.env
     ? process.env[name]
     : undefined;
 }
 
 // Read one JSON or text error body so adapter failures surface clearly.
-export async function readErrorBody(response) {
+export async function readErrorBody(response: Response): Promise<string> {
   const contentType = response.headers.get('content-type') ?? '';
 
   if (contentType.includes('application/json')) {
@@ -29,7 +29,10 @@ export async function readErrorBody(response) {
 }
 
 // Merge headers while allowing per-request overrides.
-export function mergeHeaders(baseHeaders = {}, nextHeaders = {}) {
+export function mergeHeaders(
+  baseHeaders: ProviderHeaders = {},
+  nextHeaders: ProviderHeaders = {}
+): ProviderHeaders {
   return {
     ...baseHeaders,
     ...nextHeaders

@@ -1,10 +1,22 @@
-// @ts-nocheck
 import { normalizeError } from '../shared/utils.js';
 import { mergeHeaders, readErrorBody } from './sse-env.js';
 import { getErrorMessage, isErrorEvent, parseEventData, readSSE } from './sse-parser.js';
+import type {
+  ProviderRequestOptions,
+  SSEAdapter,
+  SSEAdapterOptions,
+  SSEEvent,
+  SSERequestConfig
+} from './types.js';
+
+function isRequestConfig(value: unknown): value is SSERequestConfig {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
 // Expose a generic SSE adapter so Qore can integrate with any token-streaming endpoint.
-export function createSSEAdapter(options = {}) {
+export function createSSEAdapter<TRequest = Record<string, unknown>, TChatInput = unknown, TData = unknown>(
+  options: SSEAdapterOptions<TRequest, TChatInput, TData> = {}
+): SSEAdapter<TRequest, TChatInput, TData> {
   const {
     name = 'SSE',
     url: defaultURL,
@@ -23,14 +35,17 @@ export function createSSEAdapter(options = {}) {
     throw new Error(`Qore ${name} adapter requires fetch in the current runtime`);
   }
 
-  async function* stream(request = {}, requestOptions = {}) {
+  async function* stream(
+    request: TRequest = {} as TRequest,
+    requestOptions: ProviderRequestOptions = {}
+  ): AsyncIterable<SSEEvent<TData>> {
     const builtRequest = buildRequest
       ? await buildRequest(request, requestOptions)
       : request;
 
-    const requestConfig = builtRequest && typeof builtRequest === 'object' && !Array.isArray(builtRequest)
+    const requestConfig = isRequestConfig(builtRequest)
       ? builtRequest
-      : { body: builtRequest };
+      : { body: builtRequest as BodyInit | null };
     const {
       url = defaultURL,
       method = defaultMethod,
@@ -70,12 +85,12 @@ export function createSSEAdapter(options = {}) {
       let parsedEvent;
 
       try {
-        parsedEvent = await parse(rawEvent.data, rawEvent);
+        parsedEvent = await parse(rawEvent.data, rawEvent) as TData;
       } catch (error) {
         throw normalizeError(error);
       }
 
-      const nextEvent = {
+      const nextEvent: SSEEvent<TData> = {
         ...rawEvent,
         data: parsedEvent
       };
@@ -88,7 +103,10 @@ export function createSSEAdapter(options = {}) {
     }
   }
 
-  async function* streamText(request = {}, requestOptions = {}) {
+  async function* streamText(
+    request: TRequest = {} as TRequest,
+    requestOptions: ProviderRequestOptions = {}
+  ): AsyncIterable<string> {
     for await (const event of stream(request, requestOptions)) {
       const nextText = await eventToText(event, request, requestOptions);
 
@@ -106,7 +124,7 @@ export function createSSEAdapter(options = {}) {
     streamText,
 
     // Offer the same narrative shape as provider SDKs when buildChatRequest is supplied.
-    chat(input, requestOptions = {}) {
+    chat(input: TChatInput, requestOptions: ProviderRequestOptions = {}) {
       if (typeof buildChatRequest !== 'function') {
         throw new Error(`Qore ${name} adapter does not define chat(). Use stream() or streamText() instead.`);
       }

@@ -1,5 +1,13 @@
-// @ts-nocheck
 import { createSSEAdapter, readEnv } from './sse.js';
+import type {
+  AnthropicAdapter,
+  AnthropicChatInput,
+  AnthropicEvent,
+  AnthropicMessage,
+  AnthropicOptions,
+  AnthropicRequest,
+  ProviderRequestOptions
+} from './types.js';
 
 const DEFAULT_BASE_URL = 'https://api.anthropic.com/v1';
 const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
@@ -7,7 +15,7 @@ const DEFAULT_VERSION = '2023-06-01';
 const DEFAULT_MAX_TOKENS = 1024;
 
 // Normalize single-string prompts into Anthropic's Messages API shape.
-function normalizeMessages(input) {
+function normalizeMessages(input: AnthropicChatInput): AnthropicMessage[] | Record<string, unknown> {
   if (typeof input === 'string') {
     return [{ role: 'user', content: input }];
   }
@@ -24,7 +32,7 @@ function normalizeMessages(input) {
 }
 
 // Keep provider setup explicit because real API keys should stay off the client.
-export function createAnthropic(options = {}) {
+export function createAnthropic(options: AnthropicOptions = {}): AnthropicAdapter {
   const {
     apiKey,
     baseURL = DEFAULT_BASE_URL,
@@ -40,7 +48,7 @@ export function createAnthropic(options = {}) {
     throw new Error('Qore Anthropic adapter requires an API key. Pass apiKey or set ANTHROPIC_API_KEY.');
   }
 
-  const transport = createSSEAdapter({
+  const transport = createSSEAdapter<AnthropicRequest, AnthropicChatInput, AnthropicEvent>({
     name: 'Anthropic',
     url: `${baseURL}/messages`,
     headers: {
@@ -50,7 +58,7 @@ export function createAnthropic(options = {}) {
       ...defaultHeaders
     },
     fetch: fetchImpl,
-    buildRequest(request, requestOptions = {}) {
+    buildRequest(request, requestOptions: ProviderRequestOptions = {}) {
       const { signal, headers = {}, ...overrides } = requestOptions;
 
       return {
@@ -66,25 +74,35 @@ export function createAnthropic(options = {}) {
         })
       };
     },
-    parse: JSON.parse,
+    parse: (data) => JSON.parse(data) as AnthropicEvent,
     isError: (event) => event.data?.type === 'error',
-    getError: (event) => event.data?.error?.message ?? 'Anthropic streaming error',
+    getError: (event) => {
+      const errorEvent = event.data as { error?: { message?: string } };
+      return errorEvent.error?.message ?? 'Anthropic streaming error';
+    },
     eventToText: (event) => (
       event.data?.type === 'content_block_delta'
-      && event.data.delta?.type === 'text_delta'
-      && typeof event.data.delta.text === 'string'
+      && typeof (event.data as { delta?: { type?: unknown; text?: unknown } }).delta?.type === 'string'
+      && (event.data as { delta?: { type?: string; text?: unknown } }).delta?.type === 'text_delta'
+      && typeof (event.data as { delta?: { text?: unknown } }).delta?.text === 'string'
     )
-      ? event.data.delta.text
+      ? (event.data as unknown as { delta: { text: string } }).delta.text
       : undefined
   });
 
-  async function* streamEvents(request, requestOptions = {}) {
+  async function* streamEvents(
+    request: AnthropicRequest,
+    requestOptions: ProviderRequestOptions = {}
+  ): AsyncIterable<AnthropicEvent> {
     for await (const event of transport.stream(request, requestOptions)) {
       yield event.data;
     }
   }
 
-  async function* streamText(messages, requestOptions = {}) {
+  async function* streamText(
+    messages: string | AnthropicRequest,
+    requestOptions: ProviderRequestOptions = {}
+  ): AsyncIterable<string> {
     const request = messages && typeof messages === 'object' && 'messages' in messages
       ? messages
       : { messages };
@@ -101,17 +119,18 @@ export function createAnthropic(options = {}) {
     },
 
     // Stream only text delta chunks from assistant content blocks.
-    streamText(messages, requestOptions = {}) {
+    streamText(messages: string | AnthropicRequest, requestOptions: ProviderRequestOptions = {}) {
       return streamText(messages, requestOptions);
     },
 
     // Match the Qore narrative directly: stream(anthropic.chat(prompt)).
-    chat(input, requestOptions = {}) {
+    chat(input: AnthropicChatInput, requestOptions: ProviderRequestOptions = {}) {
       const {
         signal,
         headers,
-        ...request
+        ...rest
       } = requestOptions;
+      const request = { ...rest } as AnthropicRequest;
 
       if (!('messages' in request)) {
         request.messages = normalizeMessages(input);
