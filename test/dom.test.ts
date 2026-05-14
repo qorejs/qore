@@ -136,14 +136,14 @@ test('signal-based event handlers can still swap reactively', () => {
     button.dispatch('click', { type: 'click' } as unknown as Event);
     assert.deepEqual(calls, []);
 
-    handler.set((event) => {
-      calls.push(`first:${event.type}`);
+    handler.set((event: { type: string }) => {
+      (calls as string[]).push(`first:${event.type}`);
     });
 
     button.dispatch('click', { type: 'click' } as unknown as Event);
 
-    handler.set((event) => {
-      calls.push(`second:${event.type}`);
+    handler.set((event: { type: string }) => {
+      (calls as string[]).push(`second:${event.type}`);
     });
 
     button.dispatch('click', { type: 'click' } as unknown as Event);

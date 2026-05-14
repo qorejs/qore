@@ -12,7 +12,7 @@ import type {
   StreamOptions,
   StreamResponseState
 } from './stream-types.js';
-import { sleep } from '../shared/utils.js';
+import { normalizeError, sleep } from '../shared/utils.js';
 
 interface BufferedWrite<TChunk, TValue> extends Deferred<TValue> {
   chunk: TChunk;
@@ -260,7 +260,7 @@ export function createStream<TChunk, TValue = string>(
       // Surface producer failures to both async consumers and signal readers.
       fail(error: unknown): Error | TValue {
         if (terminated) {
-          return state.error.peek();
+          return state.error.peek() ?? normalizeError(error);
         }
 
         terminated = true;

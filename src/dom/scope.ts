@@ -50,7 +50,11 @@ export function disposeScope(scope: Scope | null | undefined): void {
 
   for (let index = scope.cleanups.length - 1; index >= 0; index -= 1) {
     try {
-      scope.cleanups[index]();
+      const cleanup = scope.cleanups[index];
+
+      if (cleanup) {
+        cleanup();
+      }
     } catch {
       // Ignore cleanup errors during teardown so the rest of the scope can unwind.
     }

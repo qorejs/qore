@@ -6,6 +6,7 @@ const presets = [
   '给我一个最小 AI 聊天界面',
   'Qore 为什么不是又一个 UI 库？'
 ];
+const defaultPreset = presets[0] ?? '';
 
 type ChatPart = { type: 'text'; text: string } | { type: string; text?: string };
 type ChatMessage = {
@@ -33,7 +34,7 @@ declare function useChat(): UseChatResult;
 
 // This comparison sample mirrors the Qore demo while keeping the React mental model explicit.
 export function Chat() {
-  const [input, setInput] = useState(presets[0]);
+  const [input, setInput] = useState(defaultPreset);
   const feedRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
   const { messages, sendMessage, status, stop } = useChat();
 

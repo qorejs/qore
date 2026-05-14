@@ -121,7 +121,9 @@ export function createResponse<TChunk, TValue>(options: CreateResponseOptions<TC
     const normalizedError = normalizeError(reason);
 
     if (isTerminalStatus(currentStatus)) {
-      return currentStatus === 'error' ? error.peek() : value.peek();
+      return currentStatus === 'error'
+        ? error.peek() ?? normalizedError
+        : value.peek();
     }
 
     activeController = null;
@@ -223,7 +225,9 @@ export function createResponse<TChunk, TValue>(options: CreateResponseOptions<TC
       },
       fail(reason) {
         if (!isCurrentRun()) {
-          return status.peek() === 'error' ? error.peek() : value.peek();
+          return status.peek() === 'error'
+            ? error.peek() ?? normalizeError(reason)
+            : value.peek();
         }
 
         return fail(reason);

@@ -90,7 +90,9 @@ test('stream surfaces producer failures through ready and status', async () => {
 
   assert.equal(answer.status(), 'error');
   assert.equal(answer(), 'Q');
-  assert.equal(answer.error().message, 'boom');
+  const failure = answer.error();
+  assert.ok(failure);
+  assert.equal(failure.message, 'boom');
 });
 
 // latest streams should keep every chunk in history while exposing only the newest value.

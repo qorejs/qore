@@ -18,5 +18,5 @@ export const renderMarkdown = (value = ''): string => {
     .split(/\n{2,}/)
     .map((block) => /^@@CODE\d+@@$/.test(block) || /^<h3>/.test(block) ? block : `<p>${block.replace(/\n/g, '<br />')}</p>`)
     .join('')
-    .replace(/@@CODE(\d+)@@/g, (_, index) => blocks[Number(index)]);
+    .replace(/@@CODE(\d+)@@/g, (_, index) => blocks[Number(index)] ?? '');
 };

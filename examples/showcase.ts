@@ -32,6 +32,7 @@ const presets = [
   '背压为什么值得做进核心层？',
   'Qore 为什么不做 UI 杂货铺？'
 ];
+const defaultPreset = presets[0] ?? '';
 
 const qoreCode = `const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const reply = stream(openai.chat(prompt));
@@ -146,7 +147,7 @@ function BenchmarkCard({ result, leader }: { result: BenchmarkSummary; leader: b
 }
 
 createApp(() => {
-  const draft = signal(presets[0]);
+  const draft = signal(defaultPreset);
   const selectedPrompt = signal(presets[0]);
   const runCount = signal(0);
   const signalPushes = signal(0);
@@ -261,8 +262,8 @@ createApp(() => {
     return `同一份 transcript 下，Qore 平均快 ${durationRatio.toFixed(1)}x，少重建约 ${formatCount(savedNodes)} 个节点，并且避免重写约 ${formatCount(savedMarkup)} 字节的 markup。`;
   });
 
-  const runPrompt = (prompt = draft().trim() || presets[0]): void => {
-    const textValue = prompt.trim();
+  const runPrompt = (prompt?: string): void => {
+    const textValue = (prompt ?? (draft().trim() || defaultPreset)).trim();
 
     if (!textValue) {
       return;

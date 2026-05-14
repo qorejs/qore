@@ -74,11 +74,13 @@ test('createSSEAdapter can map a custom chat endpoint into stream(provider.chat(
 
   assert.deepEqual(chunks, ['Hello', ' SSE']);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, 'https://example.com/stream');
-  assert.equal(calls[0].method, 'POST');
-  const headers = calls[0].headers as Record<string, string>;
+  const [call] = calls;
+  assert.ok(call);
+  assert.equal(call.url, 'https://example.com/stream');
+  assert.equal(call.method, 'POST');
+  const headers = call.headers as Record<string, string>;
   assert.equal(headers.Authorization, 'Bearer generic-key');
-  assert.deepEqual(calls[0].body, { prompt: 'hello world' });
+  assert.deepEqual(call.body, { prompt: 'hello world' });
 });
 
 test('createSSEAdapter stream preserves raw SSE metadata alongside parsed data', async () => {

@@ -151,7 +151,11 @@ export function createApp<Props extends Record<string, unknown> = Record<string,
 
       for (let index = cleanupHandlers.length - 1; index >= 0; index -= 1) {
         try {
-          cleanupHandlers[index]();
+          const cleanup = cleanupHandlers[index];
+
+          if (cleanup) {
+            cleanup();
+          }
         } catch {
           // Ignore user cleanup errors so the app can still unmount.
         }
