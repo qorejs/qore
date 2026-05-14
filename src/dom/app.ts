@@ -11,11 +11,11 @@ import {
 import { batch, computed, effect, signal, untrack } from '../core/signal.js';
 import { response } from '../core/response.js';
 import { from, mapStream, scanStream, stream } from '../core/stream.js';
-import type { GlobalElement, MountTarget, MountView, QoreChild } from './types.js';
+import type { MountTarget, MountView, QoreChild, QoreElement } from './types.js';
 
 export interface AppContext<Props extends Record<string, unknown>> {
   app: QoreApp<Props>;
-  root: GlobalElement;
+  root: QoreElement;
   props: Props;
   signal: typeof signal;
   computed: typeof computed;
@@ -41,18 +41,18 @@ export type AppSetupResult =
   | QoreChild
   | {
       view?: MountView;
-      onMount?: (root: GlobalElement) => void;
+      onMount?: (root: QoreElement) => void;
     };
 
 type AppLifecycleResult = {
   view?: MountView;
-  onMount?: (root: GlobalElement) => void;
+  onMount?: (root: QoreElement) => void;
 };
 
 export interface QoreApp<Props extends Record<string, unknown>> {
-  mount(target: MountTarget, props?: Props): GlobalElement;
+  mount(target: MountTarget, props?: Props): QoreElement;
   unmount(): QoreApp<Props>;
-  readonly root: GlobalElement | null;
+  readonly root: QoreElement | null;
 }
 
 // Resolve a CSS selector or direct node into the root mount target.
@@ -78,8 +78,8 @@ function resolveTarget(target: MountTarget): Element {
 export function createApp<Props extends Record<string, unknown> = Record<string, unknown>>(
   setup: (context: AppContext<Props>) => AppSetupResult
 ): QoreApp<Props> {
-  let dispose: (() => GlobalElement) | null = null;
-  let mountedRoot: GlobalElement | null = null;
+  let dispose: (() => QoreElement) | null = null;
+  let mountedRoot: QoreElement | null = null;
   let cleanupHandlers: Array<() => void> = [];
 
   const app: QoreApp<Props> = {

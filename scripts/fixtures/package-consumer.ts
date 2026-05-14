@@ -18,7 +18,11 @@ import {
   type BackpressureOptions,
   type ProviderRequestOptions,
   type QoreChild,
+  type QoreDocumentFragment,
+  type QoreElement,
+  type QoreNode,
   type QoreStream,
+  type QoreText,
   type ResponseRenderState,
   type ResponseState,
   type SSEAdapter,
@@ -143,7 +147,18 @@ const app = createApp((context: AppContext<{ title: string }>) => {
   };
 });
 
+const domNode: Node = h('div', {}, 'node');
+const qoreNode: QoreNode = domNode;
+const qoreElement: QoreElement = h('main', {}, text('element'));
+const qoreText: QoreText = text('text node');
+const qoreFragment: QoreDocumentFragment = list(() => ['a'], (value) => h('span', {}, value));
+
 void app;
+void domNode;
+void qoreNode;
+void qoreElement;
+void qoreText;
+void qoreFragment;
 void latest;
 void mapped;
 void replayed;

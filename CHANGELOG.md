@@ -17,6 +17,7 @@
 - Hardened the public `QoreStream` lifecycle surface so stream status, errors, chunks, and timestamps are exposed as read-only signals.
 - Split stream buffering, lifecycle, and async-iterator internals into focused modules so the stream runtime is easier to extend.
 - Added package-level type coverage for stream inference and read-only stream state boundaries.
+- Reworked public DOM aliases around standard `Node`, `Element`, `Text`, and `DocumentFragment` types while keeping the previous `Global*` aliases available.
 - Enabled `strictNullChecks`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes`, then tightened the core runtime, provider layer, demos, and tests to satisfy the stricter compiler guarantees.
 - Enabled full TypeScript `strict` mode plus `noImplicitOverride` and `noPropertyAccessFromIndexSignature`, then tightened demos and tests so the stricter surface is enforced end to end.
 - Fixed the release workflows so they install dependencies before running checks, and build the package before publishing to GitHub Packages.

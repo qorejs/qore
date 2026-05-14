@@ -1,31 +1,21 @@
 import type { ResponseState, ResponseStatus } from '../core/response.js';
 import type { ReadonlySignal } from '../core/signal.js';
 
-export type GlobalNode = typeof globalThis extends { Node: infer T }
-  ? T extends { prototype: infer P }
-    ? P
-    : unknown
-  : unknown;
-export type GlobalElement = typeof globalThis extends { Element: infer T }
-  ? T extends { prototype: infer P }
-    ? P
-    : unknown
-  : unknown;
-export type GlobalText = typeof globalThis extends { Text: infer T }
-  ? T extends { prototype: infer P }
-    ? P
-    : unknown
-  : unknown;
-export type GlobalDocumentFragment = typeof globalThis extends { DocumentFragment: infer T }
-  ? T extends { prototype: infer P }
-    ? P
-    : unknown
-  : unknown;
+export type QoreNode = Node;
+export type QoreElement = Element;
+export type QoreText = Text;
+export type QoreDocumentFragment = DocumentFragment;
+
+// Backward-compatible aliases for users who imported the previous public names.
+export type GlobalNode = QoreNode;
+export type GlobalElement = QoreElement;
+export type GlobalText = QoreText;
+export type GlobalDocumentFragment = QoreDocumentFragment;
 
 export type ReactiveValue<T> = T | ReadonlySignal<T> | (() => T);
 
 export type QoreChild =
-  | GlobalNode
+  | QoreNode
   | string
   | number
   | bigint
@@ -61,5 +51,5 @@ export type QoreComponent<Props extends Record<string, unknown> = Record<string,
   props: Props & { children: QoreChild[] }
 ) => QoreChild;
 
-export type MountTarget = string | GlobalElement;
+export type MountTarget = string | QoreElement;
 export type MountView = QoreChild | (() => QoreChild);

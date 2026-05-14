@@ -41,7 +41,11 @@ export type {
   MountView,
   QoreChild,
   QoreComponent,
+  QoreDocumentFragment,
+  QoreElement,
+  QoreNode,
   QoreTemplate,
+  QoreText,
   ReactiveValue,
   ResponseRenderState,
   ResponseViews
