@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 const root = new URL('../', import.meta.url);
 const typecheckScript = new URL('./typecheck.mjs', import.meta.url);
 const testScript = new URL('./test.mjs', import.meta.url);
+const packageTypeSmokeScript = new URL('./package-type-smoke.mjs', import.meta.url);
 
 const typecheckRun = spawnSync(process.execPath, [fileURLToPath(typecheckScript)], {
   stdio: 'inherit',
@@ -21,6 +22,15 @@ const testRun = spawnSync(process.execPath, [fileURLToPath(testScript)], {
 
 if (testRun.status !== 0) {
   process.exit(testRun.status ?? 1);
+}
+
+const packageTypeSmokeRun = spawnSync(process.execPath, [fileURLToPath(packageTypeSmokeScript)], {
+  stdio: 'inherit',
+  cwd: fileURLToPath(root)
+});
+
+if (packageTypeSmokeRun.status !== 0) {
+  process.exit(packageTypeSmokeRun.status ?? 1);
 }
 
 const npmCli = process.env.npm_execpath;
