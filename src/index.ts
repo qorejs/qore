@@ -1,7 +1,7 @@
 // Re-export the public runtime surface from a single module entrypoint.
 export { signal, computed, effect, batch, untrack, isSignal } from './core/signal.js';
 export type { ComputedSignal, ReadonlySignal, Signal } from './core/signal.js';
-export type { SubscribeOptions } from './core/signal-types.js';
+export type { EffectOptions, EffectScheduler, SubscribeOptions } from './core/signal-types.js';
 export { stream, createStream, from, mapStream, scanStream, toAsyncIterable } from './core/stream.js';
 export type {
   BackpressureOptions,

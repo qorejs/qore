@@ -150,3 +150,97 @@ test('computed observers flush once per batch across multiple dependencies', () 
 
   assert.deepEqual(seen, [3, 14]);
 });
+
+test('microtask scheduled effects collapse synchronous writes', async () => {
+  const count = signal(0);
+  const seen: number[] = [];
+
+  effect(() => {
+    seen.push(count());
+  }, { scheduler: 'microtask' });
+
+  count.set(1);
+  count.set(2);
+  count.set(3);
+
+  assert.deepEqual(seen, [0]);
+  await Promise.resolve();
+  assert.deepEqual(seen, [0, 3]);
+});
+
+test('raf scheduled effects use animation frame when available', async () => {
+  const runtime = globalThis as typeof globalThis & {
+    requestAnimationFrame?: (callback: FrameRequestCallback) => number;
+  };
+  const originalRequestAnimationFrame = runtime.requestAnimationFrame;
+  const queuedFrames: FrameRequestCallback[] = [];
+  const count = signal(0);
+  const seen: number[] = [];
+
+  runtime.requestAnimationFrame = (callback) => {
+    queuedFrames.push(callback);
+    return queuedFrames.length;
+  };
+
+  try {
+    effect(() => {
+      seen.push(count());
+    }, { scheduler: 'raf' });
+
+    count.set(1);
+    count.set(2);
+
+    assert.deepEqual(seen, [0]);
+    assert.equal(queuedFrames.length, 1);
+
+    queuedFrames.shift()?.(performance.now());
+
+    assert.deepEqual(seen, [0, 2]);
+  } finally {
+    if (originalRequestAnimationFrame) {
+      runtime.requestAnimationFrame = originalRequestAnimationFrame;
+    } else {
+      delete runtime.requestAnimationFrame;
+    }
+  }
+});
+
+test('custom scheduled effects run through the provided scheduler', () => {
+  const count = signal(0);
+  const seen: number[] = [];
+  const jobs: Array<() => void> = [];
+
+  effect(() => {
+    seen.push(count());
+  }, {
+    scheduler(run) {
+      jobs.push(run);
+    }
+  });
+
+  count.set(1);
+  count.set(2);
+
+  assert.deepEqual(seen, [0]);
+  assert.equal(jobs.length, 1);
+
+  jobs.shift()?.();
+
+  assert.deepEqual(seen, [0, 2]);
+});
+
+test('stopped scheduled effects do not run queued jobs', async () => {
+  const count = signal(0);
+  const seen: number[] = [];
+
+  const stop = effect(() => {
+    seen.push(count());
+  }, { scheduler: 'microtask' });
+
+  count.set(1);
+  stop();
+
+  await Promise.resolve();
+
+  assert.deepEqual(seen, [0]);
+});

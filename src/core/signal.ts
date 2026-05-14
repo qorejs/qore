@@ -1,6 +1,6 @@
 import { batch, READ, untrack } from './signal-context.js';
 import { ComputedNode, EffectNode, SignalNode } from './signal-nodes.js';
-import type { Cleanup, EffectCallback, SubscribeOptions } from './signal-types.js';
+import type { Cleanup, EffectCallback, EffectOptions, SubscribeOptions } from './signal-types.js';
 
 export interface ReadonlySignal<T> {
   (): T;
@@ -58,8 +58,8 @@ export function computed<T>(getter: () => T): ComputedSignal<T> {
 }
 
 // Run a reactive effect and return a disposer for it.
-export function effect(fn: EffectCallback): Cleanup {
-  const node = new EffectNode(fn);
+export function effect(fn: EffectCallback, options: EffectOptions = {}): Cleanup {
+  const node = new EffectNode(fn, options);
   return () => node.stop();
 }
 

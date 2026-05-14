@@ -46,7 +46,7 @@ export function scheduleObserver(observer: ReactiveObserver): void {
     return;
   }
 
-  observer.notify();
+  observer.schedule();
 }
 
 export function removePendingObserver(observer: ReactiveObserver): void {
@@ -60,7 +60,7 @@ function flushObservers(): void {
     pendingObservers.clear();
 
     for (const observer of queue) {
-      observer.notify();
+      observer.schedule();
     }
   }
 }

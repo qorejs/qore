@@ -16,6 +16,8 @@ import {
   text,
   type AppContext,
   type BackpressureOptions,
+  type EffectOptions,
+  type EffectScheduler,
   type ProviderRequestOptions,
   type QoreChild,
   type QoreDocumentFragment,
@@ -47,6 +49,13 @@ const stop = effect(() => {
   void doubled();
 });
 stop();
+
+const microtaskEffectOptions: EffectOptions = { scheduler: 'microtask' };
+const customScheduler: EffectScheduler = (run) => queueMicrotask(run);
+const stopScheduled = effect(() => {
+  void counter();
+}, microtaskEffectOptions);
+stopScheduled();
 
 batch(() => {
   counter(2);
@@ -154,6 +163,7 @@ const qoreText: QoreText = text('text node');
 const qoreFragment: QoreDocumentFragment = list(() => ['a'], (value) => h('span', {}, value));
 
 void app;
+void customScheduler;
 void domNode;
 void qoreNode;
 void qoreElement;

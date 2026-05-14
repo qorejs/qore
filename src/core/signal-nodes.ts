@@ -5,9 +5,11 @@ import {
   scheduleObserver,
   withActiveObserver
 } from './signal-context.js';
+import { scheduleEffectRun } from './signal-scheduler.js';
 import type {
   Cleanup,
   EffectCallback,
+  EffectOptions,
   ObserverDependency,
   ReactiveObserver,
   SignalListener,
@@ -109,6 +111,10 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
     return this.value;
   }
 
+  schedule(): void {
+    this.notify();
+  }
+
   notify(): void {
     this.recompute();
   }
@@ -174,13 +180,39 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
 // Effects are observers with optional cleanup that re-run when dependencies change.
 export class EffectNode implements ReactiveObserver {
   fn: EffectCallback;
+  scheduler: EffectOptions['scheduler'];
   deps = new Set<ObserverDependency>();
   active = true;
+  scheduled = false;
+  running = false;
+  needsRun = false;
   cleanup: Cleanup | null = null;
 
-  constructor(fn: EffectCallback) {
+  constructor(fn: EffectCallback, options: EffectOptions = {}) {
     this.fn = fn;
+    this.scheduler = options.scheduler ?? 'sync';
     this.run();
+  }
+
+  schedule(): void {
+    if (!this.active) {
+      return;
+    }
+
+    if (this.running) {
+      this.needsRun = true;
+      return;
+    }
+
+    if (this.scheduled) {
+      return;
+    }
+
+    this.scheduled = true;
+    scheduleEffectRun(this.scheduler, () => {
+      this.scheduled = false;
+      this.run();
+    });
   }
 
   notify(): void {
@@ -193,6 +225,8 @@ export class EffectNode implements ReactiveObserver {
       return;
     }
 
+    this.running = true;
+    this.needsRun = false;
     cleanupObserver(this);
 
     if (typeof this.cleanup === 'function') {
@@ -204,6 +238,12 @@ export class EffectNode implements ReactiveObserver {
       const maybeCleanup = this.fn();
       this.cleanup = typeof maybeCleanup === 'function' ? maybeCleanup : null;
     });
+
+    this.running = false;
+
+    if (this.needsRun && this.active) {
+      this.schedule();
+    }
   }
 
   stop(): void {
@@ -212,6 +252,8 @@ export class EffectNode implements ReactiveObserver {
     }
 
     this.active = false;
+    this.scheduled = false;
+    this.needsRun = false;
     cleanupObserver(this);
     removePendingObserver(this);
 
