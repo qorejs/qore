@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const isCI = Boolean(process.env['CI']);
 const localChannel = process.env['QORE_BROWSER_CHANNEL'] ?? 'chrome';
 const baseURL = process.env['QORE_TEST_BASE_URL'] ?? 'http://127.0.0.1:4173/';
+const shouldStartStaticServer = isCI && !process.env['QORE_TEST_BASE_URL'];
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,7 +23,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure'
   },
-  ...(isCI ? {
+  ...(shouldStartStaticServer ? {
     webServer: {
       command: 'node ./scripts/serve-static.mjs',
       url: 'http://127.0.0.1:4173',

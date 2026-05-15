@@ -1,6 +1,6 @@
 {
   "name": "@qorejs/qore",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Qore is a streaming-response framework where stream becomes signal.",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -30,7 +30,7 @@
     "release:check": "node ./scripts/release-check.mjs",
     "publish:github": "npm publish --registry=https://npm.pkg.github.com",
     "publish:npm": "npm publish --access public",
-    "prepublishOnly": "npm run release:check"
+    "prepublishOnly": "node ./scripts/release-check.mjs"
   },
   "engines": {
     "node": ">=18.0.0"
