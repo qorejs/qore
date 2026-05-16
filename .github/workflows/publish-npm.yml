@@ -1,0 +1,71 @@
+name: Publish npm Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional release tag to validate against package.json
+        required: false
+        type: string
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-npm-${{ github.workflow }}-${{ github.ref || github.event.release.tag_name || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js for trusted publishing
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium for browser regression
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify release tag and changelog
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.release_tag }}
+        run: |
+          node --input-type=module <<'EOF_NODE'
+          import fs from 'node:fs';
+
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+          const rawTag = process.env.RELEASE_TAG?.trim() ?? '';
+          const normalizedTag = rawTag.replace(/^v/, '');
+
+          if (rawTag && normalizedTag !== pkg.version) {
+            throw new Error(`Release tag "${rawTag}" does not match package.json version "${pkg.version}".`);
+          }
+
+          const changelogHeading = new RegExp(`^##\\s+${pkg.version}\\b`, 'm');
+
+          if (!changelogHeading.test(changelog)) {
+            throw new Error(`CHANGELOG.md is missing a heading for version ${pkg.version}.`);
+          }
+
+          console.log(`Validated package.json version ${pkg.version}.`);
+          EOF_NODE
+
+      - name: Run release checks
+        run: npm run release:check
+
+      - name: Publish to npm
+        run: npm publish --access public

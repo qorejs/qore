@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- No unreleased changes yet.
+
+## 0.7.2 - 2026-05-16
+
+- Added npm Trusted Publishing through GitHub Actions so releases can publish without long-lived npm tokens or local OTP prompts.
 - Reorganized the source tree into `core`, `dom`, `providers`, and `shared` domains so the framework layout matches its runtime responsibilities.
 - Moved compiled JavaScript out of `src` and into `dist`, keeping the source tree TypeScript-first and the published package focused on `dist/src`.
 - Reworked the local build, test, and release scripts so they no longer depend on nested `npm` calls and remain stable in lean shell environments.
