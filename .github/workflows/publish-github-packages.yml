@@ -94,13 +94,31 @@ jobs:
           scope: '@qorejs'
           cache: npm
 
+      - name: Check whether GitHub Packages version already exists
+        id: github-package-version
+        run: |
+          VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version")
+
+          if npm view "@qorejs/qore@$VERSION" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "GitHub Packages already has @qorejs/qore@$VERSION; skipping publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "GitHub Packages does not have @qorejs/qore@$VERSION yet; continuing publish."
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install dependencies
+        if: steps.github-package-version.outputs.exists != 'true'
         run: npm ci
 
       - name: Build the published package
+        if: steps.github-package-version.outputs.exists != 'true'
         run: npm run build
 
       - name: Publish the package to GitHub Packages
+        if: steps.github-package-version.outputs.exists != 'true'
         run: npm run publish:github
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

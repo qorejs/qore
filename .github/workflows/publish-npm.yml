@@ -33,10 +33,25 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
+      - name: Check whether npm version already exists
+        id: npm-version
+        run: |
+          VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version")
+
+          if npm view "@qorejs/qore@$VERSION" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "npm already has @qorejs/qore@$VERSION; skipping publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "npm does not have @qorejs/qore@$VERSION yet; continuing publish."
+          fi
+
       - name: Install dependencies
+        if: steps.npm-version.outputs.exists != 'true'
         run: npm ci
 
       - name: Install Chromium for browser regression
+        if: steps.npm-version.outputs.exists != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Verify release tag and changelog
@@ -65,7 +80,9 @@ jobs:
           EOF_NODE
 
       - name: Run release checks
+        if: steps.npm-version.outputs.exists != 'true'
         run: npm run release:check
 
       - name: Publish to npm
+        if: steps.npm-version.outputs.exists != 'true'
         run: npm publish --access public
