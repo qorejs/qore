@@ -119,6 +119,6 @@ jobs:
 
       - name: Publish the package to GitHub Packages
         if: steps.github-package-version.outputs.exists != 'true'
-        run: npm run publish:github
+        run: npm publish --registry=https://npm.pkg.github.com --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
