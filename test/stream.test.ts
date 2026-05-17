@@ -82,6 +82,21 @@ test('stream exposes read-only lifecycle signals', async () => {
   assert.equal(answer(), 'safe state');
 });
 
+// Long token runs should preserve history without making the public chunks array mutable.
+test('stream keeps long chunk histories behind a defensive read boundary', async () => {
+  const chunks = Array.from({ length: 2000 }, (_, index) => String(index % 10));
+  const answer = stream(chunks);
+
+  await answer.ready;
+
+  const exposed = answer.chunks();
+  exposed.length = 0;
+
+  assert.equal(answer.chunkCount(), chunks.length);
+  assert.equal(answer.chunks().length, chunks.length);
+  assert.equal(answer().length, chunks.length);
+});
+
 // Abort should stop future chunks while keeping the partial text visible to the UI.
 test('stream abort preserves the partial value collected so far', async () => {
   const answer = stream(async ({ push, signal }) => {

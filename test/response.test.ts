@@ -140,6 +140,28 @@ test('snapshot returns a defensive copy of chunks', () => {
   assert.equal(answer.chunkCount(), 1);
 });
 
+// Chunk history should be append-fast internally but still immutable at the public boundary.
+test('chunks are appended without exposing live history arrays', () => {
+  const answer = response.text();
+  const observed: string[][] = [];
+
+  const unsubscribe = answer.chunks.subscribe((chunks) => {
+    observed.push(chunks);
+  }, { immediate: false });
+
+  answer.push('a');
+  answer.push('b');
+
+  const exposed = answer.chunks();
+  exposed.push('mutated');
+  observed[0]?.push('observer mutation');
+  unsubscribe();
+
+  assert.deepEqual(answer.chunks(), ['a', 'b']);
+  assert.equal(answer.chunkCount(), 2);
+  assert.deepEqual(observed, [['a', 'observer mutation'], ['a', 'b']]);
+});
+
 // Reset should clear lifecycle markers and supersede any in-flight executor.
 test('reset clears response lifecycle state and supersedes the active run', async () => {
   const answer = response.text();

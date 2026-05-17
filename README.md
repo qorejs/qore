@@ -75,6 +75,17 @@ Here, `answer` is all of the following at once:
 - An `AsyncIterable`, so you can still use `for await...of`
 - A lifecycle-aware streaming state, with `status()`, `streaming()`, `error()`, and `chunks()`
 
+## Performance Model
+
+Qore keeps the streaming hot path narrow:
+
+- chunk commits append into an internal log instead of cloning the full history on every token
+- public `chunks()` reads still return defensive copies, so consumers cannot corrupt runtime state
+- `chunkCount()` tracks the internal log version directly, so status UIs can stay cheap during long generations
+- DOM bindings update only the nodes that read the stream signal
+
+That means a long AI answer can keep flowing through one signal and one text node without turning every token into a full transcript rewrite.
+
 ## Why Qore
 
 - React treats streaming as a special case that needs extra machinery

@@ -2,10 +2,14 @@
 
 ## Unreleased
 
+## 0.7.3 - 2026-05-17
+
 - Opted GitHub Actions workflows into the Node 24 JavaScript action runtime ahead of the Node 20 action retirement.
 - Added a latest-release badge and quick link to the package README.
 - Expanded the browser smoke static-server port range so local checks survive stale preview servers.
 - Documented the browser smoke port override knobs for local release checks.
+- Reworked response chunk storage so high-frequency streams append chunk history without cloning the full array on every token.
+- Added regression coverage for long stream histories and defensive chunk snapshots.
 
 ## 0.7.2 - 2026-05-16
 

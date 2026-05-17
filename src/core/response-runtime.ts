@@ -1,6 +1,12 @@
 import { batch } from './signal.js';
 import { toAsyncIterable } from './iterable.js';
-import { createResponseState, isTerminalStatus } from './response-state.js';
+import {
+  appendResponseChunk,
+  createResponseState,
+  getResponseChunkCount,
+  isTerminalStatus,
+  snapshotResponseChunks
+} from './response-state.js';
 import type {
   CreateResponseOptions,
   ResponseExecutorContext,
@@ -82,7 +88,7 @@ export function createResponse<TChunk, TValue>(options: CreateResponseOptions<TC
       return value.peek();
     }
 
-    const index = chunks.peek().length;
+    const index = getResponseChunkCount(chunks);
     const nextValue = reduce(value.peek(), chunk, index);
 
     batch(() => {
@@ -90,7 +96,7 @@ export function createResponse<TChunk, TValue>(options: CreateResponseOptions<TC
         status('streaming');
       }
 
-      chunks([...chunks.peek(), chunk]);
+      appendResponseChunk(chunks, chunk);
       value(nextValue);
     });
 
@@ -288,10 +294,10 @@ export function createResponse<TChunk, TValue>(options: CreateResponseOptions<TC
       status: status.peek(),
       value: value.peek(),
       error: error.peek(),
-      chunks: [...chunks.peek()],
+      chunks: snapshotResponseChunks(chunks),
       startedAt: startedAt.peek(),
       finishedAt: finishedAt.peek(),
-      chunkCount: chunks.peek().length
+      chunkCount: getResponseChunkCount(chunks)
     };
   }
 
