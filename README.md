@@ -284,6 +284,12 @@ CI also uploads the browser regression evidence as workflow artifacts. The bundl
 
 If a locked-down local shell cannot launch a supported headless browser, the script will defer to CI unless you force a hard local failure with `QORE_BROWSER_SMOKE_REQUIRED=1`.
 
+Local preview ports can also be pinned when another process is already using the default range:
+
+```bash
+QORE_STATIC_PORT=4300 QORE_STATIC_PORT_END=4400 npm run test:browser
+```
+
 ## Benchmark Methodology
 
 Qore now includes a reproducible browser benchmark that compares two rendering paths against the same workload:
