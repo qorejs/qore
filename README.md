@@ -1,6 +1,7 @@
 # Qore
 
 [![npm version](https://img.shields.io/npm/v/%40qorejs%2Fqore?color=0f766e&label=npm)](https://www.npmjs.com/package/@qorejs/qore)
+[![latest release](https://img.shields.io/github/v/release/qorejs/qore?color=0f766e&label=release)](https://github.com/qorejs/qore/releases/latest)
 [![ci](https://github.com/qorejs/qore/actions/workflows/ci.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/ci.yml)
 [![browser smoke](https://img.shields.io/badge/browser-smoke-playwright-45ba63)](#browser-regression)
 [![release checks](https://github.com/qorejs/qore/actions/workflows/release-check.yml/badge.svg)](https://github.com/qorejs/qore/actions/workflows/release-check.yml)
@@ -16,6 +17,7 @@ Instead of treating data as a snapshot, Qore treats it like a river. Tokens arri
 Quick links:
 
 - [npm package](https://www.npmjs.com/package/@qorejs/qore)
+- [latest release](https://github.com/qorejs/qore/releases/latest)
 - [GitHub Packages](https://github.com/qorejs/qore/packages)
 - [landing page source](https://github.com/qorejs/qore/blob/main/index.html)
 - [streaming demo source](https://github.com/qorejs/qore/blob/main/examples/streaming-response.html)

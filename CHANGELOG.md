@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- No unreleased changes yet.
+- Opted GitHub Actions workflows into the Node 24 JavaScript action runtime ahead of the Node 20 action retirement.
+- Added a latest-release badge and quick link to the package README.
 
 ## 0.7.2 - 2026-05-16
 
