@@ -87,7 +87,9 @@ async function createBaseUrl() {
   }
 
   const host = '127.0.0.1';
-  const port = await findAvailablePort(host, 4173, 4193);
+  const startPort = Number(process.env.QORE_STATIC_PORT ?? '4173');
+  const endPort = Number(process.env.QORE_STATIC_PORT_END ?? String(startPort + 240));
+  const port = await findAvailablePort(host, startPort, endPort);
   const baseUrl = `http://${host}:${port}/`;
   let serverOutput = '';
 
