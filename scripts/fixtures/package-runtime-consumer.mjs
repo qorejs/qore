@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 
 import {
   computed,
+  createLineAdapter,
+  createOllama,
   createOpenRouter,
   createSSEAdapter,
   response,
@@ -20,6 +22,18 @@ function createSSEBody(events) {
       }
 
       controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      controller.close();
+    }
+  });
+}
+
+function createLineBody(events) {
+  return new ReadableStream({
+    start(controller) {
+      for (const event of events) {
+        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+      }
+
       controller.close();
     }
   });
@@ -79,6 +93,63 @@ for await (const chunk of provider.chat('stream = signal')) {
 }
 
 assert.deepEqual(chunks, ['hello', ' world']);
+
+const lineProvider = createLineAdapter({
+  name: 'Runtime Line Smoke',
+  url: 'https://example.com/lines',
+  fetch: async () => new Response(createLineBody([
+    { type: 'token', text: 'line' },
+    { type: 'token', text: ' stream' }
+  ]), {
+    status: 200,
+    headers: {
+      'content-type': 'application/x-ndjson'
+    }
+  }),
+  buildRequest(request) {
+    return {
+      method: 'POST',
+      body: JSON.stringify(request)
+    };
+  },
+  buildChatRequest(input) {
+    return {
+      prompt: input
+    };
+  },
+  lineToText(event) {
+    return event.data?.type === 'token' ? event.data.text : undefined;
+  }
+});
+
+const lineChunks = [];
+
+for await (const chunk of lineProvider.chat('stream = signal')) {
+  lineChunks.push(chunk);
+}
+
+assert.deepEqual(lineChunks, ['line', ' stream']);
+
+const ollama = createOllama({
+  fetch: async () => new Response(createLineBody([
+    { message: { role: 'assistant', content: 'local' }, done: false },
+    { message: { role: 'assistant', content: ' model' }, done: false },
+    { done: true, done_reason: 'stop' }
+  ]), {
+    status: 200,
+    headers: {
+      'content-type': 'application/x-ndjson'
+    }
+  })
+});
+
+const ollamaChunks = [];
+
+for await (const chunk of ollama.chat('stream = signal')) {
+  ollamaChunks.push(chunk);
+}
+
+assert.deepEqual(ollamaChunks, ['local', ' model']);
 
 const openrouter = createOpenRouter({
   apiKey: 'test-key',

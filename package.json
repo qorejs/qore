@@ -43,9 +43,11 @@
     "signal",
     "reactive",
     "sse",
+    "ndjson",
     "ai",
     "openai",
     "anthropic",
+    "ollama",
     "framework",
     "async-iterable"
   ],

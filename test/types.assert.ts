@@ -1,10 +1,14 @@
 import {
+  createLineAdapter,
+  createOllama,
   createSSEAdapter,
   createOpenRouter,
   from,
   mapStream,
   scanStream,
   stream,
+  type LineAdapter,
+  type OllamaAdapter,
   type OpenRouterAdapter,
   type ProviderRequestOptions,
   type QoreStream,
@@ -42,6 +46,18 @@ const adapter = createSSEAdapter<{ prompt: string }, string, TokenEvent>({
     return event.data.type === 'token' ? event.data.text : undefined;
   }
 });
+const lineAdapter = createLineAdapter<{ prompt: string }, string, TokenEvent>({
+  url: 'https://example.com/lines',
+  buildChatRequest(prompt) {
+    return { prompt };
+  },
+  lineToText(event) {
+    return event.data.type === 'token' ? event.data.text : undefined;
+  }
+});
+const ollama = createOllama({
+  fetch: async () => new Response(null, { status: 200 })
+});
 const openrouter = createOpenRouter({
   apiKey: 'demo-key',
   fetch: async () => new Response(null, { status: 200 })
@@ -61,6 +77,8 @@ type _ScannedStream = Assert<Extends<typeof scannedSource, QoreStream<number, nu
 type _ReplayStream = Assert<Extends<typeof replayed, QoreStream<string, string>>>;
 type _ReadonlyStatus = Assert<Extends<typeof source.status, ReadonlySignal<string>>>;
 type _Adapter = Assert<Extends<typeof adapter, SSEAdapter<{ prompt: string }, string, TokenEvent>>>;
+type _LineAdapter = Assert<Extends<typeof lineAdapter, LineAdapter<{ prompt: string }, string, TokenEvent>>>;
+type _OllamaAdapter = Assert<Extends<typeof ollama, OllamaAdapter>>;
 type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 
 void providerOptions;

@@ -53,6 +53,48 @@ export interface SSEAdapter<TRequest = Record<string, unknown>, TChatInput = unk
   chat(input: TChatInput, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
 }
 
+export interface LineEvent<TData = unknown> {
+  line: number;
+  raw: string;
+  data: TData;
+}
+
+export interface LineRequestConfig {
+  url?: string;
+  method?: string;
+  headers?: ProviderHeaders;
+  signal?: GlobalAbortSignal;
+  body?: BodyInit | null;
+  [key: string]: unknown;
+}
+
+export interface LineAdapterOptions<TRequest = Record<string, unknown>, TChatInput = unknown, TData = unknown> {
+  name?: string;
+  url?: string;
+  method?: string;
+  headers?: ProviderHeaders;
+  fetch?: FetchLike;
+  buildRequest?: (
+    request: TRequest,
+    requestOptions?: ProviderRequestOptions
+  ) => MaybePromise<TRequest | string | LineRequestConfig>;
+  buildChatRequest?: (input: TChatInput, requestOptions?: ProviderRequestOptions) => TRequest;
+  parse?: (line: string, event: LineEvent<string>) => MaybePromise<TData>;
+  isError?: (event: LineEvent<TData>) => MaybePromise<boolean>;
+  getError?: (event: LineEvent<TData>, name: string) => MaybePromise<string>;
+  lineToText?: (
+    event: LineEvent<TData>,
+    request: TRequest,
+    requestOptions?: ProviderRequestOptions
+  ) => MaybePromise<string | undefined>;
+}
+
+export interface LineAdapter<TRequest = Record<string, unknown>, TChatInput = unknown, TData = unknown> {
+  stream(request?: TRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<LineEvent<TData>>;
+  streamText(request?: TRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
+  chat(input: TChatInput, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
+}
+
 export interface OpenAIEvent {
   type: string;
   [key: string]: unknown;
@@ -146,4 +188,39 @@ export interface AnthropicAdapter {
   };
   streamText(messages: string | AnthropicRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
   chat(input: AnthropicChatInput, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
+}
+
+export interface OllamaEvent {
+  model?: string;
+  created_at?: string;
+  message?: {
+    role?: string;
+    content?: string;
+    [key: string]: unknown;
+  };
+  done?: boolean;
+  done_reason?: string | null;
+  error?: string;
+  [key: string]: unknown;
+}
+
+export type OllamaMessage = Record<string, unknown> & {
+  role?: string;
+  content?: unknown;
+};
+
+export type OllamaChatInput = string | OllamaMessage | OllamaMessage[] | Record<string, unknown>;
+export type OllamaRequest = Record<string, unknown> & { messages?: OllamaChatInput };
+
+export interface OllamaOptions {
+  baseURL?: string;
+  model?: string;
+  headers?: ProviderHeaders;
+  fetch?: FetchLike;
+}
+
+export interface OllamaAdapter {
+  stream(request: OllamaRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<OllamaEvent>;
+  streamText(input: string | OllamaRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
+  chat(input: OllamaChatInput, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
 }

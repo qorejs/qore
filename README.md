@@ -150,6 +150,20 @@ const openrouter = createOpenRouter({
 const answer = stream(openrouter.chat('Why should stream be signal?'));
 ```
 
+### `createOllama(options?)`
+
+If you want a local-first provider path, Qore can stream directly from Ollama:
+
+```js
+import { createOllama, stream } from '@qorejs/qore';
+
+const ollama = createOllama({
+  model: 'llama3.2'
+});
+
+const answer = stream(ollama.chat('Why should stream be signal?'));
+```
+
 ### `createSSEAdapter(options?)`
 
 If your backend already streams `text/event-stream`, Qore can adopt it directly:
@@ -178,6 +192,38 @@ const answer = stream(provider.chat('hello'));
 ```
 
 That makes `stream(provider.chat(...))` a general entry point instead of something tied to a single SDK.
+
+### `createLineAdapter(options?)`
+
+If your backend streams newline-delimited JSON instead of `text/event-stream`, Qore can adopt that too:
+
+```js
+import { createLineAdapter, stream } from '@qorejs/qore';
+
+const provider = createLineAdapter({
+  name: 'Local NDJSON Chat',
+  url: 'http://localhost:11434/api/chat',
+  buildRequest(request) {
+    return {
+      method: 'POST',
+      body: JSON.stringify(request)
+    };
+  },
+  buildChatRequest(input) {
+    return {
+      model: 'llama3.2',
+      messages: [{ role: 'user', content: input }]
+    };
+  },
+  lineToText(event) {
+    return typeof event.data?.message?.content === 'string'
+      ? event.data.message.content
+      : undefined;
+  }
+});
+
+const answer = stream(provider.chat('hello'));
+```
 
 ## API Shape
 
@@ -260,7 +306,7 @@ The repository includes a landing page and a focused streaming demo:
 src/
   core/       stream, signal, response, iterable
   dom/        app mounting and DOM bindings
-  providers/  OpenAI, Anthropic, generic SSE adapters
+  providers/  OpenAI, Anthropic, OpenRouter, Ollama, SSE, and line-stream adapters
   shared/     runtime utilities
   index.ts    public entrypoint
 
@@ -370,7 +416,7 @@ The current test suite covers:
 - `signal`, `computed`, and `effect`
 - The core `stream = signal` behavior
 - `response` interoperability with async iterables
-- OpenAI, Anthropic, and generic SSE adapters
+- OpenAI, Anthropic, OpenRouter, Ollama, and generic streaming adapters
 
 ## Roadmap
 

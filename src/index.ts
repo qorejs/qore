@@ -51,9 +51,10 @@ export type {
   ResponseViews
 } from './dom/types.js';
 export { createAnthropic } from './providers/anthropic.js';
+export { createOllama } from './providers/ollama.js';
 export { createOpenAI } from './providers/openai.js';
 export { createOpenRouter } from './providers/openrouter.js';
-export { createSSEAdapter } from './providers/sse.js';
+export { createLineAdapter, createSSEAdapter } from './providers/sse.js';
 export type {
   AnthropicAdapter,
   AnthropicChatInput,
@@ -62,12 +63,22 @@ export type {
   AnthropicOptions,
   AnthropicRequest,
   FetchLike,
+  LineAdapter,
+  LineAdapterOptions,
+  LineEvent,
+  LineRequestConfig,
   OpenAIAdapter,
   OpenAIChatInput,
   OpenAIEvent,
   OpenAIMessage,
   OpenAIOptions,
   OpenAIRequest,
+  OllamaAdapter,
+  OllamaChatInput,
+  OllamaEvent,
+  OllamaMessage,
+  OllamaOptions,
+  OllamaRequest,
   OpenRouterAdapter,
   OpenRouterChatInput,
   OpenRouterEvent,

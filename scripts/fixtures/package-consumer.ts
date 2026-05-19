@@ -2,6 +2,8 @@ import {
   batch,
   computed,
   createApp,
+  createLineAdapter,
+  createOllama,
   createOpenRouter,
   createSSEAdapter,
   effect,
@@ -19,6 +21,14 @@ import {
   type BackpressureOptions,
   type EffectOptions,
   type EffectScheduler,
+  type LineAdapter,
+  type LineEvent,
+  type OllamaAdapter,
+  type OllamaChatInput,
+  type OllamaEvent,
+  type OllamaMessage,
+  type OllamaOptions,
+  type OllamaRequest,
   type OpenRouterAdapter,
   type OpenRouterChatInput,
   type OpenRouterEvent,
@@ -125,12 +135,43 @@ const provider = createSSEAdapter<{ prompt: string }, string, TokenEvent>({
     return event.data.type === 'token' ? event.data.text : undefined;
   }
 });
+const lineProvider = createLineAdapter<{ prompt: string }, string, TokenEvent>({
+  url: 'https://example.com/lines',
+  buildChatRequest(input) {
+    return {
+      prompt: input
+    };
+  },
+  lineToText(event) {
+    return event.data.type === 'token' ? event.data.text : undefined;
+  }
+});
+const ollama = createOllama({
+  fetch: async () => new Response(null, { status: 200 })
+});
 const openrouter = createOpenRouter({
   apiKey: 'demo-key',
   fetch: async () => new Response(null, { status: 200 })
 });
 
 const providerSurface: SSEAdapter<{ prompt: string }, string, TokenEvent> = provider;
+const lineProviderSurface: LineAdapter<{ prompt: string }, string, TokenEvent> = lineProvider;
+const ollamaSurface: OllamaAdapter = ollama;
+const ollamaOptions: OllamaOptions = {
+  model: 'llama3.2'
+};
+const ollamaRequest: OllamaRequest = {
+  messages: [{ role: 'user', content: 'hello' }]
+};
+const ollamaChatInput: OllamaChatInput = 'hello';
+const ollamaMessage: OllamaMessage = {
+  role: 'user',
+  content: 'hello'
+};
+const ollamaEvent: OllamaEvent = {
+  message: { content: 'hello' },
+  done: false
+};
 const openrouterSurface: OpenRouterAdapter = openrouter;
 const openrouterOptions: OpenRouterOptions = {
   apiKey: 'demo-key'
@@ -150,6 +191,14 @@ const sampleEvent: SSEEvent<TokenEvent> = {
   event: 'message',
   id: null,
   retry: null,
+  data: {
+    type: 'token',
+    text: 'hello'
+  }
+};
+const sampleLineEvent: LineEvent<TokenEvent> = {
+  line: 1,
+  raw: '{"type":"token","text":"hello"}',
   data: {
     type: 'token',
     text: 'hello'
@@ -201,6 +250,13 @@ void replayed;
 void transcriptState;
 void requestOptions;
 void providerSurface;
+void lineProviderSurface;
+void ollamaSurface;
+void ollamaOptions;
+void ollamaRequest;
+void ollamaChatInput;
+void ollamaMessage;
+void ollamaEvent;
 void openrouterSurface;
 void openrouterOptions;
 void openrouterRequest;
@@ -208,6 +264,7 @@ void openrouterChatInput;
 void openrouterMessage;
 void openrouterEvent;
 void sampleEvent;
+void sampleLineEvent;
 void backpressure;
 
 // @ts-expect-error Computed signals are read-only.
