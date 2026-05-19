@@ -1,3 +1,4 @@
+export { createDeepSeek } from './deepseek.js';
 export { createLineAdapter } from './line-adapter.js';
 export { readLines, parseLineData, isLineError, getLineErrorMessage } from './line-parser.js';
 export { createOllama } from './ollama.js';
@@ -12,6 +13,12 @@ export type {
   AnthropicMessage,
   AnthropicOptions,
   AnthropicRequest,
+  DeepSeekAdapter,
+  DeepSeekChatInput,
+  DeepSeekEvent,
+  DeepSeekMessage,
+  DeepSeekOptions,
+  DeepSeekRequest,
   FetchLike,
   LineAdapter,
   LineAdapterOptions,

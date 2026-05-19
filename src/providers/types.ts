@@ -159,6 +159,27 @@ export interface OpenRouterAdapter {
   chat(input: OpenRouterChatInput, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
 }
 
+export type DeepSeekEvent = OpenRouterEvent;
+export type DeepSeekMessage = OpenRouterMessage;
+export type DeepSeekChatInput = string | DeepSeekMessage | DeepSeekMessage[] | Record<string, unknown>;
+export type DeepSeekRequest = Record<string, unknown> & { messages?: DeepSeekChatInput };
+
+export interface DeepSeekOptions {
+  apiKey?: string;
+  baseURL?: string;
+  model?: string;
+  headers?: ProviderHeaders;
+  fetch?: FetchLike;
+}
+
+export interface DeepSeekAdapter {
+  chatCompletions: {
+    stream(request: DeepSeekRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<DeepSeekEvent>;
+  };
+  streamText(input: string | DeepSeekRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
+  chat(input: DeepSeekChatInput, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
+}
+
 export interface AnthropicEvent {
   type: string;
   [key: string]: unknown;

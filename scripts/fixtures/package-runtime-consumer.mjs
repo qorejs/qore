@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   canUseDOM,
   computed,
+  createDeepSeek,
   createLineAdapter,
   createOllama,
   createOpenRouter,
@@ -152,6 +153,28 @@ for await (const chunk of ollama.chat('stream = signal')) {
 }
 
 assert.deepEqual(ollamaChunks, ['local', ' model']);
+
+const deepseek = createDeepSeek({
+  apiKey: 'test-key',
+  fetch: async () => new Response(createSSEBody([
+    { event: 'message', data: { choices: [{ delta: { role: 'assistant' } }] } },
+    { event: 'message', data: { choices: [{ delta: { content: 'deep' } }] } },
+    { event: 'message', data: { choices: [{ delta: { content: 'seek' } }] } }
+  ]), {
+    status: 200,
+    headers: {
+      'content-type': 'text/event-stream'
+    }
+  })
+});
+
+const deepseekChunks = [];
+
+for await (const chunk of deepseek.chat('stream = signal')) {
+  deepseekChunks.push(chunk);
+}
+
+assert.deepEqual(deepseekChunks, ['deep', 'seek']);
 
 const openrouter = createOpenRouter({
   apiKey: 'test-key',

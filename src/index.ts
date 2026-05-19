@@ -52,6 +52,7 @@ export type {
   ResponseViews
 } from './dom/types.js';
 export { createAnthropic } from './providers/anthropic.js';
+export { createDeepSeek } from './providers/deepseek.js';
 export { createOllama } from './providers/ollama.js';
 export { createOpenAI } from './providers/openai.js';
 export { createOpenRouter } from './providers/openrouter.js';
@@ -63,6 +64,12 @@ export type {
   AnthropicMessage,
   AnthropicOptions,
   AnthropicRequest,
+  DeepSeekAdapter,
+  DeepSeekChatInput,
+  DeepSeekEvent,
+  DeepSeekMessage,
+  DeepSeekOptions,
+  DeepSeekRequest,
   FetchLike,
   LineAdapter,
   LineAdapterOptions,

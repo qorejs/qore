@@ -159,6 +159,19 @@ const openrouter = createOpenRouter({
 const answer = stream(openrouter.chat('Why should stream be signal?'));
 ```
 
+### `createDeepSeek(options?)`
+
+```js
+import { createDeepSeek, stream } from '@qorejs/qore';
+
+const deepseek = createDeepSeek({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  model: 'deepseek-chat'
+});
+
+const answer = stream(deepseek.chat('Why should stream be signal?'));
+```
+
 Provider adapters also accept a request `signal` so you can cancel in-flight streams explicitly:
 
 ```js
@@ -326,7 +339,7 @@ The repository includes a landing page and a focused streaming demo:
 src/
   core/       stream, signal, response, iterable
   dom/        app mounting and DOM bindings
-  providers/  OpenAI, Anthropic, OpenRouter, Ollama, SSE, and line-stream adapters
+  providers/  OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, SSE, and line-stream adapters
   shared/     runtime utilities
   index.ts    public entrypoint
 
@@ -455,7 +468,7 @@ The current test suite covers:
 - `signal`, `computed`, and `effect`
 - The core `stream = signal` behavior
 - `response` interoperability with async iterables
-- OpenAI, Anthropic, OpenRouter, Ollama, and generic streaming adapters
+- OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, and generic streaming adapters
 
 ## Roadmap
 

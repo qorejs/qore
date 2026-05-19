@@ -48,6 +48,7 @@
     "ai",
     "openai",
     "anthropic",
+    "deepseek",
     "ollama",
     "framework",
     "async-iterable"

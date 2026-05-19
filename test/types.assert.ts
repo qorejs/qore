@@ -1,4 +1,5 @@
 import {
+  createDeepSeek,
   createLineAdapter,
   createOllama,
   createSSEAdapter,
@@ -7,6 +8,7 @@ import {
   mapStream,
   scanStream,
   stream,
+  type DeepSeekAdapter,
   type LineAdapter,
   type OllamaAdapter,
   type OpenRouterAdapter,
@@ -58,6 +60,10 @@ const lineAdapter = createLineAdapter<{ prompt: string }, string, TokenEvent>({
 const ollama = createOllama({
   fetch: async () => new Response(null, { status: 200 })
 });
+const deepseek = createDeepSeek({
+  apiKey: 'demo-key',
+  fetch: async () => new Response(null, { status: 200 })
+});
 const openrouter = createOpenRouter({
   apiKey: 'demo-key',
   fetch: async () => new Response(null, { status: 200 })
@@ -79,6 +85,7 @@ type _ReadonlyStatus = Assert<Extends<typeof source.status, ReadonlySignal<strin
 type _Adapter = Assert<Extends<typeof adapter, SSEAdapter<{ prompt: string }, string, TokenEvent>>>;
 type _LineAdapter = Assert<Extends<typeof lineAdapter, LineAdapter<{ prompt: string }, string, TokenEvent>>>;
 type _OllamaAdapter = Assert<Extends<typeof ollama, OllamaAdapter>>;
+type _DeepSeekAdapter = Assert<Extends<typeof deepseek, DeepSeekAdapter>>;
 type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 
 void providerOptions;

@@ -3,6 +3,7 @@ import {
   canUseDOM,
   computed,
   createApp,
+  createDeepSeek,
   createLineAdapter,
   createOllama,
   createOpenRouter,
@@ -22,6 +23,12 @@ import {
   type BackpressureOptions,
   type EffectOptions,
   type EffectScheduler,
+  type DeepSeekAdapter,
+  type DeepSeekChatInput,
+  type DeepSeekEvent,
+  type DeepSeekMessage,
+  type DeepSeekOptions,
+  type DeepSeekRequest,
   type LineAdapter,
   type LineEvent,
   type OllamaAdapter,
@@ -150,6 +157,10 @@ const lineProvider = createLineAdapter<{ prompt: string }, string, TokenEvent>({
 const ollama = createOllama({
   fetch: async () => new Response(null, { status: 200 })
 });
+const deepseek = createDeepSeek({
+  apiKey: 'demo-key',
+  fetch: async () => new Response(null, { status: 200 })
+});
 const openrouter = createOpenRouter({
   apiKey: 'demo-key',
   fetch: async () => new Response(null, { status: 200 })
@@ -158,6 +169,21 @@ const openrouter = createOpenRouter({
 const providerSurface: SSEAdapter<{ prompt: string }, string, TokenEvent> = provider;
 const lineProviderSurface: LineAdapter<{ prompt: string }, string, TokenEvent> = lineProvider;
 const ollamaSurface: OllamaAdapter = ollama;
+const deepseekSurface: DeepSeekAdapter = deepseek;
+const deepseekOptions: DeepSeekOptions = {
+  apiKey: 'demo-key'
+};
+const deepseekRequest: DeepSeekRequest = {
+  messages: [{ role: 'user', content: 'hello' }]
+};
+const deepseekChatInput: DeepSeekChatInput = 'hello';
+const deepseekMessage: DeepSeekMessage = {
+  role: 'user',
+  content: 'hello'
+};
+const deepseekEvent: DeepSeekEvent = {
+  choices: [{ delta: { content: 'hello' } }]
+};
 const ollamaOptions: OllamaOptions = {
   model: 'llama3.2'
 };
@@ -254,6 +280,12 @@ void requestOptions;
 void providerSurface;
 void lineProviderSurface;
 void ollamaSurface;
+void deepseekSurface;
+void deepseekOptions;
+void deepseekRequest;
+void deepseekChatInput;
+void deepseekMessage;
+void deepseekEvent;
 void ollamaOptions;
 void ollamaRequest;
 void ollamaChatInput;
