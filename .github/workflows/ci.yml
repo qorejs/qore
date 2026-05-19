@@ -55,6 +55,10 @@ jobs:
         if: matrix.node-version == 20
         run: npm run test:browser
 
+      - name: Run the benchmark regression gate
+        if: matrix.node-version == 20
+        run: npm run test:benchmark
+
       - name: Upload browser regression artifacts
         if: matrix.node-version == 20 && always()
         uses: actions/upload-artifact@v4
