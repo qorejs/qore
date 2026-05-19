@@ -18,6 +18,30 @@ function createLineBody(events: OllamaEvent[]): ReadableStream<Uint8Array> {
   });
 }
 
+function createPendingLineBody(events: OllamaEvent[]): {
+  body: ReadableStream<Uint8Array>;
+  cancelled: Promise<unknown>;
+} {
+  let resolveCancelled!: (reason: unknown) => void;
+  const cancelled = new Promise<unknown>((resolve) => {
+    resolveCancelled = resolve;
+  });
+
+  return {
+    body: new ReadableStream({
+      start(controller) {
+        for (const event of events) {
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        }
+      },
+      cancel(reason) {
+        resolveCancelled(reason);
+      }
+    }),
+    cancelled
+  };
+}
+
 test('createOllama chat streams message deltas from the chat API', async () => {
   const calls: Array<{
     url: string | URL | Request;
@@ -122,4 +146,46 @@ test('createOllama surfaces provider HTTP errors clearly', async () => {
   const iterator = ollama.chat('hello')[Symbol.asyncIterator]();
 
   await assert.rejects(() => iterator.next(), /model not found/);
+});
+
+test('createOllama does not start fetch work when the request signal is already aborted', async () => {
+  let calls = 0;
+  const controller = new AbortController();
+  controller.abort('ollama stop now');
+  const ollama = createOllama({
+    fetch: async () => {
+      calls += 1;
+      return new Response(null, { status: 200 });
+    }
+  });
+
+  const iterator = ollama.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+
+  await assert.rejects(() => iterator.next(), /ollama stop now/);
+  assert.equal(calls, 0);
+});
+
+test('createOllama cancels the active reader when the request signal aborts mid-stream', async () => {
+  const controller = new AbortController();
+  const pendingBody = createPendingLineBody([
+    { model: 'llama3.2', message: { role: 'assistant', content: 'hello' }, done: false }
+  ]);
+  const ollama = createOllama({
+    fetch: async () => new Response(pendingBody.body, {
+      status: 200,
+      headers: {
+        'content-type': 'application/x-ndjson'
+      }
+    })
+  });
+
+  const iterator = ollama.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+  const first = await iterator.next();
+  assert.deepEqual(first, { done: false, value: 'hello' });
+
+  const nextChunk = iterator.next();
+  controller.abort('ollama stream cancelled');
+
+  await assert.rejects(() => nextChunk, /ollama stream cancelled/);
+  await assert.doesNotReject(() => pendingBody.cancelled);
 });

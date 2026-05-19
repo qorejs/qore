@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added a first-class `createDeepSeek(...)` adapter so Qore can stream directly from DeepSeek chat-completions endpoints without custom glue code.
+- Hardened provider adapter coverage so Anthropic, DeepSeek, and Ollama now verify pre-abort and mid-stream abort behavior explicitly in the test suite.
 - Added an npm publish preflight that checks changelog alignment, npm auth, and whether the target version is already published before the full release flow starts.
 - Reworked `npm run publish:npm` to use the new preflight so local autonomous releases fail fast with a clear registry or auth diagnosis.
 

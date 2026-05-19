@@ -20,6 +20,31 @@ function createSSEBody(events: AnthropicEvent[]): ReadableStream<Uint8Array> {
   });
 }
 
+function createPendingSSEBody(events: AnthropicEvent[]): {
+  body: ReadableStream<Uint8Array>;
+  cancelled: Promise<unknown>;
+} {
+  let resolveCancelled!: (reason: unknown) => void;
+  const cancelled = new Promise<unknown>((resolve) => {
+    resolveCancelled = resolve;
+  });
+
+  return {
+    body: new ReadableStream({
+      start(controller) {
+        for (const event of events) {
+          controller.enqueue(encoder.encode(`event: ${event.type}\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        }
+      },
+      cancel(reason) {
+        resolveCancelled(reason);
+      }
+    }),
+    cancelled
+  };
+}
+
 test('createAnthropic chat streams text deltas from the Messages API', async () => {
   const calls: Array<{
     url: string | URL | Request;
@@ -131,4 +156,65 @@ test('createAnthropic surfaces provider HTTP errors clearly', async () => {
   const iterator = anthropic.chat('hello')[Symbol.asyncIterator]();
 
   await assert.rejects(() => iterator.next(), /Invalid x-api-key/);
+});
+
+test('createAnthropic does not assume process exists when API keys are missing', () => {
+  const runtime = globalThis as unknown as { process: typeof process | undefined };
+  const originalProcess = runtime.process;
+
+  try {
+    runtime.process = undefined;
+
+    assert.throws(
+      () => createAnthropic({ fetch: async () => new Response(null) }),
+      /requires an API key/
+    );
+  } finally {
+    runtime.process = originalProcess;
+  }
+});
+
+test('createAnthropic does not start fetch work when the request signal is already aborted', async () => {
+  let calls = 0;
+  const controller = new AbortController();
+  controller.abort('anthropic stop now');
+  const anthropic = createAnthropic({
+    apiKey: 'test-key',
+    fetch: async () => {
+      calls += 1;
+      return new Response(null, { status: 200 });
+    }
+  });
+
+  const iterator = anthropic.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+
+  await assert.rejects(() => iterator.next(), /anthropic stop now/);
+  assert.equal(calls, 0);
+});
+
+test('createAnthropic cancels the active reader when the request signal aborts mid-stream', async () => {
+  const controller = new AbortController();
+  const pendingBody = createPendingSSEBody([
+    { type: 'message_start', message: { id: 'msg_3' } },
+    { type: 'content_block_delta', delta: { type: 'text_delta', text: 'hello' } }
+  ]);
+  const anthropic = createAnthropic({
+    apiKey: 'test-key',
+    fetch: async () => new Response(pendingBody.body, {
+      status: 200,
+      headers: {
+        'content-type': 'text/event-stream'
+      }
+    })
+  });
+
+  const iterator = anthropic.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+  const first = await iterator.next();
+  assert.deepEqual(first, { done: false, value: 'hello' });
+
+  const nextChunk = iterator.next();
+  controller.abort('anthropic stream cancelled');
+
+  await assert.rejects(() => nextChunk, /anthropic stream cancelled/);
+  await assert.doesNotReject(() => pendingBody.cancelled);
 });
