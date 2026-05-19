@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added an npm publish preflight that checks changelog alignment, npm auth, and whether the target version is already published before the full release flow starts.
+- Reworked `npm run publish:npm` to use the new preflight so local autonomous releases fail fast with a clear registry or auth diagnosis.
+
 ## 0.7.4 - 2026-05-19
 
 - Hardened provider transport abort propagation so pre-aborted requests fail before `fetch` starts and active SSE or line-stream readers are cancelled promptly when the request signal aborts.

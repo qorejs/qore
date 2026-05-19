@@ -44,6 +44,15 @@ npm i @qorejs/qore
 
 GitHub Packages installs require an authenticated session against `https://npm.pkg.github.com`.
 
+For maintainers, the local npm release path now includes a fast preflight:
+
+```bash
+npm run publish:preflight
+npm run publish:npm
+```
+
+The preflight checks npm auth, confirms the changelog matches `package.json`, and fails early if that exact version is already published.
+
 - Package name: `@qorejs/qore`
 - Module format: `ESM`
 - Supported runtime: `Node >= 18`

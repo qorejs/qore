@@ -29,8 +29,9 @@
     "smoke:package-runtime": "node ./scripts/package-runtime-smoke.mjs",
     "test": "node ./scripts/test.mjs",
     "release:check": "node ./scripts/release-check.mjs",
+    "publish:preflight": "node ./scripts/publish-preflight.mjs",
     "publish:github": "npm publish --registry=https://npm.pkg.github.com",
-    "publish:npm": "npm publish --access public",
+    "publish:npm": "node ./scripts/publish-npm.mjs",
     "prepublishOnly": "node ./scripts/release-check.mjs"
   },
   "engines": {
