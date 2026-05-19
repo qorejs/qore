@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 import {
   computed,
+  createOpenRouter,
   createSSEAdapter,
   response,
   signal,
@@ -78,5 +79,27 @@ for await (const chunk of provider.chat('stream = signal')) {
 }
 
 assert.deepEqual(chunks, ['hello', ' world']);
+
+const openrouter = createOpenRouter({
+  apiKey: 'test-key',
+  fetch: async () => new Response(createSSEBody([
+    { event: 'message', data: { choices: [{ delta: { role: 'assistant' } }] } },
+    { event: 'message', data: { choices: [{ delta: { content: 'router' } }] } },
+    { event: 'message', data: { choices: [{ delta: { content: ' ready' } }] } }
+  ]), {
+    status: 200,
+    headers: {
+      'content-type': 'text/event-stream'
+    }
+  })
+});
+
+const openrouterChunks = [];
+
+for await (const chunk of openrouter.chat('stream = signal')) {
+  openrouterChunks.push(chunk);
+}
+
+assert.deepEqual(openrouterChunks, ['router', ' ready']);
 
 process.stdout.write('package-runtime-ok\n');

@@ -52,6 +52,7 @@ export type {
 } from './dom/types.js';
 export { createAnthropic } from './providers/anthropic.js';
 export { createOpenAI } from './providers/openai.js';
+export { createOpenRouter } from './providers/openrouter.js';
 export { createSSEAdapter } from './providers/sse.js';
 export type {
   AnthropicAdapter,
@@ -67,6 +68,12 @@ export type {
   OpenAIMessage,
   OpenAIOptions,
   OpenAIRequest,
+  OpenRouterAdapter,
+  OpenRouterChatInput,
+  OpenRouterEvent,
+  OpenRouterMessage,
+  OpenRouterOptions,
+  OpenRouterRequest,
   ProviderHeaders,
   ProviderRequestOptions,
   SSEAdapter,

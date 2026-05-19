@@ -227,22 +227,28 @@ export class EffectNode implements ReactiveObserver {
 
     this.running = true;
     this.needsRun = false;
-    cleanupObserver(this);
+    const previousCleanup = this.cleanup;
+    this.cleanup = null;
 
-    if (typeof this.cleanup === 'function') {
-      this.cleanup();
-      this.cleanup = null;
-    }
+    try {
+      // Run the previous cleanup before dropping old dependencies so a thrown cleanup
+      // does not silently unsubscribe the effect from future source updates.
+      if (typeof previousCleanup === 'function') {
+        previousCleanup();
+      }
 
-    withActiveObserver(this, () => {
-      const maybeCleanup = this.fn();
-      this.cleanup = typeof maybeCleanup === 'function' ? maybeCleanup : null;
-    });
+      cleanupObserver(this);
 
-    this.running = false;
+      withActiveObserver(this, () => {
+        const maybeCleanup = this.fn();
+        this.cleanup = typeof maybeCleanup === 'function' ? maybeCleanup : null;
+      });
+    } finally {
+      this.running = false;
 
-    if (this.needsRun && this.active) {
-      this.schedule();
+      if (this.needsRun && this.active) {
+        this.schedule();
+      }
     }
   }
 

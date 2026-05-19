@@ -256,6 +256,28 @@ test('stream.withBackpressure surfaces overflow errors through ready and status'
   assert.equal(answer.buffered(), 0);
 });
 
+// High-volume queued writes should still drain into one consistent final signal value.
+test('stream.withBackpressure preserves long queued histories under wait overflow', async () => {
+  const chunks = Array.from({ length: 120 }, (_, index) => `${index},`);
+  const answer = stream.withBackpressure(async ({ push }) => {
+    for (const chunk of chunks) {
+      push(chunk);
+    }
+  }, {
+    interval: 0,
+    buffer: 6,
+    overflow: 'wait'
+  });
+
+  await answer.ready;
+
+  assert.equal(answer.status(), 'completed');
+  assert.equal(answer.buffered(), 0);
+  assert.equal(answer.dropped(), 0);
+  assert.equal(answer.chunkCount(), chunks.length);
+  assert.equal(answer(), chunks.join(''));
+});
+
 // Derived streams should preserve the chunk-by-chunk composition model.
 test('mapStream transforms a source stream', async () => {
   const source = stream<number>(async ({ push }) => {

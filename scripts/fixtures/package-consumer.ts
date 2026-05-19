@@ -2,6 +2,7 @@ import {
   batch,
   computed,
   createApp,
+  createOpenRouter,
   createSSEAdapter,
   effect,
   from,
@@ -18,6 +19,12 @@ import {
   type BackpressureOptions,
   type EffectOptions,
   type EffectScheduler,
+  type OpenRouterAdapter,
+  type OpenRouterChatInput,
+  type OpenRouterEvent,
+  type OpenRouterMessage,
+  type OpenRouterOptions,
+  type OpenRouterRequest,
   type ProviderRequestOptions,
   type QoreChild,
   type QoreDocumentFragment,
@@ -118,8 +125,27 @@ const provider = createSSEAdapter<{ prompt: string }, string, TokenEvent>({
     return event.data.type === 'token' ? event.data.text : undefined;
   }
 });
+const openrouter = createOpenRouter({
+  apiKey: 'demo-key',
+  fetch: async () => new Response(null, { status: 200 })
+});
 
 const providerSurface: SSEAdapter<{ prompt: string }, string, TokenEvent> = provider;
+const openrouterSurface: OpenRouterAdapter = openrouter;
+const openrouterOptions: OpenRouterOptions = {
+  apiKey: 'demo-key'
+};
+const openrouterRequest: OpenRouterRequest = {
+  messages: [{ role: 'user', content: 'hello' }]
+};
+const openrouterChatInput: OpenRouterChatInput = 'hello';
+const openrouterMessage: OpenRouterMessage = {
+  role: 'user',
+  content: 'hello'
+};
+const openrouterEvent: OpenRouterEvent = {
+  choices: [{ delta: { content: 'hello' } }]
+};
 const sampleEvent: SSEEvent<TokenEvent> = {
   event: 'message',
   id: null,
@@ -175,6 +201,12 @@ void replayed;
 void transcriptState;
 void requestOptions;
 void providerSurface;
+void openrouterSurface;
+void openrouterOptions;
+void openrouterRequest;
+void openrouterChatInput;
+void openrouterMessage;
+void openrouterEvent;
 void sampleEvent;
 void backpressure;
 

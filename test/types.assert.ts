@@ -1,0 +1,77 @@
+import {
+  createSSEAdapter,
+  createOpenRouter,
+  from,
+  mapStream,
+  scanStream,
+  stream,
+  type OpenRouterAdapter,
+  type ProviderRequestOptions,
+  type QoreStream,
+  type ReadonlySignal,
+  type SSEAdapter
+} from '../src/index.js';
+
+type Assert<T extends true> = T;
+type Extends<A, B> = A extends B ? true : false;
+type Equal<A, B> = (
+  (<T>() => T extends A ? 1 : 2) extends
+  (<T>() => T extends B ? 1 : 2)
+    ? true
+    : false
+);
+
+type TokenEvent = {
+  type: 'token';
+  text: string;
+};
+
+const source = stream(['a', 'b']);
+const listSource = stream.list([{ step: 1 }]);
+const latestSource = stream.latest([1, 2, 3]);
+const mappedSource = mapStream([1, 2], (value) => value.toString());
+const scannedSource = scanStream([1, 2, 3], (total, value) => total + value, 0);
+const replayed = from(['x', 'y']);
+
+const adapter = createSSEAdapter<{ prompt: string }, string, TokenEvent>({
+  url: 'https://example.com/stream',
+  buildChatRequest(prompt) {
+    return { prompt };
+  },
+  eventToText(event) {
+    return event.data.type === 'token' ? event.data.text : undefined;
+  }
+});
+const openrouter = createOpenRouter({
+  apiKey: 'demo-key',
+  fetch: async () => new Response(null, { status: 200 })
+});
+
+const providerOptions: ProviderRequestOptions = {
+  headers: {
+    Authorization: 'Bearer demo'
+  }
+};
+
+type _DefaultStream = Assert<Equal<typeof source, QoreStream<string, string>>>;
+type _ListStream = Assert<Equal<typeof listSource, QoreStream<{ step: number }, Array<{ step: number }>>>>;
+type _LatestStream = Assert<Equal<typeof latestSource, QoreStream<number, number | null>>>;
+type _MappedStream = Assert<Equal<typeof mappedSource, QoreStream<string, string>>>;
+type _ScannedStream = Assert<Extends<typeof scannedSource, QoreStream<number, number>>>;
+type _ReplayStream = Assert<Extends<typeof replayed, QoreStream<string, string>>>;
+type _ReadonlyStatus = Assert<Extends<typeof source.status, ReadonlySignal<string>>>;
+type _Adapter = Assert<Extends<typeof adapter, SSEAdapter<{ prompt: string }, string, TokenEvent>>>;
+type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
+
+void providerOptions;
+
+// @ts-expect-error Stream lifecycle state is exposed read-only.
+source.status('completed');
+
+// @ts-expect-error Stream lifecycle state does not expose mutable helpers.
+source.error.set(null);
+
+// @ts-expect-error Stream chunk history is exposed read-only.
+source.chunks([]);
+
+export {};

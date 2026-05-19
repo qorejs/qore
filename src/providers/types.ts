@@ -82,6 +82,41 @@ export interface OpenAIAdapter {
   chat(input: OpenAIChatInput, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
 }
 
+export interface OpenRouterEvent {
+  id?: string;
+  model?: string;
+  choices?: Array<{
+    index?: number;
+    finish_reason?: string | null;
+    delta?: {
+      role?: string;
+      content?: string;
+      [key: string]: unknown;
+    };
+  }>;
+  [key: string]: unknown;
+}
+
+export type OpenRouterMessage = OpenAIMessage;
+export type OpenRouterChatInput = string | OpenRouterMessage | OpenRouterMessage[] | Record<string, unknown>;
+export type OpenRouterRequest = Record<string, unknown> & { messages?: OpenRouterChatInput };
+
+export interface OpenRouterOptions {
+  apiKey?: string;
+  baseURL?: string;
+  model?: string;
+  headers?: ProviderHeaders;
+  fetch?: FetchLike;
+}
+
+export interface OpenRouterAdapter {
+  chatCompletions: {
+    stream(request: OpenRouterRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<OpenRouterEvent>;
+  };
+  streamText(input: string | OpenRouterRequest, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
+  chat(input: OpenRouterChatInput, requestOptions?: ProviderRequestOptions): AsyncIterable<string>;
+}
+
 export interface AnthropicEvent {
   type: string;
   [key: string]: unknown;

@@ -244,3 +244,77 @@ test('stopped scheduled effects do not run queued jobs', async () => {
 
   assert.deepEqual(seen, [0]);
 });
+
+test('microtask scheduled effects can settle chained writes without duplicate queued runs', async () => {
+  const count = signal(0);
+  const seen: number[] = [];
+
+  effect(() => {
+    const current = count();
+    seen.push(current);
+
+    if (current < 2) {
+      count.set(current + 1);
+    }
+  }, { scheduler: 'microtask' });
+
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(seen, [0, 1, 2]);
+});
+
+test('effects recover after a thrown callback leaves the current run', () => {
+  const count = signal(0);
+  const seen: number[] = [];
+
+  effect(() => {
+    const current = count();
+    seen.push(current);
+
+    if (current === 1) {
+      throw new Error('boom');
+    }
+  });
+
+  assert.throws(() => {
+    count.set(1);
+  }, /boom/);
+
+  count.set(2);
+
+  assert.deepEqual(seen, [0, 1, 2]);
+});
+
+test('effects stay subscribed when cleanup throws before the next run', () => {
+  const count = signal(0);
+  const events: string[] = [];
+  let shouldThrowCleanup = true;
+
+  effect(() => {
+    const current = count();
+    events.push(`run:${current}`);
+
+    return () => {
+      events.push(`cleanup:${current}`);
+
+      if (current === 0 && shouldThrowCleanup) {
+        shouldThrowCleanup = false;
+        throw new Error('cleanup boom');
+      }
+    };
+  });
+
+  assert.throws(() => {
+    count.set(1);
+  }, /cleanup boom/);
+
+  count.set(2);
+
+  assert.deepEqual(events, [
+    'run:0',
+    'cleanup:0',
+    'run:2'
+  ]);
+});

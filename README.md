@@ -137,6 +137,19 @@ const anthropic = createAnthropic({
 const answer = stream(anthropic.chat('Why should stream be signal?'));
 ```
 
+### `createOpenRouter(options?)`
+
+```js
+import { createOpenRouter, stream } from '@qorejs/qore';
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  model: 'openai/gpt-4.1-mini'
+});
+
+const answer = stream(openrouter.chat('Why should stream be signal?'));
+```
+
 ### `createSSEAdapter(options?)`
 
 If your backend already streams `text/event-stream`, Qore can adopt it directly:

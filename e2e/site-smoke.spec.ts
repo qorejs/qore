@@ -58,6 +58,13 @@ function expectBenchmarkSuiteShape(suite: BenchmarkSuite): void {
   expect(snapshot).toBeTruthy();
   expect(qore?.averageCharacterDataMutations).toBeGreaterThan(0);
   expect(snapshot?.averageRewrittenBytes).toBeGreaterThan(0);
+
+  expect(qore?.averageRewrittenBytes).toBe(0);
+  expect(qore?.averageAddedNodes).toBeLessThan(snapshot?.averageAddedNodes ?? Number.POSITIVE_INFINITY);
+  expect(qore?.averageRemovedNodes).toBeLessThanOrEqual(snapshot?.averageRemovedNodes ?? Number.POSITIVE_INFINITY);
+  expect(qore?.averageMutationRecords).toBeLessThan(snapshot?.averageMutationRecords ?? Number.POSITIVE_INFINITY);
+  expect(qore?.averageDurationMs).toBeLessThan(snapshot?.averageDurationMs ?? Number.POSITIVE_INFINITY);
+  expect(qore?.averageCommits).toBe(snapshot?.averageCommits);
 }
 
 async function attachBenchmarkSuite(testInfo: TestInfo, suite: BenchmarkSuite): Promise<void> {
@@ -96,6 +103,10 @@ test('homepage stream demo and benchmark stay interactive', async ({ page }, tes
   await page.getByTestId('home-benchmark-run').click();
   await expect(page.getByTestId('home-benchmark-run')).toContainText(/Running|Run Again/);
   await expect(page.getByTestId('home-benchmark-summary')).toBeVisible();
+
+  const homeSuite = await readBenchmarkSuite(page);
+  expectBenchmarkSuiteShape(homeSuite);
+  await attachBenchmarkSuite(testInfo, homeSuite);
 
   await attachViewportScreenshot(page, testInfo, 'homepage-viewport.png');
   await attachLocatorScreenshot(page, testInfo, 'home-page', 'homepage-full-surface.png');

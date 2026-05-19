@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
 const rootPath = fileURLToPath(root);
+const buildScript = fileURLToPath(new URL('./build.mjs', import.meta.url));
 const tscEntry = fileURLToPath(new URL('../node_modules/typescript/bin/tsc', import.meta.url));
 const fixturePath = fileURLToPath(new URL('./fixtures/package-consumer.ts', import.meta.url));
 const npmCli = process.env.npm_execpath;
@@ -19,6 +20,15 @@ const tempDir = mkdtempSync(join(tmpdir(), 'qore-package-types-'));
 let tarballPath = null;
 
 try {
+  const buildRun = spawnSync(process.execPath, [buildScript], {
+    cwd: rootPath,
+    stdio: 'inherit'
+  });
+
+  if (buildRun.status !== 0) {
+    process.exit(buildRun.status ?? 1);
+  }
+
   const packRun = spawnSync(process.execPath, [npmCli, 'pack', '--json'], {
     cwd: rootPath,
     encoding: 'utf8',
