@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import type { Page, TestInfo } from '@playwright/test';
 import type { BenchmarkSuite } from '../examples/benchmark-core.js';
+import {
+  formatBenchmarkVerificationMarkdown,
+  verifyBenchmarkSuite
+} from '../examples/benchmark-verifier.js';
 
 function installConsoleGuards(page: Page): string[] {
   const issues: string[] = [];
@@ -48,29 +52,16 @@ async function readBenchmarkSuite(page: Page): Promise<BenchmarkSuite> {
   return suite as BenchmarkSuite;
 }
 
-function expectBenchmarkSuiteShape(suite: BenchmarkSuite): void {
-  const qore = suite.results.find((result) => result.id === 'qore');
-  const snapshot = suite.results.find((result) => result.id === 'snapshot');
-
-  expect(suite.meta.chunkCount).toBeGreaterThan(0);
-  expect(suite.meta.characterCount).toBeGreaterThan(0);
-  expect(qore).toBeTruthy();
-  expect(snapshot).toBeTruthy();
-  expect(qore?.averageCharacterDataMutations).toBeGreaterThan(0);
-  expect(snapshot?.averageRewrittenBytes).toBeGreaterThan(0);
-
-  expect(qore?.averageRewrittenBytes).toBe(0);
-  expect(qore?.averageAddedNodes).toBeLessThan(snapshot?.averageAddedNodes ?? Number.POSITIVE_INFINITY);
-  expect(qore?.averageRemovedNodes).toBeLessThanOrEqual(snapshot?.averageRemovedNodes ?? Number.POSITIVE_INFINITY);
-  expect(qore?.averageMutationRecords).toBeLessThan(snapshot?.averageMutationRecords ?? Number.POSITIVE_INFINITY);
-  expect(qore?.averageDurationMs).toBeLessThan(snapshot?.averageDurationMs ?? Number.POSITIVE_INFINITY);
-  expect(qore?.averageCommits).toBe(snapshot?.averageCommits);
-}
-
 async function attachBenchmarkSuite(testInfo: TestInfo, suite: BenchmarkSuite): Promise<void> {
+  const verification = verifyBenchmarkSuite(suite);
+
   await testInfo.attach('benchmark-suite.json', {
     body: JSON.stringify(suite, null, 2),
     contentType: 'application/json'
+  });
+  await testInfo.attach('benchmark-summary.md', {
+    body: formatBenchmarkVerificationMarkdown(suite, verification),
+    contentType: 'text/markdown'
   });
 }
 
@@ -105,7 +96,7 @@ test('homepage stream demo and benchmark stay interactive', async ({ page }, tes
   await expect(page.getByTestId('home-benchmark-summary')).toBeVisible();
 
   const homeSuite = await readBenchmarkSuite(page);
-  expectBenchmarkSuiteShape(homeSuite);
+  verifyBenchmarkSuite(homeSuite);
   await attachBenchmarkSuite(testInfo, homeSuite);
 
   await attachViewportScreenshot(page, testInfo, 'homepage-viewport.png');
@@ -150,7 +141,7 @@ test('dedicated benchmark page renders both rendering-path cards', async ({ page
   await expect(page.getByTestId('benchmark-summary')).toContainText(/Qore|Run the benchmark/i);
 
   const suite = await readBenchmarkSuite(page);
-  expectBenchmarkSuiteShape(suite);
+  verifyBenchmarkSuite(suite);
   await attachBenchmarkSuite(testInfo, suite);
   await attachViewportScreenshot(page, testInfo, 'benchmark-viewport.png');
   await attachLocatorScreenshot(page, testInfo, 'benchmark-page', 'benchmark-page-surface.png');

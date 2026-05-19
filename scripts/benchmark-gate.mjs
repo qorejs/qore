@@ -10,6 +10,7 @@ const rootPath = fileURLToPath(root);
 const buildScript = fileURLToPath(new URL('./build.mjs', import.meta.url));
 const serveScript = fileURLToPath(new URL('./serve-static.mjs', import.meta.url));
 const artifactPath = fileURLToPath(new URL('../test-results/benchmark-gate.json', import.meta.url));
+const artifactSummaryPath = fileURLToPath(new URL('../test-results/benchmark-gate-summary.md', import.meta.url));
 
 const buildRun = spawnSync(process.execPath, [buildScript], {
   stdio: 'inherit',
@@ -125,31 +126,11 @@ async function createBaseUrl() {
   };
 }
 
-function assert(condition, message) {
-  if (!condition) {
-    throw new Error(message);
-  }
-}
-
-function validateSuite(suite) {
-  const qore = suite?.results?.find((result) => result.id === 'qore');
-  const snapshot = suite?.results?.find((result) => result.id === 'snapshot');
-
-  assert(suite?.meta?.chunkCount > 0, 'Benchmark suite must report a positive chunk count.');
-  assert(suite?.meta?.characterCount > 0, 'Benchmark suite must report a positive character count.');
-  assert(qore, 'Benchmark suite is missing the qore result.');
-  assert(snapshot, 'Benchmark suite is missing the snapshot result.');
-  assert(qore.averageRewrittenBytes === 0, 'Qore benchmark path must not rewrite HTML bytes.');
-  assert(qore.averageAddedNodes < snapshot.averageAddedNodes, 'Qore should add fewer DOM nodes than the snapshot baseline.');
-  assert(qore.averageRemovedNodes <= snapshot.averageRemovedNodes, 'Qore should not remove more DOM nodes than the snapshot baseline.');
-  assert(qore.averageMutationRecords < snapshot.averageMutationRecords, 'Qore should produce fewer total mutation records than the snapshot baseline.');
-  assert(qore.averageDurationMs < snapshot.averageDurationMs, 'Qore should complete faster than the snapshot baseline.');
-  assert(qore.averageCommits === snapshot.averageCommits, 'Benchmark variants must process the same number of commits.');
-}
-
 const benchmarkTarget = await createBaseUrl();
 
 try {
+  const verifierModule = await import(new URL('../dist/examples/benchmark-verifier.js', import.meta.url));
+  const { formatBenchmarkVerificationMarkdown, verifyBenchmarkSuite } = verifierModule;
   const { chromium } = await import('@playwright/test');
   const browser = await chromium.launch({
     headless: true,
@@ -171,11 +152,19 @@ try {
       return benchmarkWindow.__QORE_BENCHMARK__ ?? null;
     });
 
-    assert(suite, 'Benchmark gate could not read window.__QORE_BENCHMARK__.');
-    validateSuite(suite);
+    if (!suite) {
+      throw new Error('Benchmark gate could not read window.__QORE_BENCHMARK__.');
+    }
+
+    const verification = verifyBenchmarkSuite(suite);
 
     mkdirSync(dirname(artifactPath), { recursive: true });
-    writeFileSync(artifactPath, JSON.stringify(suite, null, 2));
+    writeFileSync(artifactPath, JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      suite,
+      verification
+    }, null, 2));
+    writeFileSync(artifactSummaryPath, formatBenchmarkVerificationMarkdown(suite, verification));
 
     await context.close();
   } finally {
