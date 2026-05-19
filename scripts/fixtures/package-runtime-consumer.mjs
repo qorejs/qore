@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import {
+  canUseDOM,
   computed,
   createLineAdapter,
   createOllama,
@@ -42,6 +43,7 @@ function createLineBody(events) {
 const count = signal(2);
 const doubled = computed(() => count() * 2);
 assert.equal(doubled(), 4);
+assert.equal(typeof canUseDOM(), 'boolean');
 
 const answer = stream(async ({ push }) => {
   await push('Qore');

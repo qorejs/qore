@@ -9,9 +9,14 @@ export interface Scope {
 
 let activeScope: Scope | null = null;
 
+// Detect whether the current runtime can create and mutate real DOM nodes.
+export function canUseDOM(): boolean {
+  return typeof document !== 'undefined';
+}
+
 // Guard DOM helpers so they only run in browser-like environments.
 export function assertDocument(): void {
-  if (typeof document === 'undefined') {
+  if (!canUseDOM()) {
     throw new Error('Qore DOM APIs require a browser-like environment');
   }
 }

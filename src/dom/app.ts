@@ -11,6 +11,7 @@ import {
 import { batch, computed, effect, signal, untrack } from '../core/signal.js';
 import { response } from '../core/response.js';
 import { from, mapStream, scanStream, stream } from '../core/stream.js';
+import { assertDocument } from './scope.js';
 import type { MountTarget, MountView, QoreChild, QoreElement } from './types.js';
 
 export interface AppContext<Props extends Record<string, unknown>> {
@@ -57,9 +58,7 @@ export interface QoreApp<Props extends Record<string, unknown>> {
 
 // Resolve a CSS selector or direct node into the root mount target.
 function resolveTarget(target: MountTarget): Element {
-  if (typeof document === 'undefined') {
-    throw new Error('Qore app mounting requires a browser-like environment');
-  }
+  assertDocument();
 
   if (typeof target === 'string') {
     const element = document.querySelector(target);

@@ -1,5 +1,6 @@
 import {
   batch,
+  canUseDOM,
   computed,
   createApp,
   createLineAdapter,
@@ -238,6 +239,7 @@ const qoreText: QoreText = text('text node');
 const qoreFragment: QoreDocumentFragment = list(() => ['a'], (value) => h('span', {}, value));
 
 void app;
+void canUseDOM;
 void customScheduler;
 void domNode;
 void qoreNode;

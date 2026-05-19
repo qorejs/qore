@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { h, mount, signal } from '../src/index.js';
+import { canUseDOM, createApp, h, mount, signal } from '../src/index.js';
 
 class FakeNode {
   parentNode: FakeElement | null = null;
@@ -108,6 +108,43 @@ function withFakeDom(run: () => void): void {
     globalDom.Node = originalNode;
   }
 }
+
+function withoutDom(run: () => void): void {
+  const globalDom = globalThis as unknown as MutableGlobalDom;
+  const originalDocument = globalDom.document;
+  const originalNode = globalDom.Node;
+
+  globalDom.document = undefined;
+  globalDom.Node = undefined;
+
+  try {
+    run();
+  } finally {
+    globalDom.document = originalDocument;
+    globalDom.Node = originalNode;
+  }
+}
+
+test('canUseDOM reflects whether a browser-like document is available', () => {
+  withoutDom(() => {
+    assert.equal(canUseDOM(), false);
+  });
+
+  withFakeDom(() => {
+    assert.equal(canUseDOM(), true);
+  });
+});
+
+test('DOM APIs fail with a clear message when document is unavailable', () => {
+  withoutDom(() => {
+    assert.throws(() => h('div', {}, 'hello'), /Qore DOM APIs require a browser-like environment/);
+    assert.throws(() => mount({} as Element, 'hello'), /Qore DOM APIs require a browser-like environment/);
+    assert.throws(
+      () => createApp(() => h('div', {}, 'hello')).mount('#app'),
+      /Qore DOM APIs require a browser-like environment/
+    );
+  });
+});
 
 test('plain event handlers are registered without being invoked during render', () => {
   let seen: string | null = null;

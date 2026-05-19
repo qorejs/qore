@@ -328,6 +328,25 @@ python3 -m http.server 4173
 
 Then open [http://127.0.0.1:4173/](http://127.0.0.1:4173/).
 
+## Server And SSR
+
+Qore's reactive core and stream runtime work in Node and browser environments today.
+
+The DOM layer is intentionally browser-only right now:
+
+- `signal`, `computed`, `effect`, `stream`, and provider adapters work in Node and the browser
+- `h`, `text`, `mount`, and `createApp(...).mount(...)` require a browser-like `document`
+- `canUseDOM()` is exported so integrations can branch cleanly before touching DOM APIs
+
+If you call DOM helpers without a browser-like runtime, Qore throws a clear `Qore DOM APIs require a browser-like environment` error instead of failing later with a generic reference error.
+
+That means the current `1.0.0` path is:
+
+- stable reactive runtime
+- stable streaming runtime
+- explicit browser DOM boundary
+- streaming SSR and hydration as a post-`1.0.0` expansion area unless the implementation is fully proven first
+
 ## Browser Regression
 
 Install the browser binary once:
