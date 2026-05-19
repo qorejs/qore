@@ -42,7 +42,7 @@ const suite: BenchmarkSuite = {
       averageDurationMs: 20,
       averageFirstMutationMs: 1.8,
       averageMutationRecords: 40,
-      averageCharacterDataMutations: 12,
+      averageCharacterDataMutations: 0,
       averageAddedNodes: 18,
       averageRemovedNodes: 4,
       averageRewrittenBytes: 4096,

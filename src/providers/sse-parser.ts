@@ -1,7 +1,11 @@
+import { normalizeAbortReason } from '../shared/utils.js';
 import type { SSEEvent } from './types.js';
 
 // Parse server-sent events without adding any transport dependency.
-export async function* readSSE(body: ReadableStream<Uint8Array>): AsyncIterable<SSEEvent<string>> {
+export async function* readSSE(
+  body: ReadableStream<Uint8Array>,
+  signal?: AbortSignal | null
+): AsyncIterable<SSEEvent<string>> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -9,6 +13,13 @@ export async function* readSSE(body: ReadableStream<Uint8Array>): AsyncIterable<
   let eventId: string | null = null;
   let retry: number | null = null;
   let data: string[] = [];
+  const abortMessage = 'SSE stream aborted';
+
+  const cancelReader = () => {
+    void reader.cancel(signal?.reason).catch(() => {
+      // Ignore reader cancellation races during abort handling.
+    });
+  };
 
   const flushEvent = (): SSEEvent<string> | null => {
     if (data.length === 0) {
@@ -33,61 +44,96 @@ export async function* readSSE(body: ReadableStream<Uint8Array>): AsyncIterable<
     return nextEvent;
   };
 
-  while (true) {
-    const { value, done } = await reader.read();
-    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
-
-    const lines = buffer.split(/\r?\n/);
-    buffer = lines.pop() ?? '';
-
-    for (const line of lines) {
-      if (!line) {
-        const nextEvent = flushEvent();
-
-        if (nextEvent) {
-          yield nextEvent;
-        }
-
-        continue;
-      }
-
-      if (line.startsWith(':')) {
-        continue;
-      }
-
-      const separator = line.indexOf(':');
-      const field = separator === -1 ? line : line.slice(0, separator);
-      const rawValue = separator === -1 ? '' : line.slice(separator + 1).replace(/^ /, '');
-
-      switch (field) {
-        case 'event':
-          eventName = rawValue || 'message';
-          break;
-        case 'data':
-          data.push(rawValue);
-          break;
-        case 'id':
-          eventId = rawValue;
-          break;
-        case 'retry': {
-          const parsedRetry = Number.parseInt(rawValue, 10);
-          retry = Number.isNaN(parsedRetry) ? null : parsedRetry;
-          break;
-        }
-        default:
-          break;
-      }
-    }
-
-    if (done) {
-      break;
-    }
+  if (signal?.aborted) {
+    cancelReader();
+    throw normalizeAbortReason(signal.reason, abortMessage);
   }
 
-  const finalEvent = flushEvent();
+  signal?.addEventListener('abort', cancelReader, { once: true });
 
-  if (finalEvent) {
-    yield finalEvent;
+  try {
+    while (true) {
+      if (signal?.aborted) {
+        throw normalizeAbortReason(signal.reason, abortMessage);
+      }
+
+      let chunk;
+
+      try {
+        chunk = await reader.read();
+      } catch (error) {
+        if (signal?.aborted) {
+          throw normalizeAbortReason(signal.reason, abortMessage);
+        }
+
+        throw error;
+      }
+
+      const { value, done } = chunk;
+      buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line) {
+          const nextEvent = flushEvent();
+
+          if (nextEvent) {
+            yield nextEvent;
+          }
+
+          continue;
+        }
+
+        if (line.startsWith(':')) {
+          continue;
+        }
+
+        const separator = line.indexOf(':');
+        const field = separator === -1 ? line : line.slice(0, separator);
+        const rawValue = separator === -1 ? '' : line.slice(separator + 1).replace(/^ /, '');
+
+        switch (field) {
+          case 'event':
+            eventName = rawValue || 'message';
+            break;
+          case 'data':
+            data.push(rawValue);
+            break;
+          case 'id':
+            eventId = rawValue;
+            break;
+          case 'retry': {
+            const parsedRetry = Number.parseInt(rawValue, 10);
+            retry = Number.isNaN(parsedRetry) ? null : parsedRetry;
+            break;
+          }
+          default:
+            break;
+        }
+      }
+
+      if (done) {
+        if (signal?.aborted) {
+          throw normalizeAbortReason(signal.reason, abortMessage);
+        }
+
+        break;
+      }
+    }
+
+    if (signal?.aborted) {
+      throw normalizeAbortReason(signal.reason, abortMessage);
+    }
+
+    const finalEvent = flushEvent();
+
+    if (finalEvent) {
+      yield finalEvent;
+    }
+  } finally {
+    signal?.removeEventListener('abort', cancelReader);
   }
 }
 

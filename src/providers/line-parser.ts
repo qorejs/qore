@@ -1,11 +1,22 @@
+import { normalizeAbortReason } from '../shared/utils.js';
 import type { LineEvent } from './types.js';
 
 // Read newline-delimited streaming bodies without depending on a provider SDK.
-export async function* readLines(body: ReadableStream<Uint8Array>): AsyncIterable<LineEvent<string>> {
+export async function* readLines(
+  body: ReadableStream<Uint8Array>,
+  signal?: AbortSignal | null
+): AsyncIterable<LineEvent<string>> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   let lineNumber = 0;
+  const abortMessage = 'Line stream aborted';
+
+  const cancelReader = () => {
+    void reader.cancel(signal?.reason).catch(() => {
+      // Ignore reader cancellation races during abort handling.
+    });
+  };
 
   const flushLines = function* (lines: string[]): Iterable<LineEvent<string>> {
     for (const line of lines) {
@@ -22,29 +33,64 @@ export async function* readLines(body: ReadableStream<Uint8Array>): AsyncIterabl
     }
   };
 
-  while (true) {
-    const { value, done } = await reader.read();
-    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
-
-    const lines = buffer.split(/\r?\n/);
-    buffer = lines.pop() ?? '';
-
-    for (const event of flushLines(lines)) {
-      yield event;
-    }
-
-    if (done) {
-      break;
-    }
+  if (signal?.aborted) {
+    cancelReader();
+    throw normalizeAbortReason(signal.reason, abortMessage);
   }
 
-  if (buffer) {
-    lineNumber += 1;
-    yield {
-      line: lineNumber,
-      raw: buffer,
-      data: buffer
-    };
+  signal?.addEventListener('abort', cancelReader, { once: true });
+
+  try {
+    while (true) {
+      if (signal?.aborted) {
+        throw normalizeAbortReason(signal.reason, abortMessage);
+      }
+
+      let chunk;
+
+      try {
+        chunk = await reader.read();
+      } catch (error) {
+        if (signal?.aborted) {
+          throw normalizeAbortReason(signal.reason, abortMessage);
+        }
+
+        throw error;
+      }
+
+      const { value, done } = chunk;
+      buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() ?? '';
+
+      for (const event of flushLines(lines)) {
+        yield event;
+      }
+
+      if (done) {
+        if (signal?.aborted) {
+          throw normalizeAbortReason(signal.reason, abortMessage);
+        }
+
+        break;
+      }
+    }
+
+    if (signal?.aborted) {
+      throw normalizeAbortReason(signal.reason, abortMessage);
+    }
+
+    if (buffer) {
+      lineNumber += 1;
+      yield {
+        line: lineNumber,
+        raw: buffer,
+        data: buffer
+      };
+    }
+  } finally {
+    signal?.removeEventListener('abort', cancelReader);
   }
 }
 

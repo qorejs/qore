@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.7.4 - 2026-05-19
+
+- Hardened provider transport abort propagation so pre-aborted requests fail before `fetch` starts and active SSE or line-stream readers are cancelled promptly when the request signal aborts.
+- Added regression coverage for both generic streaming adapters to verify early-abort and mid-stream cancellation behavior without depending on browser `fetch` internals.
+- Exported and documented clearer DOM runtime boundary detection through `canUseDOM()`, plus browser-only DOM guard coverage for `h`, `mount`, and `createApp(...).mount(...)`.
+- Unified benchmark verification into a shared verifier so the release gate, browser regression suite, and benchmark artifacts all enforce the same performance expectations.
+- Added human-readable benchmark summary artifacts to release evidence alongside the raw benchmark JSON output.
+- Added first-class local-model provider support through `createOllama(...)` and a reusable line-stream adapter for NDJSON-style transports.
+
 ## 0.7.3 - 2026-05-17
 
 - Opted GitHub Actions workflows into the Node 24 JavaScript action runtime ahead of the Node 20 action retirement.

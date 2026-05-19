@@ -19,6 +19,30 @@ function createSSEBody(chunks: string[]): ReadableStream<Uint8Array> {
   });
 }
 
+function createPendingSSEBody(initialChunks: string[]): {
+  body: ReadableStream<Uint8Array>;
+  cancelled: Promise<unknown>;
+} {
+  let resolveCancelled!: (reason: unknown) => void;
+  const cancelled = new Promise<unknown>((resolve) => {
+    resolveCancelled = resolve;
+  });
+
+  return {
+    body: new ReadableStream({
+      start(controller) {
+        for (const chunk of initialChunks) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+      },
+      cancel(reason) {
+        resolveCancelled(reason);
+      }
+    }),
+    cancelled
+  };
+}
+
 test('createSSEAdapter can map a custom chat endpoint into stream(provider.chat(...))', async () => {
   const calls: Array<{
     url: string | URL | Request;
@@ -147,4 +171,60 @@ test('createSSEAdapter surfaces SSE error events through the adapter hook', asyn
   const iterator = provider.streamText()[Symbol.asyncIterator]();
 
   await assert.rejects(() => iterator.next(), /boom/);
+});
+
+test('createSSEAdapter does not start fetch work when the request signal is already aborted', async () => {
+  let called = 0;
+  const controller = new AbortController();
+  controller.abort('stop now');
+  const provider = createSSEAdapter<Record<string, unknown>, string, { text?: string }>({
+    name: 'Abort Early',
+    url: 'https://example.com/abort-early',
+    fetch: async () => {
+      called += 1;
+      return new Response(null, { status: 200 });
+    },
+    buildChatRequest(prompt) {
+      return { prompt };
+    }
+  });
+
+  const iterator = provider.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+
+  await assert.rejects(() => iterator.next(), /stop now/);
+  assert.equal(called, 0);
+});
+
+test('createSSEAdapter cancels the active reader when the request signal aborts mid-stream', async () => {
+  const controller = new AbortController();
+  const pendingBody = createPendingSSEBody([
+    'event: token\n',
+    'data: {"type":"token","text":"hello"}\n\n'
+  ]);
+  const provider = createSSEAdapter<Record<string, unknown>, string, { type?: string; text?: string }>({
+    name: 'Abort Midstream',
+    url: 'https://example.com/abort-midstream',
+    fetch: async () => new Response(pendingBody.body, {
+      status: 200,
+      headers: {
+        'content-type': 'text/event-stream'
+      }
+    }),
+    buildChatRequest(prompt) {
+      return { prompt };
+    },
+    eventToText(event) {
+      return event.data.type === 'token' ? event.data.text : undefined;
+    }
+  });
+
+  const iterator = provider.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+  const first = await iterator.next();
+  assert.deepEqual(first, { done: false, value: 'hello' });
+
+  const nextChunk = iterator.next();
+  controller.abort('stream cancelled');
+
+  await assert.rejects(() => nextChunk, /stream cancelled/);
+  await assert.doesNotReject(() => pendingBody.cancelled);
 });

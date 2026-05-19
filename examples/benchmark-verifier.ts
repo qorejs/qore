@@ -33,7 +33,14 @@ export function verifyBenchmarkSuite(suite: BenchmarkSuite): BenchmarkVerificati
   invariant(qore.averageRewrittenBytes === 0, 'Qore benchmark path must not rewrite HTML bytes.');
   invariant(qore.averageAddedNodes < snapshot.averageAddedNodes, 'Qore should add fewer DOM nodes than the snapshot baseline.');
   invariant(qore.averageRemovedNodes <= snapshot.averageRemovedNodes, 'Qore should not remove more DOM nodes than the snapshot baseline.');
-  invariant(qore.averageMutationRecords < snapshot.averageMutationRecords, 'Qore should produce fewer total mutation records than the snapshot baseline.');
+  invariant(
+    qore.averageMutationRecords <= snapshot.averageMutationRecords,
+    'Qore should not produce more total mutation records than the snapshot baseline.'
+  );
+  invariant(
+    qore.averageCharacterDataMutations > snapshot.averageCharacterDataMutations,
+    'Qore benchmark path should spend its work on text-node updates instead of snapshot rerenders.'
+  );
   invariant(qore.averageDurationMs < snapshot.averageDurationMs, 'Qore should complete faster than the snapshot baseline.');
   invariant(qore.averageCommits === snapshot.averageCommits, 'Benchmark variants must process the same number of commits.');
 

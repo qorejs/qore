@@ -1,4 +1,4 @@
-import { normalizeError } from '../shared/utils.js';
+import { normalizeAbortReason, normalizeError } from '../shared/utils.js';
 import { mergeHeaders, readErrorBody } from './sse-env.js';
 import { getErrorMessage, isErrorEvent, parseEventData, readSSE } from './sse-parser.js';
 import type {
@@ -63,6 +63,10 @@ export function createSSEAdapter<TRequest = Record<string, unknown>, TChatInput 
       throw new Error(`Qore ${name} adapter requires a request URL`);
     }
 
+    if (signal?.aborted) {
+      throw normalizeAbortReason(signal.reason, `${name} request aborted`);
+    }
+
     const initConfig = {
       method,
       headers: mergeHeaders(defaultHeaders, mergeHeaders(requestHeaders, overrideHeaders)),
@@ -83,7 +87,7 @@ export function createSSEAdapter<TRequest = Record<string, unknown>, TChatInput 
       throw new Error(`${name} streaming response did not include a readable body`);
     }
 
-    for await (const rawEvent of readSSE(response.body)) {
+    for await (const rawEvent of readSSE(response.body, signal)) {
       if (!rawEvent.data || rawEvent.data === '[DONE]') {
         continue;
       }

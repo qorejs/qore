@@ -150,6 +150,17 @@ const openrouter = createOpenRouter({
 const answer = stream(openrouter.chat('Why should stream be signal?'));
 ```
 
+Provider adapters also accept a request `signal` so you can cancel in-flight streams explicitly:
+
+```js
+const controller = new AbortController();
+const answer = stream(openrouter.chat('Keep streaming', {
+  signal: controller.signal
+}));
+
+controller.abort('user navigated away');
+```
+
 ### `createOllama(options?)`
 
 If you want a local-first provider path, Qore can stream directly from Ollama:

@@ -17,6 +17,30 @@ function createLineBody(lines: unknown[]): ReadableStream<Uint8Array> {
   });
 }
 
+function createPendingLineBody(lines: unknown[]): {
+  body: ReadableStream<Uint8Array>;
+  cancelled: Promise<unknown>;
+} {
+  let resolveCancelled!: (reason: unknown) => void;
+  const cancelled = new Promise<unknown>((resolve) => {
+    resolveCancelled = resolve;
+  });
+
+  return {
+    body: new ReadableStream({
+      start(controller) {
+        for (const line of lines) {
+          controller.enqueue(encoder.encode(`${JSON.stringify(line)}\n`));
+        }
+      },
+      cancel(reason) {
+        resolveCancelled(reason);
+      }
+    }),
+    cancelled
+  };
+}
+
 test('createLineAdapter can map a custom chat endpoint into stream(provider.chat(...))', async () => {
   const calls: Array<{
     url: string | URL | Request;
@@ -135,4 +159,59 @@ test('createLineAdapter surfaces line-stream error events through the adapter ho
   const iterator = provider.stream()[Symbol.asyncIterator]();
 
   await assert.rejects(() => iterator.next(), /No more tokens for you/);
+});
+
+test('createLineAdapter does not start fetch work when the request signal is already aborted', async () => {
+  let called = 0;
+  const controller = new AbortController();
+  controller.abort('abort line request');
+  const provider = createLineAdapter<Record<string, unknown>, string, { text?: string }>({
+    name: 'Abort Early Lines',
+    url: 'https://example.com/abort-lines',
+    fetch: async () => {
+      called += 1;
+      return new Response(null, { status: 200 });
+    },
+    buildChatRequest(prompt) {
+      return { prompt };
+    }
+  });
+
+  const iterator = provider.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+
+  await assert.rejects(() => iterator.next(), /abort line request/);
+  assert.equal(called, 0);
+});
+
+test('createLineAdapter cancels the active reader when the request signal aborts mid-stream', async () => {
+  const controller = new AbortController();
+  const pendingBody = createPendingLineBody([
+    { type: 'token', text: 'hello' }
+  ]);
+  const provider = createLineAdapter<Record<string, unknown>, string, { type?: string; text?: string }>({
+    name: 'Abort Midstream Lines',
+    url: 'https://example.com/abort-midstream-lines',
+    fetch: async () => new Response(pendingBody.body, {
+      status: 200,
+      headers: {
+        'content-type': 'application/x-ndjson'
+      }
+    }),
+    buildChatRequest(prompt) {
+      return { prompt };
+    },
+    lineToText(event) {
+      return event.data.type === 'token' ? event.data.text : undefined;
+    }
+  });
+
+  const iterator = provider.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+  const first = await iterator.next();
+  assert.deepEqual(first, { done: false, value: 'hello' });
+
+  const nextChunk = iterator.next();
+  controller.abort('line stream cancelled');
+
+  await assert.rejects(() => nextChunk, /line stream cancelled/);
+  await assert.doesNotReject(() => pendingBody.cancelled);
 });

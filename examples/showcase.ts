@@ -18,6 +18,12 @@ type KeyLikeEvent = KeyboardEvent & {
   target: HTMLInputElement;
 };
 
+declare global {
+  interface Window {
+    __QORE_BENCHMARK__?: BenchmarkSuite;
+  }
+}
+
 // Slice demo copy into small chunks so the homepage can visibly stream.
 const chunkText = (value: string): string[] => value.match(/```|`[^`]*`|\*\*[^*]+\*\*|\n|[^\s]{1,5}\s?/g) ?? [value];
 const escapeHtml = (value = ''): string => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -299,6 +305,7 @@ createApp(() => {
       const suite: BenchmarkSuite = await runBenchmarkSuite();
       benchmarkMeta(suite.meta);
       benchmarkResults(suite.results);
+      window.__QORE_BENCHMARK__ = suite;
       benchmarkRuns.update((count) => count + 1);
       benchmarkState('ready');
     } catch (error) {
