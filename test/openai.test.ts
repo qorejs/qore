@@ -20,6 +20,30 @@ function createSSEBody(events: OpenAIEvent[]): ReadableStream<Uint8Array> {
   });
 }
 
+function createPendingSSEBody(events: OpenAIEvent[]): {
+  body: ReadableStream<Uint8Array>;
+  cancelled: Promise<unknown>;
+} {
+  let resolveCancelled!: (reason: unknown) => void;
+  const cancelled = new Promise<unknown>((resolve) => {
+    resolveCancelled = resolve;
+  });
+
+  return {
+    body: new ReadableStream({
+      start(controller) {
+        for (const event of events) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        }
+      },
+      cancel(reason) {
+        resolveCancelled(reason);
+      }
+    }),
+    cancelled
+  };
+}
+
 test('createOpenAI chat streams text deltas from the Responses API', async () => {
   const calls: Array<{
     url: string | URL | Request;
@@ -145,4 +169,49 @@ test('createOpenAI does not assume process exists when API keys are missing', ()
   } finally {
     runtime.process = originalProcess;
   }
+});
+
+test('createOpenAI does not start fetch work when the request signal is already aborted', async () => {
+  let calls = 0;
+  const controller = new AbortController();
+  controller.abort('openai stop now');
+  const openai = createOpenAI({
+    apiKey: 'test-key',
+    fetch: async () => {
+      calls += 1;
+      return new Response(null, { status: 200 });
+    }
+  });
+
+  const iterator = openai.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+
+  await assert.rejects(() => iterator.next(), /openai stop now/);
+  assert.equal(calls, 0);
+});
+
+test('createOpenAI cancels the active reader when the request signal aborts mid-stream', async () => {
+  const controller = new AbortController();
+  const pendingBody = createPendingSSEBody([
+    { type: 'response.created', response: { id: 'resp_3' } },
+    { type: 'response.output_text.delta', delta: 'hello' }
+  ]);
+  const openai = createOpenAI({
+    apiKey: 'test-key',
+    fetch: async () => new Response(pendingBody.body, {
+      status: 200,
+      headers: {
+        'content-type': 'text/event-stream'
+      }
+    })
+  });
+
+  const iterator = openai.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+  const first = await iterator.next();
+  assert.deepEqual(first, { done: false, value: 'hello' });
+
+  const nextChunk = iterator.next();
+  controller.abort('openai stream cancelled');
+
+  await assert.rejects(() => nextChunk, /openai stream cancelled/);
+  await assert.doesNotReject(() => pendingBody.cancelled);
 });

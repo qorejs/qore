@@ -19,6 +19,30 @@ function createSSEBody(events: OpenRouterEvent[]): ReadableStream<Uint8Array> {
   });
 }
 
+function createPendingSSEBody(events: OpenRouterEvent[]): {
+  body: ReadableStream<Uint8Array>;
+  cancelled: Promise<unknown>;
+} {
+  let resolveCancelled!: (reason: unknown) => void;
+  const cancelled = new Promise<unknown>((resolve) => {
+    resolveCancelled = resolve;
+  });
+
+  return {
+    body: new ReadableStream({
+      start(controller) {
+        for (const event of events) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        }
+      },
+      cancel(reason) {
+        resolveCancelled(reason);
+      }
+    }),
+    cancelled
+  };
+}
+
 test('createOpenRouter chat streams text deltas from the chat completions API', async () => {
   const calls: Array<{
     url: string | URL | Request;
@@ -146,4 +170,49 @@ test('createOpenRouter does not assume process exists when API keys are missing'
   } finally {
     runtime.process = originalProcess;
   }
+});
+
+test('createOpenRouter does not start fetch work when the request signal is already aborted', async () => {
+  let calls = 0;
+  const controller = new AbortController();
+  controller.abort('openrouter stop now');
+  const openrouter = createOpenRouter({
+    apiKey: 'test-key',
+    fetch: async () => {
+      calls += 1;
+      return new Response(null, { status: 200 });
+    }
+  });
+
+  const iterator = openrouter.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+
+  await assert.rejects(() => iterator.next(), /openrouter stop now/);
+  assert.equal(calls, 0);
+});
+
+test('createOpenRouter cancels the active reader when the request signal aborts mid-stream', async () => {
+  const controller = new AbortController();
+  const pendingBody = createPendingSSEBody([
+    { id: 'chat_3', choices: [{ index: 0, delta: { role: 'assistant' } }] },
+    { id: 'chat_3', choices: [{ index: 0, delta: { content: 'hello' } }] }
+  ]);
+  const openrouter = createOpenRouter({
+    apiKey: 'test-key',
+    fetch: async () => new Response(pendingBody.body, {
+      status: 200,
+      headers: {
+        'content-type': 'text/event-stream'
+      }
+    })
+  });
+
+  const iterator = openrouter.chat('hello', { signal: controller.signal })[Symbol.asyncIterator]();
+  const first = await iterator.next();
+  assert.deepEqual(first, { done: false, value: 'hello' });
+
+  const nextChunk = iterator.next();
+  controller.abort('openrouter stream cancelled');
+
+  await assert.rejects(() => nextChunk, /openrouter stream cancelled/);
+  await assert.doesNotReject(() => pendingBody.cancelled);
 });

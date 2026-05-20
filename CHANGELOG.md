@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filled the remaining hosted-provider abort-path gaps so OpenAI and OpenRouter now verify both pre-abort and mid-stream cancellation semantics, matching the existing Anthropic, DeepSeek, and generic adapter coverage.
+
 ## 0.8.0 - 2026-05-19
 
 - Added a first-class `createDeepSeek(...)` adapter so Qore can stream directly from DeepSeek chat-completions endpoints without custom glue code.
