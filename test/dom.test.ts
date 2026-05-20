@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { canUseDOM, createApp, h, mount, signal } from '../src/index.js';
+import { canUseDOM, createApp, createResponse, dynamic, fragment, h, list, mount, renderResponse, show, signal, text } from '../src/index.js';
 
 class FakeNode {
   parentNode: FakeElement | null = null;
@@ -137,11 +137,25 @@ test('canUseDOM reflects whether a browser-like document is available', () => {
 
 test('DOM APIs fail with a clear message when document is unavailable', () => {
   withoutDom(() => {
-    assert.throws(() => h('div', {}, 'hello'), /Qore DOM APIs require a browser-like environment/);
-    assert.throws(() => mount({} as Element, 'hello'), /Qore DOM APIs require a browser-like environment/);
+    assert.throws(() => h('div', {}, 'hello'), /h\(\) requires a browser-like environment/);
+    assert.throws(() => text('hello'), /text\(\) requires a browser-like environment/);
+    assert.throws(() => fragment('hello'), /fragment\(\) requires a browser-like environment/);
+    assert.throws(() => dynamic(() => 'hello'), /dynamic\(\) requires a browser-like environment/);
+    assert.throws(() => show(() => true, () => 'hello'), /dynamic\(\) requires a browser-like environment/);
+    assert.throws(() => list(() => ['a'], (item) => item), /dynamic\(\) requires a browser-like environment/);
+    assert.throws(
+      () => renderResponse(createResponse<string, string>({
+        seed: '',
+        reduce(value, chunk) {
+          return value + chunk;
+        }
+      })),
+      /dynamic\(\) requires a browser-like environment/
+    );
+    assert.throws(() => mount({} as Element, 'hello'), /mount\(\) requires a browser-like environment/);
     assert.throws(
       () => createApp(() => h('div', {}, 'hello')).mount('#app'),
-      /Qore DOM APIs require a browser-like environment/
+      /createApp\(\.\.\.\)\.mount\(\.\.\.\) requires a browser-like environment/
     );
   });
 });

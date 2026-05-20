@@ -58,7 +58,7 @@ export interface QoreApp<Props extends Record<string, unknown>> {
 
 // Resolve a CSS selector or direct node into the root mount target.
 function resolveTarget(target: MountTarget): Element {
-  assertDocument();
+  assertDocument('createApp(...).mount(...)');
 
   if (typeof target === 'string') {
     const element = document.querySelector(target);

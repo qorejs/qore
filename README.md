@@ -371,7 +371,11 @@ The DOM layer is intentionally browser-only right now:
 - `h`, `text`, `mount`, and `createApp(...).mount(...)` require a browser-like `document`
 - `canUseDOM()` is exported so integrations can branch cleanly before touching DOM APIs
 
-If you call DOM helpers without a browser-like runtime, Qore throws a clear `Qore DOM APIs require a browser-like environment` error instead of failing later with a generic reference error.
+If you call DOM helpers without a browser-like runtime, Qore throws an entrypoint-specific error instead of failing later with a generic reference error. For example:
+
+- `h() requires a browser-like environment`
+- `mount() requires a browser-like environment`
+- `createApp(...).mount(...) requires a browser-like environment`
 
 That means the current `1.0.0` path is:
 

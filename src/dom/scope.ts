@@ -15,9 +15,9 @@ export function canUseDOM(): boolean {
 }
 
 // Guard DOM helpers so they only run in browser-like environments.
-export function assertDocument(): void {
+export function assertDocument(apiName = 'Qore DOM APIs'): void {
   if (!canUseDOM()) {
-    throw new Error('Qore DOM APIs require a browser-like environment');
+    throw new Error(`${apiName} requires a browser-like environment`);
   }
 }
 

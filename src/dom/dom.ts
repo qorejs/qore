@@ -121,7 +121,7 @@ function resolveRoot(root: MountTarget): Element {
 
 // Build a fragment from a variadic list of children.
 export function fragment(...children: QoreChild[]): QoreDocumentFragment {
-  assertDocument();
+  assertDocument('fragment()');
 
   const node = document.createDocumentFragment();
 
@@ -137,7 +137,7 @@ export function dynamic<T>(
   source: ReactiveValue<T>,
   render: (value: T) => QoreChild = (value) => value as QoreChild
 ): QoreDocumentFragment {
-  assertDocument();
+  assertDocument('dynamic()');
 
   const start = document.createComment('qore-dynamic-start');
   const end = document.createComment('qore-dynamic-end');
@@ -233,7 +233,7 @@ export function h<TProps extends Record<string, unknown>>(
   props: TProps | Record<string, unknown> | null = null,
   ...children: QoreChild[]
 ): QoreElement | QoreChild {
-  assertDocument();
+  assertDocument('h()');
 
   if (typeof tag === 'function') {
     return tag({
@@ -259,7 +259,7 @@ export function h<TProps extends Record<string, unknown>>(
 
 // Create a text node and keep it in sync with a reactive getter when necessary.
 export function text(valueOrGetter: ReactiveValue<unknown>): QoreText {
-  assertDocument();
+  assertDocument('text()');
 
   const node = document.createTextNode('');
 
@@ -279,7 +279,7 @@ export function text(valueOrGetter: ReactiveValue<unknown>): QoreText {
 
 // Mount a view into a root element and return a disposer for its reactive scope.
 export function mount(root: MountTarget, view: MountView): () => QoreElement {
-  assertDocument();
+  assertDocument('mount()');
 
   const target = resolveRoot(root) as MountedElement;
   target[ROOT_CLEANUP]?.();
