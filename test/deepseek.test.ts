@@ -3,45 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createDeepSeek } from '../src/index.js';
 import type { DeepSeekEvent } from '../src/providers/types.js';
-
-const encoder = new TextEncoder();
-
-function createSSEBody(events: DeepSeekEvent[]): ReadableStream<Uint8Array> {
-  return new ReadableStream({
-    start(controller) {
-      for (const event of events) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-      }
-
-      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-      controller.close();
-    }
-  });
-}
-
-function createPendingSSEBody(events: DeepSeekEvent[]): {
-  body: ReadableStream<Uint8Array>;
-  cancelled: Promise<unknown>;
-} {
-  let resolveCancelled!: (reason: unknown) => void;
-  const cancelled = new Promise<unknown>((resolve) => {
-    resolveCancelled = resolve;
-  });
-
-  return {
-    body: new ReadableStream({
-      start(controller) {
-        for (const event of events) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-        }
-      },
-      cancel(reason) {
-        resolveCancelled(reason);
-      }
-    }),
-    cancelled
-  };
-}
+import { createPendingSSEBody, createSSEBody } from './provider-sse-test-helpers.js';
 
 test('createDeepSeek chat streams text deltas from the chat completions API', async () => {
   const calls: Array<{

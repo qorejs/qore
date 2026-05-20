@@ -3,46 +3,10 @@ import assert from 'node:assert/strict';
 
 import { createAnthropic } from '../src/index.js';
 import type { AnthropicEvent } from '../src/providers/types.js';
+import { createPendingSSEBody, createSSEBody } from './provider-sse-test-helpers.js';
 
-const encoder = new TextEncoder();
-
-// Turn event payloads into a tiny text/event-stream body for adapter tests.
-function createSSEBody(events: AnthropicEvent[]): ReadableStream<Uint8Array> {
-  return new ReadableStream({
-    start(controller) {
-      for (const event of events) {
-        controller.enqueue(encoder.encode(`event: ${event.type}\n`));
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-      }
-
-      controller.close();
-    }
-  });
-}
-
-function createPendingSSEBody(events: AnthropicEvent[]): {
-  body: ReadableStream<Uint8Array>;
-  cancelled: Promise<unknown>;
-} {
-  let resolveCancelled!: (reason: unknown) => void;
-  const cancelled = new Promise<unknown>((resolve) => {
-    resolveCancelled = resolve;
-  });
-
-  return {
-    body: new ReadableStream({
-      start(controller) {
-        for (const event of events) {
-          controller.enqueue(encoder.encode(`event: ${event.type}\n`));
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-        }
-      },
-      cancel(reason) {
-        resolveCancelled(reason);
-      }
-    }),
-    cancelled
-  };
+function formatAnthropicEvent(event: AnthropicEvent): string {
+  return `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
 }
 
 test('createAnthropic chat streams text deltas from the Messages API', async () => {
@@ -80,7 +44,10 @@ test('createAnthropic chat streams text deltas from the Messages API', async () 
         { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Hello' } },
         { type: 'content_block_delta', delta: { type: 'text_delta', text: ' Claude' } },
         { type: 'message_stop' }
-      ]), {
+      ], {
+        doneFrame: null,
+        formatEvent: formatAnthropicEvent
+      }), {
         status: 200,
         headers: {
           'content-type': 'text/event-stream'
@@ -121,7 +88,10 @@ test('createAnthropic messages.stream yields typed events', async () => {
       { type: 'message_start', message: { id: 'msg_2' } },
       { type: 'content_block_delta', delta: { type: 'text_delta', text: 'A' } },
       { type: 'message_stop' }
-    ]), {
+    ], {
+      doneFrame: null,
+      formatEvent: formatAnthropicEvent
+    }), {
       status: 200,
       headers: {
         'content-type': 'text/event-stream'
@@ -197,7 +167,9 @@ test('createAnthropic cancels the active reader when the request signal aborts m
   const pendingBody = createPendingSSEBody([
     { type: 'message_start', message: { id: 'msg_3' } },
     { type: 'content_block_delta', delta: { type: 'text_delta', text: 'hello' } }
-  ]);
+  ], {
+    formatEvent: formatAnthropicEvent
+  });
   const anthropic = createAnthropic({
     apiKey: 'test-key',
     fetch: async () => new Response(pendingBody.body, {

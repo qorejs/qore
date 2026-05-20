@@ -3,46 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createOpenAI } from '../src/index.js';
 import type { OpenAIEvent } from '../src/providers/types.js';
-
-const encoder = new TextEncoder();
-
-// Turn event payloads into a tiny text/event-stream body for adapter tests.
-function createSSEBody(events: OpenAIEvent[]): ReadableStream<Uint8Array> {
-  return new ReadableStream({
-    start(controller) {
-      for (const event of events) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-      }
-
-      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-      controller.close();
-    }
-  });
-}
-
-function createPendingSSEBody(events: OpenAIEvent[]): {
-  body: ReadableStream<Uint8Array>;
-  cancelled: Promise<unknown>;
-} {
-  let resolveCancelled!: (reason: unknown) => void;
-  const cancelled = new Promise<unknown>((resolve) => {
-    resolveCancelled = resolve;
-  });
-
-  return {
-    body: new ReadableStream({
-      start(controller) {
-        for (const event of events) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-        }
-      },
-      cancel(reason) {
-        resolveCancelled(reason);
-      }
-    }),
-    cancelled
-  };
-}
+import { createPendingSSEBody, createSSEBody } from './provider-sse-test-helpers.js';
 
 test('createOpenAI chat streams text deltas from the Responses API', async () => {
   const calls: Array<{
