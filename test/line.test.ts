@@ -2,44 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createLineAdapter } from '../src/index.js';
-
-const encoder = new TextEncoder();
-
-function createLineBody(lines: unknown[]): ReadableStream<Uint8Array> {
-  return new ReadableStream({
-    start(controller) {
-      for (const line of lines) {
-        controller.enqueue(encoder.encode(`${JSON.stringify(line)}\n`));
-      }
-
-      controller.close();
-    }
-  });
-}
-
-function createPendingLineBody(lines: unknown[]): {
-  body: ReadableStream<Uint8Array>;
-  cancelled: Promise<unknown>;
-} {
-  let resolveCancelled!: (reason: unknown) => void;
-  const cancelled = new Promise<unknown>((resolve) => {
-    resolveCancelled = resolve;
-  });
-
-  return {
-    body: new ReadableStream({
-      start(controller) {
-        for (const line of lines) {
-          controller.enqueue(encoder.encode(`${JSON.stringify(line)}\n`));
-        }
-      },
-      cancel(reason) {
-        resolveCancelled(reason);
-      }
-    }),
-    cancelled
-  };
-}
+import { createLineBody, createPendingLineBody } from './provider-line-test-helpers.js';
 
 test('createLineAdapter can map a custom chat endpoint into stream(provider.chat(...))', async () => {
   const calls: Array<{

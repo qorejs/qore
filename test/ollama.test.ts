@@ -2,45 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createOllama } from '../src/index.js';
-import type { OllamaEvent } from '../src/providers/types.js';
-
-const encoder = new TextEncoder();
-
-function createLineBody(events: OllamaEvent[]): ReadableStream<Uint8Array> {
-  return new ReadableStream({
-    start(controller) {
-      for (const event of events) {
-        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
-      }
-
-      controller.close();
-    }
-  });
-}
-
-function createPendingLineBody(events: OllamaEvent[]): {
-  body: ReadableStream<Uint8Array>;
-  cancelled: Promise<unknown>;
-} {
-  let resolveCancelled!: (reason: unknown) => void;
-  const cancelled = new Promise<unknown>((resolve) => {
-    resolveCancelled = resolve;
-  });
-
-  return {
-    body: new ReadableStream({
-      start(controller) {
-        for (const event of events) {
-          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
-        }
-      },
-      cancel(reason) {
-        resolveCancelled(reason);
-      }
-    }),
-    cancelled
-  };
-}
+import { createLineBody, createPendingLineBody } from './provider-line-test-helpers.js';
 
 test('createOllama chat streams message deltas from the chat API', async () => {
   const calls: Array<{
