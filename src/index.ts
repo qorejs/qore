@@ -32,7 +32,7 @@ export type {
 export { createApp } from './dom/app.js';
 export type { AppContext, AppSetupResult, QoreApp } from './dom/app.js';
 export { dynamic, fragment, h, list, mount, renderResponse, show, text } from './dom/dom.js';
-export { canUseDOM } from './dom/scope.js';
+export { assertCanUseDOM, canUseDOM } from './dom/scope.js';
 export type {
   GlobalDocumentFragment,
   GlobalElement,

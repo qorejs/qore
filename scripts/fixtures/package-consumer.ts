@@ -1,4 +1,5 @@
 import {
+  assertCanUseDOM,
   batch,
   canUseDOM,
   computed,
@@ -68,6 +69,7 @@ type Equal<A, B> = (
 
 const counter = signal(0);
 counter.update((value) => value + 1);
+void assertCanUseDOM;
 
 const doubled = computed(() => counter() * 2);
 const stop = effect(() => {

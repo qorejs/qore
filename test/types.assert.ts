@@ -1,4 +1,5 @@
 import {
+  assertCanUseDOM,
   createDeepSeek,
   createLineAdapter,
   createOllama,
@@ -89,6 +90,7 @@ type _DeepSeekAdapter = Assert<Extends<typeof deepseek, DeepSeekAdapter>>;
 type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 
 void providerOptions;
+void assertCanUseDOM;
 
 // @ts-expect-error Stream lifecycle state is exposed read-only.
 source.status('completed');

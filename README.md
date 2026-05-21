@@ -370,12 +370,25 @@ The DOM layer is intentionally browser-only right now:
 - `signal`, `computed`, `effect`, `stream`, and provider adapters work in Node and the browser
 - `h`, `text`, `mount`, and `createApp(...).mount(...)` require a browser-like `document`
 - `canUseDOM()` is exported so integrations can branch cleanly before touching DOM APIs
+- `assertCanUseDOM(name?)` is exported if you want to fail fast with the same browser-boundary error shape Qore uses internally
 
 If you call DOM helpers without a browser-like runtime, Qore throws an entrypoint-specific error instead of failing later with a generic reference error. For example:
 
 - `h() requires a browser-like environment`
 - `mount() requires a browser-like environment`
 - `createApp(...).mount(...) requires a browser-like environment`
+
+Example:
+
+```js
+import { assertCanUseDOM, canUseDOM } from '@qorejs/qore';
+
+if (canUseDOM()) {
+  // Safe to call mount(), h(), text(), and other DOM entrypoints.
+}
+
+assertCanUseDOM('chat shell hydration');
+```
 
 That means the current `1.0.0` path is:
 

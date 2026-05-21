@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { canUseDOM, createApp, createResponse, dynamic, fragment, h, list, mount, renderResponse, show, signal, text } from '../src/index.js';
+import { assertCanUseDOM, canUseDOM, createApp, createResponse, dynamic, fragment, h, list, mount, renderResponse, show, signal, text } from '../src/index.js';
 
 class FakeNode {
   parentNode: FakeElement | null = null;
@@ -128,10 +128,12 @@ function withoutDom(run: () => void): void {
 test('canUseDOM reflects whether a browser-like document is available', () => {
   withoutDom(() => {
     assert.equal(canUseDOM(), false);
+    assert.throws(() => assertCanUseDOM('test runtime'), /test runtime requires a browser-like environment/);
   });
 
   withFakeDom(() => {
     assert.equal(canUseDOM(), true);
+    assert.doesNotThrow(() => assertCanUseDOM('test runtime'));
   });
 });
 

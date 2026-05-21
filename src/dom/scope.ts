@@ -15,10 +15,14 @@ export function canUseDOM(): boolean {
 }
 
 // Guard DOM helpers so they only run in browser-like environments.
-export function assertDocument(apiName = 'Qore DOM APIs'): void {
+export function assertCanUseDOM(apiName = 'Qore DOM APIs'): void {
   if (!canUseDOM()) {
     throw new Error(`${apiName} requires a browser-like environment`);
   }
+}
+
+export function assertDocument(apiName = 'Qore DOM APIs'): void {
+  assertCanUseDOM(apiName);
 }
 
 // A scope collects effect disposers created while rendering a subtree.

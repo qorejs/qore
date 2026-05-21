@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import {
+  assertCanUseDOM,
   canUseDOM,
   computed,
   createApp,
@@ -55,6 +56,7 @@ const count = signal(2);
 const doubled = computed(() => count() * 2);
 assert.equal(doubled(), 4);
 assert.equal(canUseDOM(), false);
+assert.throws(() => assertCanUseDOM('runtime smoke'), /runtime smoke requires a browser-like environment/);
 assert.throws(() => h('div', {}, 'hello'), /h\(\) requires a browser-like environment/);
 assert.throws(() => text('hello'), /text\(\) requires a browser-like environment/);
 assert.throws(() => fragment('hello'), /fragment\(\) requires a browser-like environment/);
