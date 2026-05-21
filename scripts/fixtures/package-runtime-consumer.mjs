@@ -3,14 +3,24 @@ import assert from 'node:assert/strict';
 import {
   canUseDOM,
   computed,
+  createApp,
+  createResponse,
   createDeepSeek,
   createLineAdapter,
   createOllama,
   createOpenRouter,
   createSSEAdapter,
+  dynamic,
+  fragment,
+  h,
+  list,
+  mount,
   response,
+  renderResponse,
+  show,
   signal,
-  stream
+  stream,
+  text
 } from '@qorejs/qore';
 
 const encoder = new TextEncoder();
@@ -44,7 +54,24 @@ function createLineBody(events) {
 const count = signal(2);
 const doubled = computed(() => count() * 2);
 assert.equal(doubled(), 4);
-assert.equal(typeof canUseDOM(), 'boolean');
+assert.equal(canUseDOM(), false);
+assert.throws(() => h('div', {}, 'hello'), /h\(\) requires a browser-like environment/);
+assert.throws(() => text('hello'), /text\(\) requires a browser-like environment/);
+assert.throws(() => fragment('hello'), /fragment\(\) requires a browser-like environment/);
+assert.throws(() => dynamic(() => 'hello'), /dynamic\(\) requires a browser-like environment/);
+assert.throws(() => show(() => true, () => 'hello'), /dynamic\(\) requires a browser-like environment/);
+assert.throws(() => list(() => ['a'], (item) => item), /dynamic\(\) requires a browser-like environment/);
+assert.throws(() => renderResponse(createResponse({
+  seed: '',
+  reduce(value, chunk) {
+    return value + chunk;
+  }
+})), /dynamic\(\) requires a browser-like environment/);
+assert.throws(() => mount({}, 'hello'), /mount\(\) requires a browser-like environment/);
+assert.throws(
+  () => createApp(() => h('div', {}, 'hello')).mount('#app'),
+  /createApp\(\.\.\.\)\.mount\(\.\.\.\) requires a browser-like environment/
+);
 
 const answer = stream(async ({ push }) => {
   await push('Qore');
