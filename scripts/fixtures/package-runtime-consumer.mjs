@@ -5,9 +5,11 @@ import {
   canUseDOM,
   computed,
   createApp,
+  createAnthropic,
   createResponse,
   createDeepSeek,
   createLineAdapter,
+  createOpenAI,
   createOllama,
   createOpenRouter,
   createSSEAdapter,
@@ -162,6 +164,29 @@ for await (const chunk of lineProvider.chat('stream = signal')) {
 
 assert.deepEqual(lineChunks, ['line', ' stream']);
 
+const anthropic = createAnthropic({
+  apiKey: 'test-key',
+  fetch: async () => new Response(createSSEBody([
+    { event: 'message_start', data: { type: 'message_start', message: { id: 'msg_1' } } },
+    { event: 'content_block_delta', data: { type: 'content_block_delta', delta: { type: 'text_delta', text: 'anthropic' } } },
+    { event: 'content_block_delta', data: { type: 'content_block_delta', delta: { type: 'text_delta', text: ' stream' } } },
+    { event: 'message_stop', data: { type: 'message_stop' } }
+  ]), {
+    status: 200,
+    headers: {
+      'content-type': 'text/event-stream'
+    }
+  })
+});
+
+const anthropicChunks = [];
+
+for await (const chunk of anthropic.chat('stream = signal')) {
+  anthropicChunks.push(chunk);
+}
+
+assert.deepEqual(anthropicChunks, ['anthropic', ' stream']);
+
 const ollama = createOllama({
   fetch: async () => new Response(createLineBody([
     { message: { role: 'assistant', content: 'local' }, done: false },
@@ -204,6 +229,29 @@ for await (const chunk of deepseek.chat('stream = signal')) {
 }
 
 assert.deepEqual(deepseekChunks, ['deep', 'seek']);
+
+const openai = createOpenAI({
+  apiKey: 'test-key',
+  fetch: async () => new Response(createSSEBody([
+    { event: 'message', data: { type: 'response.created', response: { id: 'resp_1' } } },
+    { event: 'message', data: { type: 'response.output_text.delta', delta: 'open' } },
+    { event: 'message', data: { type: 'response.output_text.delta', delta: ' ai' } },
+    { event: 'message', data: { type: 'response.completed', response: { id: 'resp_1' } } }
+  ]), {
+    status: 200,
+    headers: {
+      'content-type': 'text/event-stream'
+    }
+  })
+});
+
+const openaiChunks = [];
+
+for await (const chunk of openai.chat('stream = signal')) {
+  openaiChunks.push(chunk);
+}
+
+assert.deepEqual(openaiChunks, ['open', ' ai']);
 
 const openrouter = createOpenRouter({
   apiKey: 'test-key',

@@ -1,7 +1,9 @@
 import {
   assertCanUseDOM,
+  createAnthropic,
   createDeepSeek,
   createLineAdapter,
+  createOpenAI,
   createOllama,
   createSSEAdapter,
   createOpenRouter,
@@ -9,6 +11,8 @@ import {
   mapStream,
   scanStream,
   stream,
+  type AnthropicAdapter,
+  type OpenAIAdapter,
   type DeepSeekAdapter,
   type LineAdapter,
   type OllamaAdapter,
@@ -61,7 +65,15 @@ const lineAdapter = createLineAdapter<{ prompt: string }, string, TokenEvent>({
 const ollama = createOllama({
   fetch: async () => new Response(null, { status: 200 })
 });
+const anthropic = createAnthropic({
+  apiKey: 'demo-key',
+  fetch: async () => new Response(null, { status: 200 })
+});
 const deepseek = createDeepSeek({
+  apiKey: 'demo-key',
+  fetch: async () => new Response(null, { status: 200 })
+});
+const openai = createOpenAI({
   apiKey: 'demo-key',
   fetch: async () => new Response(null, { status: 200 })
 });
@@ -85,6 +97,8 @@ type _ReplayStream = Assert<Extends<typeof replayed, QoreStream<string, string>>
 type _ReadonlyStatus = Assert<Extends<typeof source.status, ReadonlySignal<string>>>;
 type _Adapter = Assert<Extends<typeof adapter, SSEAdapter<{ prompt: string }, string, TokenEvent>>>;
 type _LineAdapter = Assert<Extends<typeof lineAdapter, LineAdapter<{ prompt: string }, string, TokenEvent>>>;
+type _AnthropicAdapter = Assert<Extends<typeof anthropic, AnthropicAdapter>>;
+type _OpenAIAdapter = Assert<Extends<typeof openai, OpenAIAdapter>>;
 type _OllamaAdapter = Assert<Extends<typeof ollama, OllamaAdapter>>;
 type _DeepSeekAdapter = Assert<Extends<typeof deepseek, DeepSeekAdapter>>;
 type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;

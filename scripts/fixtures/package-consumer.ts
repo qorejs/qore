@@ -1,11 +1,13 @@
 import {
   assertCanUseDOM,
+  createAnthropic,
   batch,
   canUseDOM,
   computed,
   createApp,
   createDeepSeek,
   createLineAdapter,
+  createOpenAI,
   createOllama,
   createOpenRouter,
   createSSEAdapter,
@@ -21,7 +23,19 @@ import {
   stream,
   text,
   type AppContext,
+  type AnthropicAdapter,
+  type AnthropicChatInput,
+  type AnthropicEvent,
+  type AnthropicMessage,
+  type AnthropicOptions,
+  type AnthropicRequest,
   type BackpressureOptions,
+  type OpenAIAdapter,
+  type OpenAIChatInput,
+  type OpenAIEvent,
+  type OpenAIMessage,
+  type OpenAIOptions,
+  type OpenAIRequest,
   type EffectOptions,
   type EffectScheduler,
   type DeepSeekAdapter,
@@ -159,7 +173,15 @@ const lineProvider = createLineAdapter<{ prompt: string }, string, TokenEvent>({
 const ollama = createOllama({
   fetch: async () => new Response(null, { status: 200 })
 });
+const anthropic = createAnthropic({
+  apiKey: 'demo-key',
+  fetch: async () => new Response(null, { status: 200 })
+});
 const deepseek = createDeepSeek({
+  apiKey: 'demo-key',
+  fetch: async () => new Response(null, { status: 200 })
+});
+const openai = createOpenAI({
   apiKey: 'demo-key',
   fetch: async () => new Response(null, { status: 200 })
 });
@@ -170,6 +192,41 @@ const openrouter = createOpenRouter({
 
 const providerSurface: SSEAdapter<{ prompt: string }, string, TokenEvent> = provider;
 const lineProviderSurface: LineAdapter<{ prompt: string }, string, TokenEvent> = lineProvider;
+const anthropicSurface: AnthropicAdapter = anthropic;
+const anthropicOptions: AnthropicOptions = {
+  apiKey: 'demo-key'
+};
+const anthropicRequest: AnthropicRequest = {
+  messages: [{ role: 'user', content: 'hello' }]
+};
+const anthropicChatInput: AnthropicChatInput = 'hello';
+const anthropicMessage: AnthropicMessage = {
+  role: 'user',
+  content: 'hello'
+};
+const anthropicEvent: AnthropicEvent = {
+  type: 'content_block_delta',
+  delta: {
+    type: 'text_delta',
+    text: 'hello'
+  }
+};
+const openaiSurface: OpenAIAdapter = openai;
+const openaiOptions: OpenAIOptions = {
+  apiKey: 'demo-key'
+};
+const openaiRequest: OpenAIRequest = {
+  input: [{ role: 'user', content: 'hello' }]
+};
+const openaiChatInput: OpenAIChatInput = 'hello';
+const openaiMessage: OpenAIMessage = {
+  role: 'user',
+  content: 'hello'
+};
+const openaiEvent: OpenAIEvent = {
+  type: 'response.output_text.delta',
+  delta: 'hello'
+};
 const ollamaSurface: OllamaAdapter = ollama;
 const deepseekSurface: DeepSeekAdapter = deepseek;
 const deepseekOptions: DeepSeekOptions = {
@@ -281,6 +338,18 @@ void transcriptState;
 void requestOptions;
 void providerSurface;
 void lineProviderSurface;
+void anthropicSurface;
+void anthropicOptions;
+void anthropicRequest;
+void anthropicChatInput;
+void anthropicMessage;
+void anthropicEvent;
+void openaiSurface;
+void openaiOptions;
+void openaiRequest;
+void openaiChatInput;
+void openaiMessage;
+void openaiEvent;
 void ollamaSurface;
 void deepseekSurface;
 void deepseekOptions;

@@ -6,6 +6,7 @@
 - Tightened the browser-only DOM boundary so server-side callers now get entrypoint-specific errors like `h() requires a browser-like environment` and `createApp(...).mount(...) requires a browser-like environment`.
 - Added package-level runtime smoke coverage for the browser-only DOM boundary so the published tarball preserves the same server-side diagnostics as the source tree.
 - Exported `assertCanUseDOM(name?)` so integrations can reuse Qore's browser-boundary guard directly instead of duplicating their own server/runtime checks.
+- Expanded package-consumer smoke coverage so the published tarball now verifies `OpenAI` and `Anthropic` adapters alongside the other provider surfaces.
 
 ## 0.8.0 - 2026-05-19
 
