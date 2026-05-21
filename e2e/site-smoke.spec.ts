@@ -113,13 +113,25 @@ test('focused streaming demo supports multi-turn chat', async ({ page }, testInf
   await expect(page.getByTestId('focused-feed')).toBeVisible();
   await expect(page.getByTestId('focused-message-user')).toHaveCount(1);
   await expect.poll(async () => (await page.getByTestId('focused-state-assistant').last().textContent())?.trim()).toBe('done');
+  await expect(page.getByTestId('focused-active-status')).toContainText('idle');
+  await expect(page.getByTestId('focused-stop')).toBeDisabled();
 
   const userMessagesBefore = await page.getByTestId('focused-message-user').count();
   await page.getByTestId('focused-input').fill('How does Qore keep a stream reactive?');
   await page.getByTestId('focused-send').click();
   await expect(page.getByTestId('focused-message-user')).toHaveCount(userMessagesBefore + 1);
-  await expect.poll(async () => (await page.getByTestId('focused-state-assistant').last().textContent())?.trim()).toBe('done');
+  await expect(page.getByTestId('focused-active-status')).toContainText(/pending|streaming/);
+  await expect(page.getByTestId('focused-stop')).toBeEnabled();
+  await page.getByTestId('focused-stop').click();
+  await expect.poll(async () => (await page.getByTestId('focused-state-assistant').last().textContent())?.trim()).toBe('aborted');
+  await expect(page.getByTestId('focused-active-status')).toContainText('idle');
+  await expect(page.getByTestId('focused-stop')).toBeDisabled();
+
+  await page.getByTestId('focused-send').click();
+  await expect(page.getByTestId('focused-message-user')).toHaveCount(userMessagesBefore + 2);
   await expect(page.getByTestId('focused-message-assistant').last()).toContainText('Stream = Signal');
+  await expect.poll(async () => (await page.getByTestId('focused-state-assistant').last().textContent())?.trim()).toBe('done');
+  await expect(page.getByTestId('focused-active-status')).toContainText('idle');
 
   await attachViewportScreenshot(page, testInfo, 'focused-demo-viewport.png');
   await attachLocatorScreenshot(page, testInfo, 'focused-demo', 'focused-demo-surface.png');

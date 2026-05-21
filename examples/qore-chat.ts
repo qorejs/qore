@@ -1,4 +1,4 @@
-import { createApp, h, list, signal, stream, text } from '../src/index.js';
+import { computed, createApp, h, list, signal, stream, text } from '../src/index.js';
 import { renderMarkdown } from './render-markdown.js';
 import type { QoreStream } from '../src/core/stream-types.js';
 
@@ -31,17 +31,33 @@ async function* answerFor(prompt: string, turn: number): AsyncIterable<string> {
 // Mount a minimal chat experience that keeps message history as plain reactive state.
 createApp(() => {
   const draft = signal('为什么 Qore 的灵魂是流式响应？');
+  const activeReply = signal<QoreStream<string, string> | null>(null);
   const messages = signal<ChatMessage[]>([
     { role: 'assistant', body: '### Qore\n问我一个问题, 我会用 **stream = signal** 的方式直接流进界面。' }
   ]);
+  const activeStatus = computed(() => activeReply()?.status() ?? 'idle');
+  const canStop = computed(() => activeReply()?.streaming() ?? false);
+  const attachReplyLifecycle = (reply: QoreStream<string, string>): void => {
+    void reply.ready.finally(() => {
+      if (activeReply.peek() === reply) {
+        activeReply(null);
+      }
+    });
+  };
   // Convert the current prompt into a live stream and append it to the conversation.
   const send = (): void => {
     const prompt = draft().trim();
     if (!prompt) return;
+    activeReply.peek()?.abort('Focused demo superseded the active reply');
     draft('');
     const turn = Math.floor(messages.peek().length / 2) + 1;
     const answer = stream(answerFor(prompt, turn));
+    activeReply(answer);
+    attachReplyLifecycle(answer);
     messages.update((items) => [...items, { role: 'user', body: prompt }, { role: 'assistant', body: answer }]);
+  };
+  const stop = (): void => {
+    activeReply.peek()?.abort('Focused demo stop button pressed');
   };
   return {
     onMount: send,
@@ -61,18 +77,39 @@ createApp(() => {
           list(messages, (message) => {
             // Assistant entries may still be streaming, so resolve body and status lazily.
             const body = (): string => typeof message.body === 'function' ? message.body() : message.body;
-            const live = (): boolean => typeof message.body === 'function' && message.body.streaming();
+            const state = (): string => {
+              if (typeof message.body !== 'function') {
+                return message.role === 'assistant' ? 'done' : 'sent';
+              }
+
+              if (message.body.streaming()) {
+                return 'typing...';
+              }
+
+              if (message.body.aborted()) {
+                return 'aborted';
+              }
+
+              if (message.body.failed()) {
+                return 'error';
+              }
+
+              return 'done';
+            };
             return h('article', { className: `message ${message.role}`, 'data-testid': `focused-message-${message.role}` },
               h('div', { className: 'meta' },
                 h('strong', null, message.role === 'assistant' ? 'Qore' : 'You'),
-                h('span', { className: 'state', 'data-testid': `focused-state-${message.role}` }, text(() => live() ? 'typing...' : message.role === 'assistant' ? 'done' : 'sent'))
+                h('span', { className: 'state', 'data-testid': `focused-state-${message.role}` }, text(state))
               ),
               h('div', { className: 'markdown', innerHTML: () => renderMarkdown(body()) })
             );
           })
         ),
         h('label', { className: 'composer' },
-          h('span', null, 'Prompt'),
+          h('div', { className: 'composer-head' },
+            h('span', null, 'Prompt'),
+            h('span', { className: 'demo-badge stream-state', 'data-testid': 'focused-active-status' }, text(() => activeStatus()))
+          ),
           h('input', {
             'data-testid': 'focused-input',
             value: draft,
@@ -86,7 +123,15 @@ createApp(() => {
             },
             placeholder: '问一个需要流式回答的问题...'
           }),
-          h('button', { onclick: send, 'data-testid': 'focused-send' }, 'Send')
+          h('div', { className: 'composer-actions' },
+            h('button', { onclick: send, 'data-testid': 'focused-send' }, 'Send'),
+            h('button', {
+              className: 'secondary',
+              onclick: stop,
+              disabled: () => !canStop(),
+              'data-testid': 'focused-stop'
+            }, 'Stop')
+          )
         )
       )
     )

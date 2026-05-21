@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a stop control to the focused streaming demo so browser regression now verifies an in-flight Qore stream can abort cleanly and recover into the next turn.
 - Filled the remaining hosted-provider abort-path gaps so OpenAI and OpenRouter now verify both pre-abort and mid-stream cancellation semantics, matching the existing Anthropic, DeepSeek, and generic adapter coverage.
 - Tightened the browser-only DOM boundary so server-side callers now get entrypoint-specific errors like `h() requires a browser-like environment` and `createApp(...).mount(...) requires a browser-like environment`.
 - Added package-level runtime smoke coverage for the browser-only DOM boundary so the published tarball preserves the same server-side diagnostics as the source tree.
