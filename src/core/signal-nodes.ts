@@ -6,6 +6,7 @@ import {
   scheduleObserver,
   withActiveObserver
 } from './signal-context.js';
+import { createOwnedScope, disposeOwner, onCleanup, resetOwner, withOwner } from './owner.js';
 import { scheduleEffectRun } from './signal-scheduler.js';
 import type {
   Cleanup,
@@ -88,6 +89,7 @@ export class SignalNode<T> implements ObserverDependency {
 // A computed node re-runs its getter whenever one of its dependencies changes.
 export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
   getter: () => T;
+  private owner = createOwnedScope();
   level = 1;
   subscribers = new Set<ReactiveObserver>();
   listeners = new Set<SignalListener<T>>();
@@ -98,6 +100,7 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
 
   constructor(getter: () => T) {
     this.getter = getter;
+    onCleanup(() => this.stop());
     this.recompute();
   }
 
@@ -146,9 +149,10 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
 
     const previousValue = this.value;
 
+    resetOwner(this.owner);
     cleanupObserver(this);
 
-    withActiveObserver(this, () => {
+    withOwner(this.owner, () => withActiveObserver(this, () => {
       const nextValue = this.getter();
       const changed = !this.initialized || !Object.is(previousValue, nextValue);
       const nextLevel = this.deps.size > 0
@@ -172,7 +176,7 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
           scheduleObserver(observer);
         }
       });
-    });
+    }));
   }
 
   stop(): void {
@@ -183,6 +187,7 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
     this.active = false;
     cleanupObserver(this);
     removePendingObserver(this);
+    disposeOwner(this.owner);
     this.subscribers.clear();
     this.listeners.clear();
   }
@@ -192,6 +197,7 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
 export class EffectNode implements ReactiveObserver {
   fn: EffectCallback;
   scheduler: EffectOptions['scheduler'];
+  private owner = createOwnedScope();
   level = 1;
   deps = new Set<ObserverDependency>();
   active = true;
@@ -203,6 +209,7 @@ export class EffectNode implements ReactiveObserver {
   constructor(fn: EffectCallback, options: EffectOptions = {}) {
     this.fn = fn;
     this.scheduler = options.scheduler ?? 'sync';
+    onCleanup(() => this.stop());
     this.run();
   }
 
@@ -249,12 +256,13 @@ export class EffectNode implements ReactiveObserver {
         previousCleanup();
       }
 
+      resetOwner(this.owner);
       cleanupObserver(this);
 
-      withActiveObserver(this, () => {
+      withOwner(this.owner, () => withActiveObserver(this, () => {
         const maybeCleanup = this.fn();
         this.cleanup = typeof maybeCleanup === 'function' ? maybeCleanup : null;
-      });
+      }));
 
       this.level = this.deps.size > 0
         ? Math.max(...Array.from(this.deps, (dependency) => dependency.level)) + 1
@@ -278,6 +286,7 @@ export class EffectNode implements ReactiveObserver {
     this.needsRun = false;
     cleanupObserver(this);
     removePendingObserver(this);
+    disposeOwner(this.owner);
 
     if (typeof this.cleanup === 'function') {
       this.cleanup();

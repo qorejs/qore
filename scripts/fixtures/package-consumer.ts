@@ -5,6 +5,7 @@ import {
   canUseDOM,
   computed,
   createApp,
+  createRoot,
   createDeepSeek,
   createLineAdapter,
   createOpenAI,
@@ -16,6 +17,7 @@ import {
   h,
   list,
   mapStream,
+  onCleanup,
   renderResponse,
   response,
   scanStream,
@@ -90,6 +92,12 @@ const stop = effect(() => {
   void doubled();
 });
 stop();
+
+const disposeRoot = createRoot((dispose) => {
+  onCleanup(() => {});
+  return dispose;
+});
+disposeRoot();
 
 const microtaskEffectOptions: EffectOptions = { scheduler: 'microtask' };
 const customScheduler: EffectScheduler = (run) => queueMicrotask(run);

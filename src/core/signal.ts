@@ -1,3 +1,4 @@
+import { createRoot, onCleanup } from './owner.js';
 import { batch, READ, untrack } from './signal-context.js';
 import { ComputedNode, EffectNode, SignalNode } from './signal-nodes.js';
 import type { Cleanup, EffectCallback, EffectOptions, SubscribeOptions } from './signal-types.js';
@@ -64,6 +65,7 @@ export function effect(fn: EffectCallback, options: EffectOptions = {}): Cleanup
 }
 
 export { batch, untrack } from './signal-context.js';
+export { createRoot, onCleanup } from './owner.js';
 
 // Detect Qore signal-like values by their callable shape plus peek helper.
 export function isSignal<T = unknown>(value: unknown): value is ReadonlySignal<T> {

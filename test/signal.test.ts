@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { batch, computed, effect, signal, untrack } from '../src/index.js';
+import { batch, computed, createRoot, effect, onCleanup, signal, untrack } from '../src/index.js';
 
 // Cover the core signal API surface from raw writes through observer semantics.
 test('signal supports undefined and direct updates', () => {
@@ -49,6 +49,64 @@ test('effect tracks dependencies and runs cleanup before re-run', () => {
     'run:1',
     'cleanup:1'
   ]);
+});
+
+test('createRoot disposes owned reactive work as a group', () => {
+  const count = signal(0);
+  const seen: number[] = [];
+  let disposeRoot!: () => void;
+
+  createRoot((dispose) => {
+    disposeRoot = dispose;
+    effect(() => {
+      seen.push(count());
+    });
+  });
+
+  count.set(1);
+  disposeRoot();
+  count.set(2);
+
+  assert.deepEqual(seen, [0, 1]);
+});
+
+test('nested effects are torn down when the owning effect re-runs', () => {
+  const enabled = signal(true);
+  const count = signal(0);
+  const seen: number[] = [];
+
+  const stop = effect(() => {
+    if (!enabled()) {
+      return;
+    }
+
+    effect(() => {
+      seen.push(count());
+    });
+  });
+
+  count.set(1);
+  enabled.set(false);
+  count.set(2);
+  stop();
+
+  assert.deepEqual(seen, [0, 1]);
+});
+
+test('onCleanup hooks run when an owning root is disposed', () => {
+  const events: string[] = [];
+  let disposeRoot!: () => void;
+
+  createRoot((dispose) => {
+    disposeRoot = dispose;
+    onCleanup(() => {
+      events.push('root');
+    });
+  });
+
+  disposeRoot();
+
+  assert.deepEqual(events, ['root']);
 });
 
 // A batch should collapse multiple synchronous writes into one downstream observer pass.

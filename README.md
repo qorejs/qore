@@ -304,13 +304,24 @@ answer.buffered(); // how many chunks are queued right now
 answer.dropped();  // how many chunks were dropped by the overflow policy
 ```
 
-### `signal`, `computed`, `effect`
+### `signal`, `computed`, `effect`, `createRoot`, `onCleanup`
 
 ```js
-import { computed, signal, stream } from '@qorejs/qore';
+import { computed, createRoot, effect, onCleanup, signal, stream } from '@qorejs/qore';
 
 const answer = stream(openai.chat('hello'));
 const length = computed(() => answer().length);
+
+const dispose = createRoot((dispose) => {
+  effect(() => {
+    console.log(length());
+    onCleanup(() => console.log('effect disposed'));
+  });
+
+  return dispose;
+});
+
+dispose();
 ```
 
 ### `response`

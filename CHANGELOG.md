@@ -4,6 +4,7 @@
 
 - Topologically ordered reactive observer flushes by tracking dependency levels through signals, computed values, and effects, preventing duplicate downstream recomputes across diamond-shaped dependency graphs.
 - Batched reactive fan-out inside signal and computed notifications so nested observer scheduling cannot re-enter the flush loop with partially updated upstream state.
+- Added `createRoot(...)` and `onCleanup(...)` so reactive work can live inside explicit owner trees, letting nested effects and computed values tear down automatically when their parent scope disposes or re-runs.
 
 ## 0.8.1 - 2026-05-22
 

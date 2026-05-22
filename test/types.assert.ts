@@ -5,10 +5,12 @@ import {
   createLineAdapter,
   createOpenAI,
   createOllama,
+  createRoot,
   createSSEAdapter,
   createOpenRouter,
   from,
   mapStream,
+  onCleanup,
   scanStream,
   stream,
   type AnthropicAdapter,
@@ -105,6 +107,8 @@ type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 
 void providerOptions;
 void assertCanUseDOM;
+void createRoot;
+void onCleanup;
 
 // @ts-expect-error Stream lifecycle state is exposed read-only.
 source.status('completed');

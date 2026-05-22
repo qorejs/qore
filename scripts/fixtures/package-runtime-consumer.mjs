@@ -6,6 +6,7 @@ import {
   computed,
   createApp,
   createAnthropic,
+  createRoot,
   createResponse,
   createDeepSeek,
   createLineAdapter,
@@ -18,6 +19,7 @@ import {
   h,
   list,
   mount,
+  onCleanup,
   response,
   renderResponse,
   show,
@@ -56,6 +58,11 @@ function createLineBody(events) {
 
 const count = signal(2);
 const doubled = computed(() => count() * 2);
+const disposeRoot = createRoot((dispose) => {
+  onCleanup(() => {});
+  return dispose;
+});
+disposeRoot();
 assert.equal(doubled(), 4);
 assert.equal(canUseDOM(), false);
 assert.throws(() => assertCanUseDOM('runtime smoke'), /runtime smoke requires a browser-like environment/);
