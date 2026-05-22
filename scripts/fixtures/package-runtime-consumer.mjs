@@ -88,12 +88,30 @@ const answer = stream(async ({ push }) => {
   await push('Qore');
   await push(' rocks');
 });
+const merged = stream.merge([['Qore'], [' merge']]);
+const raced = stream.race([
+  (async function* slow() {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    yield 'slow';
+  })(),
+  ['fast', ' lane']
+]);
+const retried = stream.retryable((attempt) => async ({ push }) => {
+  if (attempt < 1) {
+    throw new Error('retry once');
+  }
 
-await answer.ready;
+  await push('retry ok');
+}, { maxRetries: 1, backoff: 0 });
+
+await Promise.all([answer.ready, merged.ready, raced.ready, retried.ready]);
 
 assert.equal(answer(), 'Qore rocks');
 assert.equal(answer.status(), 'completed');
 assert.deepEqual(answer.chunks(), ['Qore', ' rocks']);
+assert.equal(merged(), 'Qore merge');
+assert.equal(raced(), 'fast lane');
+assert.equal(retried(), 'retry ok');
 
 const transcript = response.list();
 await transcript.consume(answer);

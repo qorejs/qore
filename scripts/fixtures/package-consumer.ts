@@ -116,6 +116,9 @@ const textStream = stream<string>(async ({ push }) => {
 const inferredText = stream(['a', 'b']);
 const inferredList = stream.list([{ step: 1 }]);
 const latest = stream.latest<number>([1, 2, 3]);
+const merged = stream.merge([[1, 2], [3, 4]]);
+const raced = stream.race([[1, 2], [3, 4]]);
+const retried = stream.retryable((attempt) => [`retry-${attempt}`], { maxRetries: 1, backoff: 0 });
 const mapped = mapStream([1, 2, 3], async (value) => value.toString());
 const scanned = scanStream([1, 2, 3], (total, value) => total + value, 0);
 const replayed = from(['a', 'b', 'c']);
@@ -124,6 +127,9 @@ type _TextStream = Assert<Extends<typeof textStream, QoreStream<string, string>>
 type _InferredTextStream = Assert<Equal<typeof inferredText, QoreStream<string, string>>>;
 type _InferredListStream = Assert<Equal<typeof inferredList, QoreStream<{ step: number }, Array<{ step: number }>>>>;
 type _LatestStream = Assert<Equal<typeof latest, QoreStream<number, number | null>>>;
+type _MergedStream = Assert<Equal<typeof merged, QoreStream<number, string>>>;
+type _RacedStream = Assert<Equal<typeof raced, QoreStream<number, string>>>;
+type _RetriedStream = Assert<Equal<typeof retried, QoreStream<string, string>>>;
 type _MappedStream = Assert<Equal<typeof mapped, QoreStream<string, string>>>;
 type _ScannedStream = Assert<Extends<typeof scanned, QoreStream<number, number>>>;
 

@@ -42,6 +42,9 @@ type TokenEvent = {
 const source = stream(['a', 'b']);
 const listSource = stream.list([{ step: 1 }]);
 const latestSource = stream.latest([1, 2, 3]);
+const mergedSource = stream.merge([[1, 2], [3, 4]]);
+const racedSource = stream.race([[1, 2], [3, 4]]);
+const retriedSource = stream.retryable((attempt) => [`retry-${attempt}`], { maxRetries: 1, backoff: 0 });
 const mappedSource = mapStream([1, 2], (value) => value.toString());
 const scannedSource = scanStream([1, 2, 3], (total, value) => total + value, 0);
 const replayed = from(['x', 'y']);
@@ -93,6 +96,9 @@ const providerOptions: ProviderRequestOptions = {
 type _DefaultStream = Assert<Equal<typeof source, QoreStream<string, string>>>;
 type _ListStream = Assert<Equal<typeof listSource, QoreStream<{ step: number }, Array<{ step: number }>>>>;
 type _LatestStream = Assert<Equal<typeof latestSource, QoreStream<number, number | null>>>;
+type _MergedStream = Assert<Equal<typeof mergedSource, QoreStream<number, string>>>;
+type _RacedStream = Assert<Equal<typeof racedSource, QoreStream<number, string>>>;
+type _RetriedStream = Assert<Equal<typeof retriedSource, QoreStream<string, string>>>;
 type _MappedStream = Assert<Equal<typeof mappedSource, QoreStream<string, string>>>;
 type _ScannedStream = Assert<Extends<typeof scannedSource, QoreStream<number, number>>>;
 type _ReplayStream = Assert<Extends<typeof replayed, QoreStream<string, string>>>;

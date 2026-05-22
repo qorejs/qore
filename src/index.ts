@@ -6,6 +6,8 @@ export { stream, createStream, from, mapStream, scanStream, toAsyncIterable } fr
 export type {
   BackpressureOptions,
   QoreStream,
+  RetryBackoff,
+  RetryableStreamOptions,
   StreamController,
   StreamFactory,
   StreamInput,

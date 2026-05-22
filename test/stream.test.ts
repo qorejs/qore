@@ -142,6 +142,82 @@ test('stream.latest keeps only the newest chunk as its signal value', async () =
   assert.deepEqual(answer.chunks(), ['old', 'new']);
 });
 
+test('stream.merge interleaves multiple sources into one signal surface', async () => {
+  const merged = stream.merge([
+    (async function* () {
+      await sleep(2);
+      yield 'A';
+      await sleep(6);
+      yield 'C';
+    })(),
+    (async function* () {
+      await sleep(4);
+      yield 'B';
+    })()
+  ]);
+
+  await merged.ready;
+
+  assert.equal(merged(), 'ABC');
+  assert.deepEqual(merged.chunks(), ['A', 'B', 'C']);
+});
+
+test('stream.race stays on the first source that produces a chunk', async () => {
+  const raced = stream.race([
+    (async function* () {
+      await sleep(12);
+      yield 'slow';
+    })(),
+    (async function* () {
+      await sleep(1);
+      yield 'fast';
+      await sleep(1);
+      yield ' winner';
+    })()
+  ]);
+
+  await raced.ready;
+
+  assert.equal(raced(), 'fast winner');
+  assert.deepEqual(raced.chunks(), ['fast', ' winner']);
+});
+
+test('stream.retryable retries failed sources before succeeding', async () => {
+  let attempts = 0;
+  const retried = stream.retryable(() => async ({ push }) => {
+    attempts += 1;
+
+    if (attempts < 3) {
+      throw new Error(`attempt ${attempts} failed`);
+    }
+
+    await push('Qore');
+  }, {
+    maxRetries: 2,
+    backoff: 0
+  });
+
+  await retried.ready;
+
+  assert.equal(attempts, 3);
+  assert.equal(retried(), 'Qore');
+});
+
+test('stream.retryable surfaces the final error after exhausting retries', async () => {
+  let attempts = 0;
+  const retried = stream.retryable(() => async () => {
+    attempts += 1;
+    throw new Error(`attempt ${attempts} failed`);
+  }, {
+    maxRetries: 1,
+    backoff: 0
+  });
+
+  await assert.rejects(retried.ready, /attempt 2 failed/);
+  assert.equal(attempts, 2);
+  assert.equal(retried.status(), 'error');
+});
+
 // paced streams should visibly space out chunk delivery for streaming UIs.
 test('stream.paced spaces chunk delivery over time', async () => {
   const timestamps: number[] = [];

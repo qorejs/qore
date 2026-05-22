@@ -1,8 +1,17 @@
 import { toAsyncIterable } from './iterable.js';
 import { createStream } from './stream-runtime.js';
+import { startSource } from './stream-source.js';
 import { reduceText } from './stream-state.js';
 import type { MaybePromise, SourceLike } from './response.js';
-import type { BackpressureOptions, QoreStream, StreamFactory, StreamInput, StreamOptions } from './stream-types.js';
+import type {
+  BackpressureOptions,
+  QoreStream,
+  RetryBackoff,
+  RetryableStreamOptions,
+  StreamFactory,
+  StreamInput,
+  StreamOptions
+} from './stream-types.js';
 import { sleep } from '../shared/utils.js';
 
 const streamFactory = (<TChunk = unknown>(
@@ -70,8 +79,127 @@ streamFactory.paced = <TChunk = unknown, TValue = string>(
   options
 );
 
+streamFactory.merge = <TChunk = unknown, TValue = string>(
+  sources: Array<SourceLike<TChunk>>,
+  options: StreamOptions<TChunk, TValue> = {}
+): QoreStream<TChunk, TValue> => createStream(async (controller) => {
+  await Promise.all(sources.map(async (source) => {
+    await startSource(source, controller);
+  }));
+}, options);
+
+streamFactory.race = <TChunk = unknown, TValue = string>(
+  sources: Array<SourceLike<TChunk>>,
+  options: StreamOptions<TChunk, TValue> = {}
+): QoreStream<TChunk, TValue> => createStream(async (controller) => {
+  const activeIterators = sources.map((source, index) => ({
+    index,
+    iterator: toAsyncIterable(source)[Symbol.asyncIterator]()
+  }));
+
+  let winner: AsyncIterator<TChunk> | null = null;
+
+  try {
+    while (!controller.signal.aborted && winner === null && activeIterators.length > 0) {
+      const nextResult = await Promise.race(activeIterators.map(async ({ index, iterator }) => ({
+        index,
+        result: await iterator.next()
+      })));
+
+      if (nextResult.result.done) {
+        const exhaustedIndex = activeIterators.findIndex(({ index }) => index === nextResult.index);
+
+        if (exhaustedIndex >= 0) {
+          activeIterators.splice(exhaustedIndex, 1);
+        }
+
+        continue;
+      }
+
+      winner = activeIterators.find(({ index }) => index === nextResult.index)?.iterator ?? null;
+      await controller.push(nextResult.result.value);
+    }
+
+    if (!winner || controller.signal.aborted) {
+      return;
+    }
+
+    for (const candidate of activeIterators) {
+      if (candidate.iterator !== winner) {
+        await candidate.iterator.return?.();
+      }
+    }
+
+    while (!controller.signal.aborted) {
+      const nextChunk = await winner.next();
+
+      if (nextChunk.done) {
+        break;
+      }
+
+      await controller.push(nextChunk.value);
+    }
+  } finally {
+    for (const { iterator } of activeIterators) {
+      if (iterator !== winner) {
+        await iterator.return?.();
+      }
+    }
+  }
+}, options);
+
+streamFactory.retryable = <TChunk = unknown, TValue = string>(
+  sourceFactory: (attempt: number) => StreamInput<TChunk, TValue>,
+  options: RetryableStreamOptions<TChunk, TValue> = {}
+): QoreStream<TChunk, TValue> => {
+  const {
+    maxRetries = 0,
+    backoff = 'exponential',
+    ...streamOptions
+  } = options;
+
+  return createStream(async (controller) => {
+    let retries = 0;
+
+    while (!controller.signal.aborted) {
+      try {
+        await startSource(sourceFactory(retries), controller);
+        return;
+      } catch (error) {
+        if (retries >= maxRetries || controller.signal.aborted) {
+          throw error;
+        }
+
+        retries += 1;
+        const delay = await resolveRetryDelay(backoff, retries, error);
+
+        if (delay > 0) {
+          await sleep(delay, controller.signal);
+        }
+      }
+    }
+  }, streamOptions);
+};
+
 // Create a text-accumulating stream by default.
 export const stream = streamFactory;
+
+async function resolveRetryDelay(backoff: RetryBackoff, retry: number, error: unknown): Promise<number> {
+  if (typeof backoff === 'function') {
+    return Math.max(0, await backoff(retry, error));
+  }
+
+  if (Array.isArray(backoff)) {
+    const nextDelay = backoff[Math.min(retry - 1, backoff.length - 1)] ?? 0;
+    return Math.max(0, nextDelay);
+  }
+
+  if (backoff === 'exponential') {
+    return 250 * 2 ** (retry - 1);
+  }
+
+  return Math.max(0, backoff);
+}
 
 // Turn any iterable or async iterable into a stream, optionally adding source delay.
 export function from<TChunk, TValue = string>(
@@ -147,6 +275,8 @@ export { createStream } from './stream-runtime.js';
 export type {
   BackpressureOptions,
   QoreStream,
+  RetryBackoff,
+  RetryableStreamOptions,
   StreamController,
   StreamFactory,
   StreamInput,

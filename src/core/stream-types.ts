@@ -16,6 +16,12 @@ export interface BackpressureOptions {
   overflow?: OverflowStrategy;
 }
 
+export type RetryBackoff =
+  | number
+  | number[]
+  | 'exponential'
+  | ((retry: number, error: unknown) => MaybePromise<number>);
+
 export interface NormalizedBackpressure {
   interval: number;
   buffer: number;
@@ -32,6 +38,11 @@ export interface StreamOptions<TChunk = unknown, TValue = string> {
   seed?: TValue;
   reduce?: (currentValue: TValue, chunk: TChunk, index: number) => TValue;
   backpressure?: number | BackpressureOptions | null;
+}
+
+export interface RetryableStreamOptions<TChunk = unknown, TValue = string> extends StreamOptions<TChunk, TValue> {
+  maxRetries?: number;
+  backoff?: RetryBackoff;
 }
 
 export interface StreamController<TChunk = unknown, TValue = string> {
@@ -98,6 +109,18 @@ export interface StreamFactory {
     sourceOrSetup: StreamInput<TChunk, TValue>,
     interval: number,
     options?: StreamOptions<TChunk, TValue>
+  ): QoreStream<TChunk, TValue>;
+  merge<TChunk = unknown, TValue = string>(
+    sources: Array<SourceLike<TChunk>>,
+    options?: StreamOptions<TChunk, TValue>
+  ): QoreStream<TChunk, TValue>;
+  race<TChunk = unknown, TValue = string>(
+    sources: Array<SourceLike<TChunk>>,
+    options?: StreamOptions<TChunk, TValue>
+  ): QoreStream<TChunk, TValue>;
+  retryable<TChunk = unknown, TValue = string>(
+    sourceFactory: (attempt: number) => StreamInput<TChunk, TValue>,
+    options?: RetryableStreamOptions<TChunk, TValue>
   ): QoreStream<TChunk, TValue>;
 }
 

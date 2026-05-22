@@ -281,6 +281,17 @@ const events = stream.list(eventSource);
 const latest = stream.latest(modelEvents);
 ```
 
+If you need orchestration:
+
+```js
+const merged = stream.merge([openai.chat('a'), anthropic.chat('b')]);
+const fastest = stream.race([openai.chat('hello'), openrouter.chat('hello')]);
+const resilient = stream.retryable(() => openai.chat('retry me'), {
+  maxRetries: 2,
+  backoff: 'exponential'
+});
+```
+
 ### Backpressure
 
 ```js
