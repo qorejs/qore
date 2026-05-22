@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Topologically ordered reactive observer flushes by tracking dependency levels through signals, computed values, and effects, preventing duplicate downstream recomputes across diamond-shaped dependency graphs.
+- Batched reactive fan-out inside signal and computed notifications so nested observer scheduling cannot re-enter the flush loop with partially updated upstream state.
+
 ## 0.8.1 - 2026-05-22
 
 - Added a stop control to the focused streaming demo so browser regression now verifies an in-flight Qore stream can abort cleanly and recover into the next turn.

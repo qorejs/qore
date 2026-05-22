@@ -1,4 +1,5 @@
 import {
+  batch,
   cleanupObserver,
   getActiveObserver,
   removePendingObserver,
@@ -19,6 +20,7 @@ import type {
 // A mutable signal node stores a value and fan-outs updates to listeners and observers.
 export class SignalNode<T> implements ObserverDependency {
   value: T;
+  level = 0;
   subscribers = new Set<ReactiveObserver>();
   listeners = new Set<SignalListener<T>>();
 
@@ -75,15 +77,18 @@ export class SignalNode<T> implements ObserverDependency {
       listener(this.value);
     }
 
-    for (const observer of Array.from(this.subscribers)) {
-      scheduleObserver(observer);
-    }
+    batch(() => {
+      for (const observer of Array.from(this.subscribers)) {
+        scheduleObserver(observer);
+      }
+    });
   }
 }
 
 // A computed node re-runs its getter whenever one of its dependencies changes.
 export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
   getter: () => T;
+  level = 1;
   subscribers = new Set<ReactiveObserver>();
   listeners = new Set<SignalListener<T>>();
   deps = new Set<ObserverDependency>();
@@ -146,8 +151,12 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
     withActiveObserver(this, () => {
       const nextValue = this.getter();
       const changed = !this.initialized || !Object.is(previousValue, nextValue);
+      const nextLevel = this.deps.size > 0
+        ? Math.max(...Array.from(this.deps, (dependency) => dependency.level)) + 1
+        : 1;
 
       this.value = nextValue;
+      this.level = nextLevel;
       this.initialized = true;
 
       if (!changed) {
@@ -158,9 +167,11 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
         listener(this.value);
       }
 
-      for (const observer of Array.from(this.subscribers)) {
-        scheduleObserver(observer);
-      }
+      batch(() => {
+        for (const observer of Array.from(this.subscribers)) {
+          scheduleObserver(observer);
+        }
+      });
     });
   }
 
@@ -181,6 +192,7 @@ export class ComputedNode<T> implements ObserverDependency, ReactiveObserver {
 export class EffectNode implements ReactiveObserver {
   fn: EffectCallback;
   scheduler: EffectOptions['scheduler'];
+  level = 1;
   deps = new Set<ObserverDependency>();
   active = true;
   scheduled = false;
@@ -243,6 +255,10 @@ export class EffectNode implements ReactiveObserver {
         const maybeCleanup = this.fn();
         this.cleanup = typeof maybeCleanup === 'function' ? maybeCleanup : null;
       });
+
+      this.level = this.deps.size > 0
+        ? Math.max(...Array.from(this.deps, (dependency) => dependency.level)) + 1
+        : 1;
     } finally {
       this.running = false;
 

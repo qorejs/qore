@@ -151,6 +151,41 @@ test('computed observers flush once per batch across multiple dependencies', () 
   assert.deepEqual(seen, [3, 14]);
 });
 
+test('diamond dependencies settle once per source write', () => {
+  const source = signal(1);
+  const left = computed(() => source() * 2);
+  const right = computed(() => source() * 3);
+  const total = computed(() => left() + right());
+  const seen: number[] = [];
+
+  effect(() => {
+    seen.push(total());
+  });
+
+  source.set(2);
+
+  assert.deepEqual(seen, [5, 10]);
+});
+
+test('diamond dependencies do not recompute downstream computed values twice per source write', () => {
+  const source = signal(1);
+  const left = computed(() => source() + 1);
+  const right = computed(() => source() + 2);
+  let recomputes = 0;
+  const total = computed(() => {
+    recomputes += 1;
+    return left() + right();
+  });
+
+  assert.equal(total(), 5);
+  assert.equal(recomputes, 1);
+
+  source.set(3);
+
+  assert.equal(total(), 9);
+  assert.equal(recomputes, 2);
+});
+
 test('microtask scheduled effects collapse synchronous writes', async () => {
   const count = signal(0);
   const seen: number[] = [];

@@ -12,12 +12,14 @@ export interface EffectOptions {
 }
 
 export interface ObserverDependency {
+  level: number;
   subscribers: Set<ReactiveObserver>;
 }
 
 export interface ReactiveObserver {
   deps: Set<ObserverDependency>;
   active: boolean;
+  level: number;
   schedule(): void;
   notify(): void;
 }

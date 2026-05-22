@@ -6,6 +6,7 @@ export const READ = Symbol('qore.signal.read');
 let activeObserver: ReactiveObserver | null = null;
 let batchDepth = 0;
 const pendingObservers = new Set<ReactiveObserver>();
+let flushingObservers = false;
 
 export function getActiveObserver(): ReactiveObserver | null {
   return activeObserver;
@@ -41,12 +42,13 @@ export function scheduleObserver(observer: ReactiveObserver): void {
     return;
   }
 
-  if (batchDepth > 0) {
-    pendingObservers.add(observer);
+  pendingObservers.add(observer);
+
+  if (batchDepth > 0 || flushingObservers) {
     return;
   }
 
-  observer.schedule();
+  flushObservers();
 }
 
 export function removePendingObserver(observer: ReactiveObserver): void {
@@ -55,13 +57,21 @@ export function removePendingObserver(observer: ReactiveObserver): void {
 
 // Flush batched observer work in FIFO-like waves until the queue is empty.
 function flushObservers(): void {
-  while (pendingObservers.size > 0) {
-    const queue = Array.from(pendingObservers);
-    pendingObservers.clear();
+  flushingObservers = true;
+  try {
+    while (pendingObservers.size > 0) {
+      const queue = Array.from(pendingObservers);
+      pendingObservers.clear();
+      queue.sort((left, right) => left.level - right.level);
 
-    for (const observer of queue) {
-      observer.schedule();
+      for (const observer of queue) {
+        if (observer.active) {
+          observer.schedule();
+        }
+      }
     }
+  } finally {
+    flushingObservers = false;
   }
 }
 
@@ -74,7 +84,7 @@ export function batch<T>(fn: () => T): T {
   } finally {
     batchDepth -= 1;
 
-    if (batchDepth === 0) {
+    if (batchDepth === 0 && !flushingObservers) {
       flushObservers();
     }
   }
