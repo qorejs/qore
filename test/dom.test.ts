@@ -4,8 +4,33 @@ import assert from 'node:assert/strict';
 import { assertCanUseDOM, canUseDOM, createApp, createResponse, dynamic, fragment, h, list, mount, renderResponse, show, signal, text } from '../src/index.js';
 
 class FakeNode {
-  parentNode: FakeElement | null = null;
+  parentNode: FakeParent | null = null;
+
+  get nextSibling(): FakeNode | null {
+    if (!this.parentNode) {
+      return null;
+    }
+
+    const index = this.parentNode.childNodes.indexOf(this);
+    return index >= 0 ? this.parentNode.childNodes[index + 1] ?? null : null;
+  }
+
+  remove(): void {
+    if (!this.parentNode) {
+      return;
+    }
+
+    const index = this.parentNode.childNodes.indexOf(this);
+
+    if (index >= 0) {
+      this.parentNode.childNodes.splice(index, 1);
+    }
+
+    this.parentNode = null;
+  }
 }
+
+type FakeParent = FakeElement | FakeDocumentFragment;
 
 class FakeElement extends FakeNode {
   tagName: string;
@@ -14,7 +39,7 @@ class FakeElement extends FakeNode {
   style: Record<string, unknown> & { cssText?: string } = {};
   className = '';
   childNodes: FakeNode[] = [];
-  override parentNode: FakeElement | null = null;
+  override parentNode: FakeParent | null = null;
 
   constructor(tagName: string) {
     super();
@@ -40,12 +65,46 @@ class FakeElement extends FakeNode {
   }
 
   appendChild(node: FakeNode): FakeNode {
-    if (node instanceof FakeElement || node instanceof FakeTextNode) {
-      node.parentNode = this;
+    if (node instanceof FakeDocumentFragment) {
+      for (const child of [...node.childNodes]) {
+        this.appendChild(child);
+      }
+
+      node.childNodes = [];
+      return node;
     }
 
     node.parentNode = this;
     this.childNodes.push(node);
+    return node;
+  }
+
+  insertBefore(node: FakeNode, reference: FakeNode | null): FakeNode {
+    if (node instanceof FakeDocumentFragment) {
+      for (const child of [...node.childNodes]) {
+        this.insertBefore(child, reference);
+      }
+
+      node.childNodes = [];
+      return node;
+    }
+
+    node.remove();
+    node.parentNode = this;
+
+    if (reference == null) {
+      this.childNodes.push(node);
+      return node;
+    }
+
+    const index = this.childNodes.indexOf(reference);
+
+    if (index < 0) {
+      this.childNodes.push(node);
+      return node;
+    }
+
+    this.childNodes.splice(index, 0, node);
     return node;
   }
 
@@ -72,7 +131,71 @@ class FakeElement extends FakeNode {
   }
 }
 
+class FakeDocumentFragment extends FakeNode {
+  childNodes: FakeNode[] = [];
+
+  append(...nodes: FakeNode[]): void {
+    for (const node of nodes) {
+      this.appendChild(node);
+    }
+  }
+
+  appendChild(node: FakeNode): FakeNode {
+    if (node instanceof FakeDocumentFragment) {
+      for (const child of [...node.childNodes]) {
+        this.appendChild(child);
+      }
+
+      node.childNodes = [];
+      return node;
+    }
+
+    node.remove();
+    node.parentNode = this;
+    this.childNodes.push(node);
+    return node;
+  }
+
+  insertBefore(node: FakeNode, reference: FakeNode | null): FakeNode {
+    if (node instanceof FakeDocumentFragment) {
+      for (const child of [...node.childNodes]) {
+        this.insertBefore(child, reference);
+      }
+
+      node.childNodes = [];
+      return node;
+    }
+
+    node.remove();
+    node.parentNode = this;
+
+    if (reference == null) {
+      this.childNodes.push(node);
+      return node;
+    }
+
+    const index = this.childNodes.indexOf(reference);
+
+    if (index < 0) {
+      this.childNodes.push(node);
+      return node;
+    }
+
+    this.childNodes.splice(index, 0, node);
+    return node;
+  }
+}
+
 class FakeTextNode extends FakeNode {
+  textContent: string;
+
+  constructor(textContent = '') {
+    super();
+    this.textContent = textContent;
+  }
+}
+
+class FakeComment extends FakeNode {
   textContent: string;
 
   constructor(textContent = '') {
@@ -95,6 +218,12 @@ function withFakeDom(run: () => void): void {
   globalDom.document = {
     createElement(tagName: string) {
       return new FakeElement(tagName);
+    },
+    createComment(textContent?: string) {
+      return new FakeComment(textContent);
+    },
+    createDocumentFragment() {
+      return new FakeDocumentFragment();
     },
     createTextNode(textContent?: string) {
       return new FakeTextNode(textContent);
@@ -240,5 +369,32 @@ test('ref can hydrate a signal with the created element', () => {
     const input = h('input', { ref }) as unknown as FakeElement;
 
     assert.equal(ref(), input);
+  });
+});
+
+test('list with keys appends new items without rebuilding existing DOM nodes', () => {
+  withFakeDom(() => {
+    const items = signal([
+      { id: 'a', label: 'Alpha' },
+      { id: 'b', label: 'Beta' }
+    ]);
+    const root = new FakeElement('div');
+
+    mount(root as unknown as Element, () => list(items, (item) => h('p', { 'data-id': item.id }, item.label), {
+      key: (item) => item.id
+    }));
+
+    const firstParagraph = root.childNodes[2] as FakeElement;
+    const secondParagraph = root.childNodes[5] as FakeElement;
+
+    items.set([
+      { id: 'a', label: 'Alpha' },
+      { id: 'b', label: 'Beta' },
+      { id: 'c', label: 'Gamma' }
+    ]);
+
+    assert.equal(root.childNodes[2], firstParagraph);
+    assert.equal(root.childNodes[5], secondParagraph);
+    assert.equal((root.childNodes[8] as FakeElement).attributes.get('data-id'), 'c');
   });
 });

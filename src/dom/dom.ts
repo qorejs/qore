@@ -104,6 +104,48 @@ function replaceRange(start: Comment, end: Comment, nextValue: QoreChild): void 
   }
 }
 
+function insertBefore(parent: Node, reference: Node, value: QoreChild): void {
+  for (const node of materialize(value)) {
+    parent.insertBefore(node, reference);
+  }
+}
+
+type KeyedListEntry<T> = {
+  key: unknown;
+  value: T;
+  index: number;
+  start: Comment;
+  end: Comment;
+  scope: ReturnType<typeof createScope>;
+};
+
+function destroyKeyedEntry<T>(entry: KeyedListEntry<T>): void {
+  disposeScope(entry.scope);
+  clearRange(entry.start, entry.end);
+  entry.start.remove();
+  entry.end.remove();
+}
+
+function renderKeyedEntry<T>(
+  parent: Node,
+  reference: Node,
+  item: T,
+  index: number,
+  render: (item: T, index: number) => QoreChild
+): KeyedListEntry<T> {
+  const start = document.createComment('qore-list-item-start');
+  const end = document.createComment('qore-list-item-end');
+  const scope = createScope();
+
+  parent.insertBefore(start, reference);
+
+  const content = withScope(scope, () => render(item, index));
+  insertBefore(parent, reference, content);
+  parent.insertBefore(end, reference);
+
+  return { key: null, value: item, index, start, end, scope };
+}
+
 // Allow mount targets to be passed as selectors or direct nodes.
 function resolveRoot(root: MountTarget): Element {
   if (typeof root === 'string') {
@@ -182,23 +224,109 @@ export function show<T>(
 export function list<T>(
   source: ReactiveValue<Iterable<T> | ArrayLike<T> | null | undefined>,
   render: (item: T, index: number) => QoreChild,
-  options: { fallback?: QoreChild | ((items: T[]) => QoreChild) } = {}
+  options: {
+    fallback?: QoreChild | ((items: T[]) => QoreChild);
+    key?: (item: T, index: number) => unknown;
+  } = {}
 ): QoreDocumentFragment {
-  const { fallback = null } = options;
+  const { fallback = null, key } = options;
 
-  return dynamic(source, (value) => {
+  if (!key) {
+    return dynamic(source, (value) => {
+      const items: T[] = value == null
+        ? []
+        : Array.isArray(value)
+          ? value
+          : Array.from(value);
+
+      if (items.length === 0) {
+        return resolveTemplate(fallback, items);
+      }
+
+      return items.map((item, index) => render(item, index));
+    });
+  }
+
+  assertDocument('list()');
+
+  const start = document.createComment('qore-list-start');
+  const end = document.createComment('qore-list-end');
+  const node = document.createDocumentFragment();
+  node.append(start, end);
+
+  let entries: Array<KeyedListEntry<T>> = [];
+  let fallbackScope: ReturnType<typeof createScope> | null = null;
+  const stop = effect(() => {
+    const value = resolveAccessor(source);
     const items: T[] = value == null
       ? []
       : Array.isArray(value)
         ? value
         : Array.from(value);
+    const parent = end.parentNode;
 
-    if (items.length === 0) {
-      return resolveTemplate(fallback, items);
+    if (!parent) {
+      return;
     }
 
-    return items.map((item, index) => render(item, index));
+    if (items.length === 0) {
+      for (const entry of entries) {
+        destroyKeyedEntry(entry);
+      }
+
+      entries = [];
+      disposeScope(fallbackScope);
+      fallbackScope = createScope();
+      const renderedFallback = withScope(fallbackScope, () => resolveTemplate(fallback, items));
+      replaceRange(start, end, renderedFallback);
+      return;
+    }
+
+    disposeScope(fallbackScope);
+    fallbackScope = null;
+
+    const nextKeys = items.map((item, index) => key(item, index));
+    const canAppend = entries.length <= items.length
+      && entries.every((entry, index) => Object.is(entry.key, nextKeys[index]));
+
+    if (!canAppend) {
+      for (const entry of entries) {
+        destroyKeyedEntry(entry);
+      }
+
+      clearRange(start, end);
+      entries = [];
+    }
+
+    if (!canAppend) {
+      for (let index = 0; index < items.length; index += 1) {
+        const entry = renderKeyedEntry(parent, end, items[index]!, index, render);
+        entry.key = nextKeys[index];
+        entries.push(entry);
+      }
+
+      return;
+    }
+
+    for (let index = entries.length; index < items.length; index += 1) {
+      const entry = renderKeyedEntry(parent, end, items[index]!, index, render);
+      entry.key = nextKeys[index];
+      entries.push(entry);
+    }
   });
+
+  registerCleanup(() => {
+    stop();
+    disposeScope(fallbackScope);
+
+    for (const entry of entries) {
+      destroyKeyedEntry(entry);
+    }
+
+    entries = [];
+  });
+
+  return node;
 }
 
 // Render response state through status-aware template overrides.

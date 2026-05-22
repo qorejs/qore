@@ -281,6 +281,14 @@ const events = stream.list(eventSource);
 const latest = stream.latest(modelEvents);
 ```
 
+For append-heavy DOM lists such as chat transcripts, pass a stable key:
+
+```js
+list(messages, (message) => h('article', {}, message.body), {
+  key: (message) => message.id
+});
+```
+
 If you need orchestration:
 
 ```js
