@@ -122,6 +122,11 @@ export interface StreamFactory {
     sourceFactory: (attempt: number) => StreamInput<TChunk, TValue>,
     options?: RetryableStreamOptions<TChunk, TValue>
   ): QoreStream<TChunk, TValue>;
+  switchMap<TInput, TChunk = unknown, TValue = string>(
+    source: SourceLike<TInput>,
+    mapper: (value: TInput, index: number) => MaybePromise<SourceLike<TChunk>>,
+    options?: StreamOptions<TChunk, TValue>
+  ): QoreStream<TChunk, TValue>;
 }
 
 export type StreamResponseState<TChunk, TValue> = ResponseState<TChunk, TValue>;

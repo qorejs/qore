@@ -103,8 +103,16 @@ const retried = stream.retryable((attempt) => async ({ push }) => {
 
   await push('retry ok');
 }, { maxRetries: 1, backoff: 0 });
+const switched = stream.switchMap([
+  { label: 'old', delay: 10 },
+  { label: 'new', delay: 1 }
+], async (entry) => (async function* switchedChunks() {
+  yield `${entry.label}:1`;
+  await new Promise((resolve) => setTimeout(resolve, entry.delay));
+  yield `${entry.label}:2`;
+})());
 
-await Promise.all([answer.ready, merged.ready, raced.ready, retried.ready]);
+await Promise.all([answer.ready, merged.ready, raced.ready, retried.ready, switched.ready]);
 
 assert.equal(answer(), 'Qore rocks');
 assert.equal(answer.status(), 'completed');
@@ -112,6 +120,7 @@ assert.deepEqual(answer.chunks(), ['Qore', ' rocks']);
 assert.equal(merged(), 'Qore merge');
 assert.equal(raced(), 'fast lane');
 assert.equal(retried(), 'retry ok');
+assert.deepEqual(switched.chunks(), ['old:1', 'new:1', 'new:2']);
 
 const transcript = response.list();
 await transcript.consume(answer);

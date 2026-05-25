@@ -46,6 +46,7 @@ const latestSource = stream.latest([1, 2, 3]);
 const mergedSource = stream.merge([[1, 2], [3, 4]]);
 const racedSource = stream.race([[1, 2], [3, 4]]);
 const retriedSource = stream.retryable((attempt) => [`retry-${attempt}`], { maxRetries: 1, backoff: 0 });
+const switchedSource = stream.switchMap(['a', 'b'], (value) => [value, value.toUpperCase()]);
 const mappedSource = mapStream([1, 2], (value) => value.toString());
 const scannedSource = scanStream([1, 2, 3], (total, value) => total + value, 0);
 const replayed = from(['x', 'y']);
@@ -109,6 +110,7 @@ type _LatestStream = Assert<Equal<typeof latestSource, QoreStream<number, number
 type _MergedStream = Assert<Equal<typeof mergedSource, QoreStream<number, string>>>;
 type _RacedStream = Assert<Equal<typeof racedSource, QoreStream<number, string>>>;
 type _RetriedStream = Assert<Equal<typeof retriedSource, QoreStream<string, string>>>;
+type _SwitchedStream = Assert<Equal<typeof switchedSource, QoreStream<string, string>>>;
 type _MappedStream = Assert<Equal<typeof mappedSource, QoreStream<string, string>>>;
 type _ScannedStream = Assert<Extends<typeof scannedSource, QoreStream<number, number>>>;
 type _ReplayStream = Assert<Extends<typeof replayed, QoreStream<string, string>>>;

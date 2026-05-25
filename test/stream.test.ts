@@ -218,6 +218,43 @@ test('stream.retryable surfaces the final error after exhausting retries', async
   assert.equal(retried.status(), 'error');
 });
 
+test('stream.switchMap keeps only the latest mapped stream active', async () => {
+  const switched = stream.switchMap([
+    { label: 'first', delay: 10, parts: ['old'] },
+    { label: 'second', delay: 1, parts: ['new', ' value'] }
+  ], async (entry) => (async function* latestOnly() {
+    await sleep(entry.delay);
+
+    for (const part of entry.parts) {
+      yield part;
+      await sleep(1);
+    }
+  })());
+
+  await switched.ready;
+
+  assert.equal(switched(), 'new value');
+  assert.deepEqual(switched.chunks(), ['new', ' value']);
+});
+
+test('stream.switchMap can follow prompt churn without leaking stale chunks', async () => {
+  const prompts = (async function* promptSequence() {
+    yield 'alpha';
+    await sleep(2);
+    yield 'beta';
+  })();
+  const switched = stream.switchMap(prompts, async (prompt) => (async function* answer() {
+    yield `${prompt}:1`;
+    await sleep(prompt === 'alpha' ? 8 : 1);
+    yield `${prompt}:2`;
+  })());
+
+  await switched.ready;
+
+  assert.deepEqual(switched.chunks(), ['alpha:1', 'beta:1', 'beta:2']);
+  assert.equal(switched(), 'alpha:1beta:1beta:2');
+});
+
 // paced streams should visibly space out chunk delivery for streaming UIs.
 test('stream.paced spaces chunk delivery over time', async () => {
   const timestamps: number[] = [];

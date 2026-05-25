@@ -298,6 +298,7 @@ const resilient = stream.retryable(() => openai.chat('retry me'), {
   maxRetries: 2,
   backoff: 'exponential'
 });
+const liveAnswer = stream.switchMap(promptChanges, (prompt) => openai.chat(prompt));
 ```
 
 Provider adapters can also retry dropped SSE connections and resume from the last event id:

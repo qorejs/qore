@@ -181,6 +181,46 @@ streamFactory.retryable = <TChunk = unknown, TValue = string>(
   }, streamOptions);
 };
 
+streamFactory.switchMap = <TInput, TChunk = unknown, TValue = string>(
+  source: SourceLike<TInput>,
+  mapper: (value: TInput, index: number) => MaybePromise<SourceLike<TChunk>>,
+  options: StreamOptions<TChunk, TValue> = {}
+): QoreStream<TChunk, TValue> => createStream(async (controller) => {
+  let index = 0;
+  let activeToken = 0;
+  let activeTask: Promise<void> | null = null;
+
+  const startInner = (token: number, innerSource: SourceLike<TChunk>) => (async () => {
+    for await (const chunk of toAsyncIterable(innerSource)) {
+      if (controller.signal.aborted || token !== activeToken) {
+        break;
+      }
+
+      await controller.push(chunk);
+    }
+  })().catch((error) => {
+    if (token !== activeToken || controller.signal.aborted) {
+      return;
+    }
+
+    throw error;
+  });
+
+  for await (const value of toAsyncIterable(source)) {
+    if (controller.signal.aborted) {
+      break;
+    }
+
+    activeToken += 1;
+    const token = activeToken;
+    const innerSource = await mapper(value, index);
+    activeTask = startInner(token, innerSource);
+    index += 1;
+  }
+
+  await activeTask;
+}, options);
+
 // Create a text-accumulating stream by default.
 export const stream = streamFactory;
 
