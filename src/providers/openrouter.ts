@@ -34,7 +34,8 @@ export function createOpenRouter(options: OpenRouterOptions = {}): OpenRouterAda
     baseURL = DEFAULT_BASE_URL,
     model = DEFAULT_MODEL,
     headers: defaultHeaders = {},
-    fetch: fetchImpl = globalThis.fetch
+    fetch: fetchImpl = globalThis.fetch,
+    retry
   } = options;
   const resolvedApiKey = apiKey ?? readEnv('OPENROUTER_API_KEY');
 
@@ -51,8 +52,9 @@ export function createOpenRouter(options: OpenRouterOptions = {}): OpenRouterAda
       ...defaultHeaders
     },
     fetch: fetchImpl,
+    ...(retry ? { retry } : {}),
     buildRequest(request, requestOptions: ProviderRequestOptions = {}) {
-      const { signal, headers = {}, ...overrides } = requestOptions;
+      const { signal, headers = {}, retry: _retry, ...overrides } = requestOptions;
       const config = {
         method: 'POST',
         headers,
@@ -119,6 +121,7 @@ export function createOpenRouter(options: OpenRouterOptions = {}): OpenRouterAda
       const {
         signal,
         headers,
+        retry,
         ...rest
       } = requestOptions;
       const request = { ...rest } as OpenRouterRequest;
@@ -129,7 +132,8 @@ export function createOpenRouter(options: OpenRouterOptions = {}): OpenRouterAda
 
       return streamText(request, {
         ...(signal ? { signal } : {}),
-        ...(headers ? { headers } : {})
+        ...(headers ? { headers } : {}),
+        ...(retry ? { retry } : {})
       });
     }
   };

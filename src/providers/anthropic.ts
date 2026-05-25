@@ -40,7 +40,8 @@ export function createAnthropic(options: AnthropicOptions = {}): AnthropicAdapte
     version = DEFAULT_VERSION,
     maxTokens = DEFAULT_MAX_TOKENS,
     headers: defaultHeaders = {},
-    fetch: fetchImpl = globalThis.fetch
+    fetch: fetchImpl = globalThis.fetch,
+    retry
   } = options;
   const resolvedApiKey = apiKey ?? readEnv('ANTHROPIC_API_KEY');
 
@@ -58,8 +59,9 @@ export function createAnthropic(options: AnthropicOptions = {}): AnthropicAdapte
       ...defaultHeaders
     },
     fetch: fetchImpl,
+    ...(retry ? { retry } : {}),
     buildRequest(request, requestOptions: ProviderRequestOptions = {}) {
-      const { signal, headers = {}, ...overrides } = requestOptions;
+      const { signal, headers = {}, retry: _retry, ...overrides } = requestOptions;
       const config = {
         method: 'POST',
         headers,
@@ -137,6 +139,7 @@ export function createAnthropic(options: AnthropicOptions = {}): AnthropicAdapte
       const {
         signal,
         headers,
+        retry,
         ...rest
       } = requestOptions;
       const request = { ...rest } as AnthropicRequest;
@@ -147,7 +150,8 @@ export function createAnthropic(options: AnthropicOptions = {}): AnthropicAdapte
 
       return streamText(request, {
         ...(signal ? { signal } : {}),
-        ...(headers ? { headers } : {})
+        ...(headers ? { headers } : {}),
+        ...(retry ? { retry } : {})
       });
     }
   };

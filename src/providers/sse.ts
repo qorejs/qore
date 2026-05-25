@@ -43,6 +43,8 @@ export type {
   OpenRouterOptions,
   OpenRouterRequest,
   ProviderHeaders,
+  ProviderRetryBackoff,
+  ProviderRetryOptions,
   ProviderRequestOptions,
   SSEAdapter,
   SSEAdapterOptions,

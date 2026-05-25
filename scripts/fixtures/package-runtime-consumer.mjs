@@ -144,6 +144,49 @@ const provider = createSSEAdapter({
     return event.data?.type === 'token' ? event.data.text : undefined;
   }
 });
+let retryAttempts = 0;
+const retryingProvider = createSSEAdapter({
+  name: 'Runtime Retry Smoke',
+  url: 'https://example.com/retry-stream',
+  fetch: async () => {
+    retryAttempts += 1;
+
+    if (retryAttempts === 1) {
+      return new Response(JSON.stringify({
+        error: {
+          message: 'retry me'
+        }
+      }), {
+        status: 503,
+        headers: {
+          'content-type': 'application/json'
+        }
+      });
+    }
+
+    return new Response(createSSEBody([
+      { event: 'token', data: { type: 'token', text: 'retry' } },
+      { event: 'token', data: { type: 'token', text: ' ok' } }
+    ]), {
+      status: 200,
+      headers: {
+        'content-type': 'text/event-stream'
+      }
+    });
+  },
+  buildChatRequest(input) {
+    return {
+      prompt: input
+    };
+  },
+  eventToText(event) {
+    return event.data?.type === 'token' ? event.data.text : undefined;
+  },
+  retry: {
+    maxAttempts: 2,
+    backoff: 0
+  }
+});
 
 const chunks = [];
 
@@ -152,6 +195,15 @@ for await (const chunk of provider.chat('stream = signal')) {
 }
 
 assert.deepEqual(chunks, ['hello', ' world']);
+
+const retryChunks = [];
+
+for await (const chunk of retryingProvider.chat('stream = signal')) {
+  retryChunks.push(chunk);
+}
+
+assert.deepEqual(retryChunks, ['retry', ' ok']);
+assert.equal(retryAttempts, 2);
 
 const lineProvider = createLineAdapter({
   name: 'Runtime Line Smoke',

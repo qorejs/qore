@@ -20,6 +20,7 @@ import {
   type OllamaAdapter,
   type OpenRouterAdapter,
   type ProviderRequestOptions,
+  type ProviderRetryOptions,
   type QoreStream,
   type ReadonlySignal,
   type SSEAdapter
@@ -90,7 +91,16 @@ const openrouter = createOpenRouter({
 const providerOptions: ProviderRequestOptions = {
   headers: {
     Authorization: 'Bearer demo'
+  },
+  retry: {
+    maxAttempts: 2,
+    backoff: 0
   }
+};
+const retryOptions: ProviderRetryOptions = {
+  maxAttempts: 2,
+  backoff: 'exponential',
+  resume: true
 };
 
 type _DefaultStream = Assert<Equal<typeof source, QoreStream<string, string>>>;
@@ -112,6 +122,7 @@ type _DeepSeekAdapter = Assert<Extends<typeof deepseek, DeepSeekAdapter>>;
 type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 
 void providerOptions;
+void retryOptions;
 void assertCanUseDOM;
 void createRoot;
 void onCleanup;

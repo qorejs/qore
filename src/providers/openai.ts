@@ -36,7 +36,8 @@ export function createOpenAI(options: OpenAIOptions = {}): OpenAIAdapter {
     baseURL = DEFAULT_BASE_URL,
     model = DEFAULT_MODEL,
     headers: defaultHeaders = {},
-    fetch: fetchImpl = globalThis.fetch
+    fetch: fetchImpl = globalThis.fetch,
+    retry
   } = options;
   const resolvedApiKey = apiKey ?? readEnv('OPENAI_API_KEY');
 
@@ -53,8 +54,9 @@ export function createOpenAI(options: OpenAIOptions = {}): OpenAIAdapter {
       ...defaultHeaders
     },
     fetch: fetchImpl,
+    ...(retry ? { retry } : {}),
     buildRequest(request, requestOptions: ProviderRequestOptions = {}) {
-      const { signal, headers = {}, ...overrides } = requestOptions;
+      const { signal, headers = {}, retry: _retry, ...overrides } = requestOptions;
       const config = {
         method: 'POST',
         headers,
@@ -127,6 +129,7 @@ export function createOpenAI(options: OpenAIOptions = {}): OpenAIAdapter {
       const {
         signal,
         headers,
+        retry,
         ...rest
       } = requestOptions;
       const request = { ...rest } as OpenAIRequest;
@@ -137,7 +140,8 @@ export function createOpenAI(options: OpenAIOptions = {}): OpenAIAdapter {
 
       return streamText(request, {
         ...(signal ? { signal } : {}),
-        ...(headers ? { headers } : {})
+        ...(headers ? { headers } : {}),
+        ...(retry ? { retry } : {})
       });
     }
   };

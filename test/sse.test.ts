@@ -43,6 +43,22 @@ function createPendingSSEBody(initialChunks: string[]): {
   };
 }
 
+function createErroringSSEBody(chunks: string[], errorMessage: string): ReadableStream<Uint8Array> {
+  let index = 0;
+
+  return new ReadableStream({
+    pull(controller) {
+      if (index < chunks.length) {
+        controller.enqueue(encoder.encode(chunks[index]));
+        index += 1;
+        return;
+      }
+
+      controller.error(new Error(errorMessage));
+    }
+  });
+}
+
 test('createSSEAdapter can map a custom chat endpoint into stream(provider.chat(...))', async () => {
   const calls: Array<{
     url: string | URL | Request;
@@ -227,4 +243,112 @@ test('createSSEAdapter cancels the active reader when the request signal aborts 
 
   await assert.rejects(() => nextChunk, /stream cancelled/);
   await assert.doesNotReject(() => pendingBody.cancelled);
+});
+
+test('createSSEAdapter retries retryable HTTP failures before succeeding', async () => {
+  let attempts = 0;
+  const provider = createSSEAdapter<{ prompt: string }, string, { type?: string; text?: string }>({
+    name: 'Retry HTTP',
+    url: 'https://example.com/retry-http',
+    fetch: async () => {
+      attempts += 1;
+
+      if (attempts === 1) {
+        return new Response(JSON.stringify({ error: { message: 'try again' } }), {
+          status: 503,
+          headers: {
+            'content-type': 'application/json'
+          }
+        });
+      }
+
+      return new Response(createSSEBody([
+        'event: token\n',
+        'data: {"type":"token","text":"ok"}\n\n'
+      ]), {
+        status: 200,
+        headers: {
+          'content-type': 'text/event-stream'
+        }
+      });
+    },
+    buildChatRequest(prompt) {
+      return { prompt };
+    },
+    eventToText(event) {
+      return event.data.type === 'token' ? event.data.text : undefined;
+    },
+    retry: {
+      maxAttempts: 2,
+      backoff: 0
+    }
+  });
+
+  const chunks: string[] = [];
+
+  for await (const chunk of provider.chat('hello')) {
+    chunks.push(chunk);
+  }
+
+  assert.equal(attempts, 2);
+  assert.deepEqual(chunks, ['ok']);
+});
+
+test('createSSEAdapter resumes with Last-Event-ID after a dropped stream', async () => {
+  const seenHeaders: HeadersInit[] = [];
+  let attempts = 0;
+  const provider = createSSEAdapter<Record<string, unknown>, string, { type?: string; text?: string }>({
+    name: 'Resume SSE',
+    url: 'https://example.com/resume',
+    fetch: async (_url, init) => {
+      attempts += 1;
+      seenHeaders.push(init?.headers ?? {});
+
+      if (attempts === 1) {
+        return new Response(createErroringSSEBody([
+          'id: evt_1\n',
+          'retry: 0\n',
+          'event: token\n',
+          'data: {"type":"token","text":"hello"}\n\n'
+        ], 'connection dropped'), {
+          status: 200,
+          headers: {
+            'content-type': 'text/event-stream'
+          }
+        });
+      }
+
+      return new Response(createSSEBody([
+        'id: evt_2\n',
+        'event: token\n',
+        'data: {"type":"token","text":" world"}\n\n'
+      ]), {
+        status: 200,
+        headers: {
+          'content-type': 'text/event-stream'
+        }
+      });
+    },
+    buildChatRequest(prompt) {
+      return { prompt };
+    },
+    eventToText(event) {
+      return event.data.type === 'token' ? event.data.text : undefined;
+    },
+    retry: {
+      maxAttempts: 2,
+      backoff: 0
+    }
+  });
+
+  const chunks: string[] = [];
+
+  for await (const chunk of provider.chat('hello')) {
+    chunks.push(chunk);
+  }
+
+  assert.equal(attempts, 2);
+  assert.deepEqual(chunks, ['hello', ' world']);
+  const retryHeaders = seenHeaders[1] as Record<string, string>;
+  assert.equal(retryHeaders['Last-Event-ID'], 'evt_1');
 });

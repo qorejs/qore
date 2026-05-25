@@ -61,6 +61,7 @@ import {
   type OpenRouterOptions,
   type OpenRouterRequest,
   type ProviderRequestOptions,
+  type ProviderRetryOptions,
   type QoreChild,
   type QoreDocumentFragment,
   type QoreElement,
@@ -148,7 +149,16 @@ const transcriptState: ResponseState<
 const requestOptions: ProviderRequestOptions = {
   headers: {
     Authorization: 'Bearer demo'
+  },
+  retry: {
+    maxAttempts: 2,
+    backoff: 0
   }
+};
+const retryOptions: ProviderRetryOptions = {
+  maxAttempts: 2,
+  backoff: 'exponential',
+  resume: true
 };
 
 type TokenEvent = {
@@ -350,6 +360,7 @@ void mapped;
 void replayed;
 void transcriptState;
 void requestOptions;
+void retryOptions;
 void providerSurface;
 void lineProviderSurface;
 void anthropicSurface;

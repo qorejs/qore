@@ -2,9 +2,23 @@ import type { GlobalAbortSignal, MaybePromise } from '../core/response.js';
 
 export type ProviderHeaders = Record<string, string>;
 
+export type ProviderRetryBackoff =
+  | number
+  | number[]
+  | 'exponential'
+  | ((attempt: number, error: unknown, retryHint: number | null) => MaybePromise<number>);
+
+export interface ProviderRetryOptions {
+  maxAttempts?: number;
+  backoff?: ProviderRetryBackoff;
+  resume?: boolean;
+  retryOn?: (error: unknown, attempt: number) => MaybePromise<boolean>;
+}
+
 export interface ProviderRequestOptions {
   signal?: GlobalAbortSignal;
   headers?: ProviderHeaders;
+  retry?: ProviderRetryOptions;
   [key: string]: unknown;
 }
 
@@ -45,6 +59,7 @@ export interface SSEAdapterOptions<TRequest = Record<string, unknown>, TChatInpu
     request: TRequest,
     requestOptions?: ProviderRequestOptions
   ) => MaybePromise<string | undefined>;
+  retry?: ProviderRetryOptions;
 }
 
 export interface SSEAdapter<TRequest = Record<string, unknown>, TChatInput = unknown, TData = unknown> {
@@ -114,6 +129,7 @@ export interface OpenAIOptions {
   model?: string;
   headers?: ProviderHeaders;
   fetch?: FetchLike;
+  retry?: ProviderRetryOptions;
 }
 
 export interface OpenAIAdapter {
@@ -149,6 +165,7 @@ export interface OpenRouterOptions {
   model?: string;
   headers?: ProviderHeaders;
   fetch?: FetchLike;
+  retry?: ProviderRetryOptions;
 }
 
 export interface OpenRouterAdapter {
@@ -170,6 +187,7 @@ export interface DeepSeekOptions {
   model?: string;
   headers?: ProviderHeaders;
   fetch?: FetchLike;
+  retry?: ProviderRetryOptions;
 }
 
 export interface DeepSeekAdapter {
@@ -201,6 +219,7 @@ export interface AnthropicOptions {
   maxTokens?: number;
   headers?: ProviderHeaders;
   fetch?: FetchLike;
+  retry?: ProviderRetryOptions;
 }
 
 export interface AnthropicAdapter {

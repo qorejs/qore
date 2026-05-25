@@ -300,6 +300,18 @@ const resilient = stream.retryable(() => openai.chat('retry me'), {
 });
 ```
 
+Provider adapters can also retry dropped SSE connections and resume from the last event id:
+
+```js
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  retry: {
+    maxAttempts: 3,
+    backoff: 'exponential'
+  }
+});
+```
+
 ### Backpressure
 
 ```js
