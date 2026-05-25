@@ -9,8 +9,14 @@ import {
   createRoot,
   createSSEAdapter,
   createOpenRouter,
+  collectProviderMetadata,
+  extractAnthropicMetadata,
+  extractOllamaMetadata,
+  extractOpenAIMetadata,
+  extractOpenRouterMetadata,
   from,
   mapStream,
+  mergeProviderMetadata,
   onCleanup,
   scanStream,
   stream,
@@ -22,6 +28,8 @@ import {
   type OpenRouterAdapter,
   type ProviderRequestOptions,
   type ProviderRetryOptions,
+  type ProviderStreamMetadata,
+  type ProviderUsage,
   type QoreStream,
   type ReadonlySignal,
   type SSEFrame,
@@ -105,11 +113,38 @@ const retryOptions: ProviderRetryOptions = {
   backoff: 'exponential',
   resume: true
 };
+const usage: ProviderUsage = {
+  inputTokens: 1,
+  outputTokens: 2,
+  totalTokens: 3
+};
+const providerMetadata: ProviderStreamMetadata = {
+  provider: 'OpenAI',
+  usage
+};
 const serverFrame: SSEFrame<string> = {
   event: 'token',
   data: 'hello'
 };
 const serverResponse = createSSEResponse(['hello']);
+const mergedMetadata = mergeProviderMetadata(providerMetadata, {
+  finishReason: 'stop'
+});
+const collectedMetadata = collectProviderMetadata('OpenAI', [
+  { type: 'response.created', response: { id: 'resp_1' } }
+], extractOpenAIMetadata);
+const openRouterMetadata = extractOpenRouterMetadata({
+  id: 'chat_1',
+  choices: [{ finish_reason: 'stop', delta: {} }]
+});
+const anthropicMetadata = extractAnthropicMetadata({
+  type: 'message_delta',
+  delta: { stop_reason: 'end_turn' }
+});
+const ollamaMetadata = extractOllamaMetadata({
+  model: 'llama3.2',
+  done_reason: 'stop'
+});
 
 type _DefaultStream = Assert<Equal<typeof source, QoreStream<string, string>>>;
 type _ListStream = Assert<Equal<typeof listSource, QoreStream<{ step: number }, Array<{ step: number }>>>>;
@@ -132,6 +167,12 @@ type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 
 void providerOptions;
 void retryOptions;
+void providerMetadata;
+void mergedMetadata;
+void collectedMetadata;
+void openRouterMetadata;
+void anthropicMetadata;
+void ollamaMetadata;
 void serverFrame;
 void serverResponse;
 void assertCanUseDOM;

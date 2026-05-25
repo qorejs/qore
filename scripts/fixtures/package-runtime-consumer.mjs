@@ -15,11 +15,17 @@ import {
   createOllama,
   createOpenRouter,
   createSSEAdapter,
+  collectProviderMetadata,
   dynamic,
+  extractAnthropicMetadata,
+  extractOllamaMetadata,
+  extractOpenAIMetadata,
+  extractOpenRouterMetadata,
   fragment,
   h,
   list,
   mount,
+  mergeProviderMetadata,
   onCleanup,
   response,
   renderResponse,
@@ -90,6 +96,71 @@ assert.equal(serverResponse.headers.get('content-type'), 'text/event-stream; cha
 const serverResponseBody = new TextDecoder().decode(await serverResponse.arrayBuffer());
 assert.match(serverResponseBody, /data: server\n\n/);
 assert.match(serverResponseBody, /data:  stream\n\n/);
+
+const mergedMetadata = mergeProviderMetadata({
+  provider: 'OpenAI',
+  responseId: 'resp_1',
+  usage: {
+    inputTokens: 2
+  }
+}, {
+  usage: {
+    outputTokens: 3
+  }
+});
+assert.deepEqual(mergedMetadata, {
+  provider: 'OpenAI',
+  responseId: 'resp_1',
+  usage: {
+    inputTokens: 2,
+    outputTokens: 3,
+    totalTokens: 5
+  }
+});
+
+const normalizedMetadata = await collectProviderMetadata('OpenAI', [
+  { type: 'response.created', response: { id: 'resp_meta', model: 'gpt-5' } },
+  { type: 'response.completed', response: { id: 'resp_meta', usage: { input_tokens: 3, output_tokens: 4 } } }
+], extractOpenAIMetadata);
+assert.deepEqual(normalizedMetadata, {
+  provider: 'OpenAI',
+  responseId: 'resp_meta',
+  model: 'gpt-5',
+  usage: {
+    inputTokens: 3,
+    outputTokens: 4,
+    totalTokens: 7
+  }
+});
+assert.deepEqual(extractOpenRouterMetadata({
+  id: 'chat_meta',
+  choices: [{ finish_reason: 'stop', delta: {} }]
+}), {
+  responseId: 'chat_meta',
+  finishReason: 'stop'
+});
+assert.deepEqual(extractAnthropicMetadata({
+  type: 'message_delta',
+  delta: { stop_reason: 'end_turn' }
+}), {
+  finishReason: 'end_turn',
+  stopReason: 'end_turn'
+});
+assert.deepEqual(extractOllamaMetadata({
+  model: 'llama3.2',
+  done_reason: 'stop',
+  prompt_eval_count: 5,
+  eval_count: 6
+}), {
+  model: 'llama3.2',
+  finishReason: 'stop',
+  stopReason: 'stop',
+  usage: {
+    inputTokens: 5,
+    outputTokens: 6,
+    totalTokens: 11
+  }
+});
 
 const answer = stream(async ({ push }) => {
   await push('Qore');

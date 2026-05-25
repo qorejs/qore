@@ -1,5 +1,14 @@
 export { createDeepSeek } from './deepseek.js';
 export { createLineAdapter } from './line-adapter.js';
+export {
+  collectProviderMetadata,
+  extractAnthropicMetadata,
+  extractDeepSeekMetadata,
+  extractOllamaMetadata,
+  extractOpenAIMetadata,
+  extractOpenRouterMetadata,
+  mergeProviderMetadata
+} from './metadata.js';
 export { readLines, parseLineData, isLineError, getLineErrorMessage } from './line-parser.js';
 export { createOllama } from './ollama.js';
 export { createSSEAdapter } from './sse-adapter.js';
@@ -43,9 +52,12 @@ export type {
   OpenRouterOptions,
   OpenRouterRequest,
   ProviderHeaders,
+  ProviderMetadataUpdate,
   ProviderRetryBackoff,
   ProviderRetryOptions,
   ProviderRequestOptions,
+  ProviderStreamMetadata,
+  ProviderUsage,
   SSEAdapter,
   SSEAdapterOptions,
   SSEEvent,

@@ -15,6 +15,25 @@ export interface ProviderRetryOptions {
   retryOn?: (error: unknown, attempt: number) => MaybePromise<boolean>;
 }
 
+export interface ProviderUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+}
+
+export interface ProviderStreamMetadata {
+  provider: string;
+  responseId?: string;
+  model?: string;
+  finishReason?: string | null;
+  stopReason?: string | null;
+  usage?: ProviderUsage;
+}
+
+export interface ProviderMetadataUpdate extends Omit<Partial<ProviderStreamMetadata>, 'usage'> {
+  usage?: Partial<ProviderUsage>;
+}
+
 export interface ProviderRequestOptions {
   signal?: GlobalAbortSignal;
   headers?: ProviderHeaders;

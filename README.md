@@ -325,6 +325,31 @@ const openai = createOpenAI({
 });
 ```
 
+Provider metadata can be normalized into one shared shape:
+
+```js
+import {
+  collectProviderMetadata,
+  extractAnthropicMetadata,
+  extractOpenAIMetadata
+} from '@qorejs/qore';
+
+const openaiMetadata = await collectProviderMetadata(
+  'OpenAI',
+  openai.responses.stream({ input: 'hello' }),
+  extractOpenAIMetadata
+);
+
+const anthropicMetadata = await collectProviderMetadata(
+  'Anthropic',
+  anthropic.messages.stream({ messages: [{ role: 'user', content: 'hello' }] }),
+  extractAnthropicMetadata
+);
+
+openaiMetadata.usage?.totalTokens;
+anthropicMetadata.finishReason;
+```
+
 ### Backpressure
 
 ```js

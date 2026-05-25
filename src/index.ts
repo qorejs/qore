@@ -60,7 +60,17 @@ export { createDeepSeek } from './providers/deepseek.js';
 export { createOllama } from './providers/ollama.js';
 export { createOpenAI } from './providers/openai.js';
 export { createOpenRouter } from './providers/openrouter.js';
-export { createLineAdapter, createSSEAdapter } from './providers/sse.js';
+export {
+  collectProviderMetadata,
+  createLineAdapter,
+  createSSEAdapter,
+  extractAnthropicMetadata,
+  extractDeepSeekMetadata,
+  extractOllamaMetadata,
+  extractOpenAIMetadata,
+  extractOpenRouterMetadata,
+  mergeProviderMetadata
+} from './providers/sse.js';
 export type {
   AnthropicAdapter,
   AnthropicChatInput,
@@ -98,9 +108,12 @@ export type {
   OpenRouterOptions,
   OpenRouterRequest,
   ProviderHeaders,
+  ProviderMetadataUpdate,
   ProviderRetryBackoff,
   ProviderRetryOptions,
   ProviderRequestOptions,
+  ProviderStreamMetadata,
+  ProviderUsage,
   SSEAdapter,
   SSEAdapterOptions,
   SSEEvent,

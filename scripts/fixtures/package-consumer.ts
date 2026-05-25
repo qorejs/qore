@@ -13,11 +13,17 @@ import {
   createOllama,
   createOpenRouter,
   createSSEAdapter,
+  collectProviderMetadata,
   effect,
+  extractAnthropicMetadata,
+  extractOllamaMetadata,
+  extractOpenAIMetadata,
+  extractOpenRouterMetadata,
   from,
   h,
   list,
   mapStream,
+  mergeProviderMetadata,
   onCleanup,
   renderResponse,
   response,
@@ -63,6 +69,8 @@ import {
   type OpenRouterRequest,
   type ProviderRequestOptions,
   type ProviderRetryOptions,
+  type ProviderStreamMetadata,
+  type ProviderUsage,
   type QoreChild,
   type QoreDocumentFragment,
   type QoreElement,
@@ -164,11 +172,38 @@ const retryOptions: ProviderRetryOptions = {
   backoff: 'exponential',
   resume: true
 };
+const providerUsage: ProviderUsage = {
+  inputTokens: 1,
+  outputTokens: 2,
+  totalTokens: 3
+};
+const providerMetadata: ProviderStreamMetadata = {
+  provider: 'OpenAI',
+  usage: providerUsage
+};
 const serverFrame: SSEFrame<string> = {
   event: 'token',
   data: 'hello'
 };
 const serverResponse = createSSEResponse(['hello']);
+const mergedProviderMetadata = mergeProviderMetadata(providerMetadata, {
+  finishReason: 'stop'
+});
+const collectedProviderMetadata = collectProviderMetadata('OpenAI', [
+  { type: 'response.created', response: { id: 'resp_1' } }
+], extractOpenAIMetadata);
+const openRouterMetadata = extractOpenRouterMetadata({
+  id: 'chat_1',
+  choices: [{ finish_reason: 'stop', delta: {} }]
+});
+const anthropicMetadata = extractAnthropicMetadata({
+  type: 'message_delta',
+  delta: { stop_reason: 'end_turn' }
+});
+const ollamaMetadata = extractOllamaMetadata({
+  model: 'llama3.2',
+  done_reason: 'stop'
+});
 
 type TokenEvent = {
   type: 'token';
@@ -370,6 +405,12 @@ void replayed;
 void transcriptState;
 void requestOptions;
 void retryOptions;
+void providerMetadata;
+void mergedProviderMetadata;
+void collectedProviderMetadata;
+void openRouterMetadata;
+void anthropicMetadata;
+void ollamaMetadata;
 void serverFrame;
 void serverResponse;
 void providerSurface;
