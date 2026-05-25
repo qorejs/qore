@@ -32,6 +32,7 @@ async function* answerFor(prompt: string, turn: number): AsyncIterable<string> {
 createApp(() => {
   const draft = signal('为什么 Qore 的灵魂是流式响应？');
   const activeReply = signal<QoreStream<string, string> | null>(null);
+  const activePrompt = signal<string | null>(null);
   const messages = signal<ChatMessage[]>([
     { role: 'assistant', body: '### Qore\n问我一个问题, 我会用 **stream = signal** 的方式直接流进界面。' }
   ]);
@@ -41,6 +42,7 @@ createApp(() => {
     void reply.ready.finally(() => {
       if (activeReply.peek() === reply) {
         activeReply(null);
+        activePrompt(null);
       }
     });
   };
@@ -50,6 +52,7 @@ createApp(() => {
     if (!prompt) return;
     activeReply.peek()?.abort('Focused demo superseded the active reply');
     draft('');
+    activePrompt(prompt);
     const turn = Math.floor(messages.peek().length / 2) + 1;
     const answer = stream(answerFor(prompt, turn));
     activeReply(answer);
@@ -57,6 +60,12 @@ createApp(() => {
     messages.update((items) => [...items, { role: 'user', body: prompt }, { role: 'assistant', body: answer }]);
   };
   const stop = (): void => {
+    const prompt = activePrompt.peek();
+
+    if (prompt && draft.peek().trim().length === 0) {
+      draft(prompt);
+    }
+
     activeReply.peek()?.abort('Focused demo stop button pressed');
   };
   return {
