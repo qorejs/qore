@@ -6,6 +6,7 @@ import {
   computed,
   createApp,
   createRoot,
+  createSSEResponse,
   createDeepSeek,
   createLineAdapter,
   createOpenAI,
@@ -70,6 +71,7 @@ import {
   type QoreText,
   type ResponseRenderState,
   type ResponseState,
+  type SSEFrame,
   type SSEAdapter,
   type SSEEvent,
   type StreamController
@@ -162,6 +164,11 @@ const retryOptions: ProviderRetryOptions = {
   backoff: 'exponential',
   resume: true
 };
+const serverFrame: SSEFrame<string> = {
+  event: 'token',
+  data: 'hello'
+};
+const serverResponse = createSSEResponse(['hello']);
 
 type TokenEvent = {
   type: 'token';
@@ -363,6 +370,8 @@ void replayed;
 void transcriptState;
 void requestOptions;
 void retryOptions;
+void serverFrame;
+void serverResponse;
 void providerSurface;
 void lineProviderSurface;
 void anthropicSurface;

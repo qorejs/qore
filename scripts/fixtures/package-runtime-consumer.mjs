@@ -8,6 +8,7 @@ import {
   createAnthropic,
   createRoot,
   createResponse,
+  createSSEResponse,
   createDeepSeek,
   createLineAdapter,
   createOpenAI,
@@ -83,6 +84,12 @@ assert.throws(
   () => createApp(() => h('div', {}, 'hello')).mount('#app'),
   /createApp\(\.\.\.\)\.mount\(\.\.\.\) requires a browser-like environment/
 );
+
+const serverResponse = createSSEResponse(['server', ' stream']);
+assert.equal(serverResponse.headers.get('content-type'), 'text/event-stream; charset=utf-8');
+const serverResponseBody = new TextDecoder().decode(await serverResponse.arrayBuffer());
+assert.match(serverResponseBody, /data: server\n\n/);
+assert.match(serverResponseBody, /data:  stream\n\n/);
 
 const answer = stream(async ({ push }) => {
   await push('Qore');

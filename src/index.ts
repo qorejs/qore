@@ -35,6 +35,8 @@ export { createApp } from './dom/app.js';
 export type { AppContext, AppSetupResult, QoreApp } from './dom/app.js';
 export { dynamic, fragment, h, list, mount, renderResponse, show, text } from './dom/dom.js';
 export { assertCanUseDOM, canUseDOM } from './dom/scope.js';
+export { createSSEResponse } from './server/sse-response.js';
+export type { CreateSSEResponseOptions, SSEFrame } from './server/sse-response.js';
 export type {
   GlobalDocumentFragment,
   GlobalElement,

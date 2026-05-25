@@ -1,5 +1,6 @@
 import {
   assertCanUseDOM,
+  createSSEResponse,
   createAnthropic,
   createDeepSeek,
   createLineAdapter,
@@ -23,6 +24,7 @@ import {
   type ProviderRetryOptions,
   type QoreStream,
   type ReadonlySignal,
+  type SSEFrame,
   type SSEAdapter
 } from '../src/index.js';
 
@@ -103,6 +105,11 @@ const retryOptions: ProviderRetryOptions = {
   backoff: 'exponential',
   resume: true
 };
+const serverFrame: SSEFrame<string> = {
+  event: 'token',
+  data: 'hello'
+};
+const serverResponse = createSSEResponse(['hello']);
 
 type _DefaultStream = Assert<Equal<typeof source, QoreStream<string, string>>>;
 type _ListStream = Assert<Equal<typeof listSource, QoreStream<{ step: number }, Array<{ step: number }>>>>;
@@ -125,6 +132,8 @@ type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 
 void providerOptions;
 void retryOptions;
+void serverFrame;
+void serverResponse;
 void assertCanUseDOM;
 void createRoot;
 void onCleanup;

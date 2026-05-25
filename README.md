@@ -289,6 +289,18 @@ list(messages, (message) => h('article', {}, message.body), {
 });
 ```
 
+## Server-Side SSE
+
+If you want Qore to produce the server stream as well:
+
+```js
+import { createSSEResponse } from '@qorejs/qore';
+
+export function handler() {
+  return createSSEResponse(['hello', ' world']);
+}
+```
+
 If you need orchestration:
 
 ```js

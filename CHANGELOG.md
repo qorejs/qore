@@ -9,6 +9,7 @@
 - Added keyed `list(...)` reconciliation with an append-friendly fast path so chat-style transcripts can grow without rebuilding existing DOM nodes on every new message.
 - Added shared SSE retry and reconnection contracts, including configurable provider retry policies plus `Last-Event-ID` resume support so hosted adapters can recover dropped streams without bespoke retry glue.
 - Added `stream.switchMap(...)` for prompt churn and agent handoff flows so stale inner streams stop contributing future chunks once a newer source takes over.
+- Added `createSSEResponse(...)` so Qore now covers server-side SSE production as well as client-side SSE consumption, including frame encoding hooks and terminal error event support.
 
 ## 0.8.1 - 2026-05-22
 
