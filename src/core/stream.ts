@@ -88,6 +88,19 @@ streamFactory.merge = <TChunk = unknown, TValue = string>(
   }));
 }, options);
 
+streamFactory.concat = <TChunk = unknown, TValue = string>(
+  sources: Array<SourceLike<TChunk>>,
+  options: StreamOptions<TChunk, TValue> = {}
+): QoreStream<TChunk, TValue> => createStream(async (controller) => {
+  for (const source of sources) {
+    if (controller.signal.aborted) {
+      break;
+    }
+
+    await startSource(source, controller);
+  }
+}, options);
+
 streamFactory.race = <TChunk = unknown, TValue = string>(
   sources: Array<SourceLike<TChunk>>,
   options: StreamOptions<TChunk, TValue> = {}

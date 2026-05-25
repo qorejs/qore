@@ -305,6 +305,7 @@ If you need orchestration:
 
 ```js
 const merged = stream.merge([openai.chat('a'), anthropic.chat('b')]);
+const scripted = stream.concat([retrieve.chat('a'), summarize.chat('a')]);
 const fastest = stream.race([openai.chat('hello'), openrouter.chat('hello')]);
 const resilient = stream.retryable(() => openai.chat('retry me'), {
   maxRetries: 2,

@@ -8,6 +8,7 @@
 - Batched reactive fan-out inside signal and computed notifications so nested observer scheduling cannot re-enter the flush loop with partially updated upstream state.
 - Added `createRoot(...)` and `onCleanup(...)` so reactive work can live inside explicit owner trees, letting nested effects and computed values tear down automatically when their parent scope disposes or re-runs.
 - Added first-class stream composition primitives through `stream.merge(...)`, `stream.race(...)`, and `stream.retryable(...)`, keeping multi-source orchestration and retry loops inside the same signal-first streaming surface.
+- Added `stream.concat(...)` so sequential multi-step flows can stay inside the same stream composition layer instead of hand-rolling source chaining around `startSource(...)`.
 - Added keyed `list(...)` reconciliation with an append-friendly fast path so chat-style transcripts can grow without rebuilding existing DOM nodes on every new message.
 - Added shared SSE retry and reconnection contracts, including configurable provider retry policies plus `Last-Event-ID` resume support so hosted adapters can recover dropped streams without bespoke retry glue.
 - Added `stream.switchMap(...)` for prompt churn and agent handoff flows so stale inner streams stop contributing future chunks once a newer source takes over.

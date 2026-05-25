@@ -167,6 +167,7 @@ const answer = stream(async ({ push }) => {
   await push(' rocks');
 });
 const merged = stream.merge([['Qore'], [' merge']]);
+const concatenated = stream.concat([['Qore'], [' concat']]);
 const raced = stream.race([
   (async function* slow() {
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -196,6 +197,7 @@ assert.equal(answer(), 'Qore rocks');
 assert.equal(answer.status(), 'completed');
 assert.deepEqual(answer.chunks(), ['Qore', ' rocks']);
 assert.equal(merged(), 'Qore merge');
+assert.equal(concatenated(), 'Qore concat');
 assert.equal(raced(), 'fast lane');
 assert.equal(retried(), 'retry ok');
 assert.deepEqual(switched.chunks(), ['old:1', 'new:1', 'new:2']);

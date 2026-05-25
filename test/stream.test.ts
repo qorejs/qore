@@ -162,6 +162,26 @@ test('stream.merge interleaves multiple sources into one signal surface', async 
   assert.deepEqual(merged.chunks(), ['A', 'B', 'C']);
 });
 
+test('stream.concat drains sources in sequence', async () => {
+  const concatenated = stream.concat([
+    (async function* first() {
+      yield 'A';
+      await sleep(2);
+      yield 'B';
+    })(),
+    (async function* second() {
+      yield 'C';
+      await sleep(1);
+      yield 'D';
+    })()
+  ]);
+
+  await concatenated.ready;
+
+  assert.equal(concatenated(), 'ABCD');
+  assert.deepEqual(concatenated.chunks(), ['A', 'B', 'C', 'D']);
+});
+
 test('stream.race stays on the first source that produces a chunk', async () => {
   const raced = stream.race([
     (async function* () {

@@ -114,6 +114,10 @@ export interface StreamFactory {
     sources: Array<SourceLike<TChunk>>,
     options?: StreamOptions<TChunk, TValue>
   ): QoreStream<TChunk, TValue>;
+  concat<TChunk = unknown, TValue = string>(
+    sources: Array<SourceLike<TChunk>>,
+    options?: StreamOptions<TChunk, TValue>
+  ): QoreStream<TChunk, TValue>;
   race<TChunk = unknown, TValue = string>(
     sources: Array<SourceLike<TChunk>>,
     options?: StreamOptions<TChunk, TValue>
