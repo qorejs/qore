@@ -451,6 +451,7 @@ The DOM layer is intentionally browser-only right now:
 - `h`, `text`, `mount`, and `createApp(...).mount(...)` require a browser-like `document`
 - `canUseDOM()` is exported so integrations can branch cleanly before touching DOM APIs
 - `assertCanUseDOM(name?)` is exported if you want to fail fast with the same browser-boundary error shape Qore uses internally
+- the published entrypoint is checked against a frozen public API snapshot before release so accidental export drift fails CI early
 
 If you call DOM helpers without a browser-like runtime, Qore throws an entrypoint-specific error instead of failing later with a generic reference error. For example:
 

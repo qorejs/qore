@@ -11,6 +11,7 @@
 - Added `stream.switchMap(...)` for prompt churn and agent handoff flows so stale inner streams stop contributing future chunks once a newer source takes over.
 - Added `createSSEResponse(...)` so Qore now covers server-side SSE production as well as client-side SSE consumption, including frame encoding hooks and terminal error event support.
 - Added provider metadata normalization helpers so OpenAI, Anthropic, OpenRouter, DeepSeek, and Ollama streams can expose a shared usage, finish-reason, and response-id surface without provider-specific parsing in app code.
+- Froze the published API surface behind an explicit snapshot check so release candidates fail fast when the `@qorejs/qore` entrypoint changes unintentionally.
 
 ## 0.8.1 - 2026-05-22
 
