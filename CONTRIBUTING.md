@@ -48,6 +48,15 @@ The release flow is intentionally strict:
 - `Release Check` verifies version, changelog, tests, and tarball shape
 - `Publish GitHub Packages` publishes the package to GitHub Packages after the same validation passes
 - npm releases should continue to use the checked package state from the repository root
+- `RELEASE.md` is the source of truth for RC and stable release criteria
+- `MIGRATION.md` is the source of truth for public upgrade notes across version lines
+
+If a change affects the public API or runtime semantics, contributors should treat it as release-sensitive work:
+
+- update `README.md` when the API becomes user-facing
+- update `CHANGELOG.md` under the active version heading
+- update the public API snapshot only when the export change is intentional
+- do not introduce ambiguous SSR or hydration claims
 
 ## Good First Contributions
 

@@ -24,6 +24,7 @@
     "typecheck": "node ./scripts/typecheck.mjs",
     "check:dist": "node ./scripts/check-dist-sync.mjs",
     "check:api-surface": "node ./scripts/check-public-api.mjs",
+    "check:release-docs": "node ./scripts/check-release-docs.mjs",
     "test:browser": "node ./scripts/browser-smoke.mjs",
     "test:benchmark": "node ./scripts/benchmark-gate.mjs",
     "smoke:package-types": "node ./scripts/package-type-smoke.mjs",

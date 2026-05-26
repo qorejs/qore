@@ -10,6 +10,8 @@
 - Added first-class stream composition primitives through `stream.merge(...)`, `stream.race(...)`, and `stream.retryable(...)`, keeping multi-source orchestration and retry loops inside the same signal-first streaming surface.
 - Added `stream.concat(...)` so sequential multi-step flows can stay inside the same stream composition layer instead of hand-rolling source chaining around `startSource(...)`.
 - Added `stream.pipe(...)` so completed stage output can feed the next source declaratively, covering retrieval-review-format style chains without leaving Qore's stream runtime.
+- Added an explicit release checklist and compatibility matrix for the `1.0.0-rc` phase so supported runtime boundaries, publish gates, and release-blocking failures are documented alongside the code.
+- Added migration notes and a provider support matrix so the `0.9.x` to `1.0.0-rc` transition has explicit upgrade guidance and transport coverage documentation.
 - Added keyed `list(...)` reconciliation with an append-friendly fast path so chat-style transcripts can grow without rebuilding existing DOM nodes on every new message.
 - Added shared SSE retry and reconnection contracts, including configurable provider retry policies plus `Last-Event-ID` resume support so hosted adapters can recover dropped streams without bespoke retry glue.
 - Added `stream.switchMap(...)` for prompt churn and agent handoff flows so stale inner streams stop contributing future chunks once a newer source takes over.

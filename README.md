@@ -19,6 +19,7 @@ Quick links:
 - [npm package](https://www.npmjs.com/package/@qorejs/qore)
 - [latest release](https://github.com/qorejs/qore/releases/latest)
 - [GitHub Packages](https://github.com/qorejs/qore/packages)
+- [migration notes](./MIGRATION.md)
 - [landing page source](https://github.com/qorejs/qore/blob/main/index.html)
 - [streaming demo source](https://github.com/qorejs/qore/blob/main/examples/streaming-response.html)
 - [benchmark page](https://github.com/qorejs/qore/blob/main/examples/benchmark.html)
@@ -61,6 +62,19 @@ The preflight checks npm auth, confirms the changelog matches `package.json`, an
 - Registries:
   - npm: [npmjs.com/package/@qorejs/qore](https://www.npmjs.com/package/@qorejs/qore)
   - GitHub Packages: [github.com/qorejs/qore/packages](https://github.com/qorejs/qore/packages)
+
+## Compatibility Matrix
+
+| Surface | Status | Notes |
+| --- | --- | --- |
+| Node runtime | Supported | `Node >= 18` |
+| Browser runtime | Supported | browser DOM entrypoints require `document` |
+| Reactive core | Supported | `signal`, `computed`, `effect`, `batch`, `createRoot`, `onCleanup` |
+| Stream runtime | Supported | includes backpressure, retry, orchestration, async iteration, and abort |
+| Provider adapters | Supported | OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, generic SSE, generic line-stream |
+| Browser DOM layer | Supported | `h`, `text`, `dynamic`, `list`, `mount`, `createApp(...).mount(...)` |
+| SSR | Not supported | explicit browser-only DOM boundary in `1.0.x` |
+| Hydration | Not supported | deferred until a fully proven implementation exists |
 
 ## Core Idea
 
@@ -257,6 +271,31 @@ const provider = createLineAdapter({
 
 const answer = stream(provider.chat('hello'));
 ```
+
+## Provider Support Matrix
+
+| Adapter | Transport | Status | Notes |
+| --- | --- | --- | --- |
+| `createOpenAI(...)` | SSE | Supported | OpenAI Responses streaming |
+| `createAnthropic(...)` | SSE | Supported | Anthropic Messages streaming |
+| `createOpenRouter(...)` | SSE | Supported | chat-completions style SSE |
+| `createDeepSeek(...)` | SSE | Supported | chat-completions style SSE |
+| `createOllama(...)` | line-stream / NDJSON | Supported | local-first model path |
+| `createSSEAdapter(...)` | SSE | Supported | generic hosted or self-managed SSE |
+| `createLineAdapter(...)` | line-stream / NDJSON | Supported | generic line-delimited transport |
+
+Common guarantees across supported adapters:
+
+- async iterable text streaming
+- request `signal` support for cancellation
+- typed event streaming on provider-specific surfaces
+- package smoke coverage
+
+Additional hosted SSE guarantees:
+
+- retry contract support
+- `Last-Event-ID` resume support
+- normalized metadata helpers for usage, finish reason, response id, and model identity
 
 ## API Shape
 
@@ -537,6 +576,23 @@ The repository includes GitHub Actions workflows for both release validation and
 - GitHub Packages starts new packages as private by default, so you may want to switch the package visibility to public after the first publish
 
 Because the package already includes the correct `repository` field in `package.json`, GitHub Packages can link the package back to `qorejs/qore` when the workflow publishes it.
+
+## Release Checklist
+
+The canonical release checklist lives in [`RELEASE.md`](./RELEASE.md).
+
+For every release candidate or stable release, the minimum local gate is:
+
+```bash
+npm ci
+npm run release:check
+```
+
+For npm publishing from a local shell, run:
+
+```bash
+npm run publish:preflight
+```
 
 ## Project Hygiene
 

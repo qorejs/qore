@@ -73,6 +73,7 @@ Every `1.0.0` release candidate must pass:
 - Accept only bug fixes and documentation corrections
 - Validate against real integration projects
 - Publish migration notes and release checklist
+- Keep `RELEASE.md` and the compatibility matrix aligned with the actual supported surface
 
 ### `1.0.0`
 
