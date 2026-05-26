@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.0.0-rc.2 - 2026-05-27
+
+- Added regression coverage for the release-tooling surface so rc tag validation and generated GitHub release notes stay correct as the publish flow evolves.
+- Upgraded GitHub Actions workflows to `actions/setup-node@v5` to reduce action-runtime churn during the rc period.
+
 ## 1.0.0-rc.1 - 2026-05-27
 
 - Added release-channel validation plus automatic npm dist-tag selection so `1.0.0-rc.x` publishes to the `rc` channel instead of accidentally taking over `latest`.
