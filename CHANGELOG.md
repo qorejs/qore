@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.0.0 - 2026-05-27
+
+- Declared the `stream = signal` runtime, provider layer, DOM bindings, and release gates stable for the first production-ready Qore release.
+- Shipped production debugger support through published JavaScript source maps and declaration maps, with tarball smoke coverage to keep those artifacts stable.
+- Locked the npm release path to trusted publishing plus provenance-enabled artifacts so the stable package ships with verifiable supply-chain metadata.
+
 ## 1.0.0-rc.3 - 2026-05-27
 
 - Enabled JavaScript source maps and declaration maps in the published package so `@qorejs/qore` is easier to debug in real production integrations.

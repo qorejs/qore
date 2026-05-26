@@ -37,7 +37,7 @@ if (distTag.status !== 0) {
 
 const npmTag = distTag.stdout.trim();
 
-const publish = spawnSync(process.execPath, [npmCli, 'publish', '--access', 'public', '--tag', npmTag], {
+const publish = spawnSync(process.execPath, [npmCli, 'publish', '--access', 'public', '--provenance', '--tag', npmTag], {
   cwd: rootPath,
   stdio: 'inherit'
 });

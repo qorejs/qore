@@ -580,7 +580,7 @@ Because the package already includes the correct `repository` field in `package.
 
 ## Release Checklist
 
-The canonical release checklist lives in [`RELEASE.md`](./RELEASE.md). You can generate the current version's GitHub release body with `npm run release:notes`.
+The canonical release checklist lives in [`RELEASE.md`](./RELEASE.md). You can generate the current version's GitHub release body with `npm run release:notes`, and GitHub Actions publishes with npm provenance enabled.
 
 For every release candidate or stable release, the minimum local gate is:
 

@@ -93,4 +93,4 @@ jobs:
 
       - name: Publish to npm
         if: steps.npm-version.outputs.exists != 'true'
-        run: npm publish --access public --tag ${{ steps.release-channel.outputs.tag }}
+        run: npm publish --access public --provenance --tag ${{ steps.release-channel.outputs.tag }}

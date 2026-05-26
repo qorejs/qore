@@ -54,9 +54,13 @@ test('release-notes renders the current changelog section with the matching inst
   const result = runNodeScript(releaseNotesScript);
   assert.equal(result.status, 0, readOutput(result));
   const stdout = readStdout(result);
+  const isRc = packageVersion.includes('-rc.');
   assert.match(stdout, new RegExp(`# Qore ${packageVersion.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`));
-  assert.match(stdout, /Release channel: rc/);
-  assert.match(stdout, /Install: `npm i @qorejs\/qore@rc`/);
+  assert.match(stdout, new RegExp(`Release channel: ${isRc ? 'rc' : 'stable'}`));
+  assert.ok(
+    stdout.includes(`Install: \`npm i @qorejs/qore${isRc ? '@rc' : ''}\``),
+    `release notes should include the expected install command for ${packageVersion}`
+  );
   const lines = stdout.trim().split('\n');
   assert.ok(lines.length >= 6, 'release notes should include at least one changelog bullet');
   assert.ok(lines.slice(4).some((line) => line.startsWith('- ')), 'release notes should include changelog bullets');
