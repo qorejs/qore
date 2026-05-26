@@ -73,6 +73,7 @@ The preflight checks npm auth, confirms the changelog matches `package.json`, an
 | Stream runtime | Supported | includes backpressure, retry, orchestration, async iteration, and abort |
 | Provider adapters | Supported | OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, generic SSE, generic line-stream |
 | Browser DOM layer | Supported | `h`, `text`, `dynamic`, `list`, `mount`, `createApp(...).mount(...)` |
+| Published package maps | Supported | JavaScript source maps and declaration maps ship in `dist/src` for debugger-friendly production diagnostics |
 | SSR | Not supported | explicit browser-only DOM boundary in `1.0.x` |
 | Hydration | Not supported | deferred until a fully proven implementation exists |
 

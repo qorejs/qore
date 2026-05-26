@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.0.0-rc.3 - 2026-05-27
+
+- Enabled JavaScript source maps and declaration maps in the published package so `@qorejs/qore` is easier to debug in real production integrations.
+- Added tarball smoke assertions for `dist/src/index.js.map` and `dist/src/index.d.ts.map` so future RCs cannot silently drop debugger metadata from the npm package.
+
 ## 1.0.0-rc.2 - 2026-05-27
 
 - Added regression coverage for the release-tooling surface so rc tag validation and generated GitHub release notes stay correct as the publish flow evolves.

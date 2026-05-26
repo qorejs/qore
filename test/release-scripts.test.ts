@@ -57,5 +57,7 @@ test('release-notes renders the current changelog section with the matching inst
   assert.match(stdout, new RegExp(`# Qore ${packageVersion.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`));
   assert.match(stdout, /Release channel: rc/);
   assert.match(stdout, /Install: `npm i @qorejs\/qore@rc`/);
-  assert.match(stdout, /(release-channel validation plus automatic npm dist-tag selection|regression coverage for the release-tooling surface)/);
+  const lines = stdout.trim().split('\n');
+  assert.ok(lines.length >= 6, 'release notes should include at least one changelog bullet');
+  assert.ok(lines.slice(4).some((line) => line.startsWith('- ')), 'release notes should include changelog bullets');
 });

@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -56,6 +56,15 @@ try {
 
   if (installRun.status !== 0) {
     process.exit(installRun.status ?? 1);
+  }
+
+  const installedRoot = join(tempDir, 'node_modules', '@qorejs', 'qore');
+
+  for (const requiredFile of ['dist/src/index.js.map', 'dist/src/index.d.ts.map']) {
+    if (!existsSync(join(installedRoot, requiredFile))) {
+      console.error(`Published tarball is missing ${requiredFile}.`);
+      process.exit(1);
+    }
   }
 
   const runtimeRun = spawnSync(process.execPath, [join(tempDir, 'package-runtime-consumer.mjs')], {
