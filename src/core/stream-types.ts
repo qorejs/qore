@@ -45,6 +45,11 @@ export interface RetryableStreamOptions<TChunk = unknown, TValue = string> exten
   backoff?: RetryBackoff;
 }
 
+export type StreamPipeStage<TChunk = unknown, TValue = string> = (
+  value: TValue,
+  index: number
+) => MaybePromise<StreamInput<TChunk, TValue>>;
+
 export interface StreamController<TChunk = unknown, TValue = string> {
   readonly signal: GlobalAbortSignal;
   push(chunk: TChunk): Promise<TValue>;
@@ -116,6 +121,11 @@ export interface StreamFactory {
   ): QoreStream<TChunk, TValue>;
   concat<TChunk = unknown, TValue = string>(
     sources: Array<SourceLike<TChunk>>,
+    options?: StreamOptions<TChunk, TValue>
+  ): QoreStream<TChunk, TValue>;
+  pipe<TChunk = unknown, TValue = string>(
+    sourceOrSetup: StreamInput<TChunk, TValue>,
+    stages: Array<StreamPipeStage<TChunk, TValue>>,
     options?: StreamOptions<TChunk, TValue>
   ): QoreStream<TChunk, TValue>;
   race<TChunk = unknown, TValue = string>(

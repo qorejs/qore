@@ -55,6 +55,10 @@ const listSource = stream.list([{ step: 1 }]);
 const latestSource = stream.latest([1, 2, 3]);
 const mergedSource = stream.merge([[1, 2], [3, 4]]);
 const concatenatedSource = stream.concat([[1, 2], [3, 4]]);
+const pipedSource = stream.pipe(['a'], [
+  (value) => [value.toUpperCase()],
+  (value) => [value]
+]);
 const racedSource = stream.race([[1, 2], [3, 4]]);
 const retriedSource = stream.retryable((attempt) => [`retry-${attempt}`], { maxRetries: 1, backoff: 0 });
 const switchedSource = stream.switchMap(['a', 'b'], (value) => [value, value.toUpperCase()]);
@@ -152,6 +156,7 @@ type _ListStream = Assert<Equal<typeof listSource, QoreStream<{ step: number }, 
 type _LatestStream = Assert<Equal<typeof latestSource, QoreStream<number, number | null>>>;
 type _MergedStream = Assert<Equal<typeof mergedSource, QoreStream<number, string>>>;
 type _ConcatenatedStream = Assert<Equal<typeof concatenatedSource, QoreStream<number, string>>>;
+type _PipedStream = Assert<Equal<typeof pipedSource, QoreStream<string, string>>>;
 type _RacedStream = Assert<Equal<typeof racedSource, QoreStream<number, string>>>;
 type _RetriedStream = Assert<Equal<typeof retriedSource, QoreStream<string, string>>>;
 type _SwitchedStream = Assert<Equal<typeof switchedSource, QoreStream<string, string>>>;

@@ -10,6 +10,7 @@ import type {
   RetryableStreamOptions,
   StreamFactory,
   StreamInput,
+  StreamPipeStage,
   StreamOptions
 } from './stream-types.js';
 import { sleep } from '../shared/utils.js';
@@ -98,6 +99,37 @@ streamFactory.concat = <TChunk = unknown, TValue = string>(
     }
 
     await startSource(source, controller);
+  }
+}, options);
+
+streamFactory.pipe = <TChunk = unknown, TValue = string>(
+  sourceOrSetup: StreamInput<TChunk, TValue>,
+  stages: Array<StreamPipeStage<TChunk, TValue>>,
+  options: StreamOptions<TChunk, TValue> = {}
+): QoreStream<TChunk, TValue> => createStream(async (controller) => {
+  const consumeSource = async (currentSource: StreamInput<TChunk, TValue>): Promise<TValue> => {
+    const currentStream = createStream(currentSource, options);
+
+    for await (const chunk of currentStream) {
+      if (controller.signal.aborted) {
+        break;
+      }
+
+      await controller.push(chunk);
+    }
+
+    return currentStream.ready;
+  };
+
+  let currentValue = await consumeSource(sourceOrSetup);
+
+  for (const [index, stage] of stages.entries()) {
+    if (controller.signal.aborted) {
+      break;
+    }
+
+    const nextSource = await stage(currentValue, index);
+    currentValue = await consumeSource(nextSource);
   }
 }, options);
 

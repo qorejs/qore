@@ -129,6 +129,10 @@ const inferredList = stream.list([{ step: 1 }]);
 const latest = stream.latest<number>([1, 2, 3]);
 const merged = stream.merge([[1, 2], [3, 4]]);
 const concatenated = stream.concat([[1, 2], [3, 4]]);
+const piped = stream.pipe(['a'], [
+  (value) => [value.toUpperCase()],
+  (value) => [value]
+]);
 const raced = stream.race([[1, 2], [3, 4]]);
 const retried = stream.retryable((attempt) => [`retry-${attempt}`], { maxRetries: 1, backoff: 0 });
 const switched = stream.switchMap(['a', 'b'], (value) => [value, value.toUpperCase()]);
@@ -142,6 +146,7 @@ type _InferredListStream = Assert<Equal<typeof inferredList, QoreStream<{ step: 
 type _LatestStream = Assert<Equal<typeof latest, QoreStream<number, number | null>>>;
 type _MergedStream = Assert<Equal<typeof merged, QoreStream<number, string>>>;
 type _ConcatenatedStream = Assert<Equal<typeof concatenated, QoreStream<number, string>>>;
+type _PipedStream = Assert<Equal<typeof piped, QoreStream<string, string>>>;
 type _RacedStream = Assert<Equal<typeof raced, QoreStream<number, string>>>;
 type _RetriedStream = Assert<Equal<typeof retried, QoreStream<string, string>>>;
 type _SwitchedStream = Assert<Equal<typeof switched, QoreStream<string, string>>>;

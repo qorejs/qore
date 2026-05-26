@@ -182,6 +182,18 @@ test('stream.concat drains sources in sequence', async () => {
   assert.deepEqual(concatenated.chunks(), ['A', 'B', 'C', 'D']);
 });
 
+test('stream.pipe feeds each completed value into the next stage', async () => {
+  const piped = stream.pipe(['Qore'], [
+    async (value) => [value.toUpperCase()],
+    async (value) => [` ${value.length}`]
+  ]);
+
+  await piped.ready;
+
+  assert.equal(piped(), 'QoreQORE 4');
+  assert.deepEqual(piped.chunks(), ['Qore', 'QORE', ' 4']);
+});
+
 test('stream.race stays on the first source that produces a chunk', async () => {
   const raced = stream.race([
     (async function* () {
