@@ -77,7 +77,8 @@ Before creating a release tag:
 3. Ensure `README.md` reflects any new public API.
 4. Ensure no uncommitted changes remain.
 5. Run `npm run release:check`.
-6. Run `npm run publish:preflight` if publishing to npm from a local shell.
+6. Run `npm run release:notes` and keep the output with the GitHub release draft.
+7. Run `npm run publish:preflight` if publishing to npm from a local shell.
 
 Before publishing `1.0.0-rc.x` or `1.0.0`:
 
@@ -94,6 +95,9 @@ Before publishing `1.0.0-rc.x` or `1.0.0`:
 - Trigger:
   - manual `workflow_dispatch`
   - GitHub Release `published`
+- Dist-tags:
+  - stable releases publish to `latest`
+  - `1.0.0-rc.x` style prereleases publish to `rc`
 
 ### GitHub Packages
 

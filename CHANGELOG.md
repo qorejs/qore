@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.0.0-rc.1 - 2026-05-27
+
+- Added release-channel validation plus automatic npm dist-tag selection so `1.0.0-rc.x` publishes to the `rc` channel instead of accidentally taking over `latest`.
+- Added `npm run release:notes` so the current version's changelog section can be reused directly as the GitHub Release body during RC and stable publishes.
+- Tightened the release gate again by validating the release version shape inside `npm run release:check`, keeping prereleases on the `rc.N` track before `1.0.0` lands.
+
 ## 0.9.0 - 2026-05-26
 
 - Topologically ordered reactive observer flushes by tracking dependency levels through signals, computed values, and effects, preventing duplicate downstream recomputes across diamond-shaped dependency graphs.

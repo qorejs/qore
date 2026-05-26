@@ -6,6 +6,8 @@ const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.me
 const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
 const packageName = packageJson.name;
 const version = packageJson.version;
+const releaseChannel = version.includes('-rc.') ? 'rc' : 'stable';
+const npmDistTag = releaseChannel === 'rc' ? 'rc' : 'latest';
 
 function fail(message) {
   console.error(message);
@@ -137,7 +139,7 @@ const { response: versionResponse, body: versionBody } = await fetchJson(
 );
 
 if (versionResponse.status === 404) {
-  console.log(`Preflight ready: ${packageName}@${version} is not on ${registry} yet.`);
+  console.log(`Preflight ready: ${packageName}@${version} is not on ${registry} yet. npm dist-tag: ${npmDistTag}.`);
   process.exit(0);
 }
 
@@ -154,4 +156,4 @@ if (publishedVersions[version]) {
   fail(`${packageName}@${version} is already published on ${registry}. Bump package.json before publishing again.`);
 }
 
-console.log(`Preflight ready: ${packageName}@${version} is not on ${registry} yet.`);
+console.log(`Preflight ready: ${packageName}@${version} is not on ${registry} yet. npm dist-tag: ${npmDistTag}.`);

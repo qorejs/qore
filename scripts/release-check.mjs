@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
 const typecheckScript = new URL('./typecheck.mjs', import.meta.url);
+const releaseVersionScript = new URL('./check-release-version.mjs', import.meta.url);
 const testScript = new URL('./test.mjs', import.meta.url);
 const browserSmokeScript = new URL('./browser-smoke.mjs', import.meta.url);
 const benchmarkGateScript = new URL('./benchmark-gate.mjs', import.meta.url);
@@ -19,6 +20,15 @@ const typecheckRun = spawnSync(process.execPath, [fileURLToPath(typecheckScript)
 
 if (typecheckRun.status !== 0) {
   process.exit(typecheckRun.status ?? 1);
+}
+
+const releaseVersionRun = spawnSync(process.execPath, [fileURLToPath(releaseVersionScript)], {
+  stdio: 'inherit',
+  cwd: fileURLToPath(root)
+});
+
+if (releaseVersionRun.status !== 0) {
+  process.exit(releaseVersionRun.status ?? 1);
 }
 
 const testRun = spawnSync(process.execPath, [fileURLToPath(testScript)], {

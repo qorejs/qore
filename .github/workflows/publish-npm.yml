@@ -86,6 +86,11 @@ jobs:
         if: steps.npm-version.outputs.exists != 'true'
         run: npm run release:check
 
+      - name: Resolve npm dist-tag
+        if: steps.npm-version.outputs.exists != 'true'
+        id: release-channel
+        run: echo "tag=$(node ./scripts/release-version.mjs --tag)" >> "$GITHUB_OUTPUT"
+
       - name: Publish to npm
         if: steps.npm-version.outputs.exists != 'true'
-        run: npm publish --access public
+        run: npm publish --access public --tag ${{ steps.release-channel.outputs.tag }}
