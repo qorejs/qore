@@ -57,6 +57,24 @@ Token -> Stream signal -> Text node
 
 That is the core difference. Qore is not trying to be another AI SDK. It is the runtime layer that makes streamed data reactive.
 
+## Event Streams
+
+AI interfaces do not only stream text. They stream status, tool calls, reasoning, diffs, artifacts, retries, and errors.
+
+```js
+const events = stream.events(agent.run(task));
+
+const text = events.select('text', {
+  seed: '',
+  reduce: (current, event) => current + event.text
+});
+const tools = events.select('tool_call');
+const status = events.select('status');
+const diff = events.select('diff');
+```
+
+Each selected stream is still a signal and an async iterable. A timeline can render every event, while a markdown pane can bind only to `text()`.
+
 ## Provider Safety
 
 Provider adapters are intended for server-side or trusted runtimes. Do not put `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or any vendor secret in browser code. For browsers, expose your own SSE or NDJSON endpoint and stream that endpoint into Qore.

@@ -194,8 +194,20 @@ const switched = stream.switchMap([
   await new Promise((resolve) => setTimeout(resolve, entry.delay));
   yield `${entry.label}:2`;
 })());
+const events = stream.events([
+  { type: 'status', value: 'running' },
+  { type: 'text', text: 'event ' },
+  { type: 'tool_call', name: 'search' },
+  { type: 'text', text: 'stream' },
+  { type: 'status', value: 'done' }
+]);
+const eventText = events.select('text', {
+  seed: '',
+  reduce: (currentValue, event) => currentValue + event.text
+});
+const toolCalls = events.select('tool_call');
 
-await Promise.all([answer.ready, merged.ready, raced.ready, retried.ready, switched.ready]);
+await Promise.all([answer.ready, merged.ready, raced.ready, retried.ready, switched.ready, events.ready, eventText.ready, toolCalls.ready]);
 
 assert.equal(answer(), 'Qore rocks');
 assert.equal(answer.status(), 'completed');
@@ -206,6 +218,8 @@ assert.equal(piped(), 'QoreQORE 4');
 assert.equal(raced(), 'fast lane');
 assert.equal(retried(), 'retry ok');
 assert.deepEqual(switched.chunks(), ['old:1', 'new:1', 'new:2']);
+assert.equal(eventText(), 'event stream');
+assert.deepEqual(toolCalls(), [{ type: 'tool_call', name: 'search' }]);
 
 const transcript = response.list();
 await transcript.consume(answer);

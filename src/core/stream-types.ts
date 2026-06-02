@@ -40,6 +40,27 @@ export interface StreamOptions<TChunk = unknown, TValue = string> {
   backpressure?: number | BackpressureOptions | null;
 }
 
+export interface StreamEventBase<TType extends string = string> {
+  type: TType;
+}
+
+export type StreamEventType<TEvent extends StreamEventBase> = TEvent['type'] & string;
+
+export type StreamEventOf<
+  TEvent extends StreamEventBase,
+  TType extends StreamEventType<TEvent>
+> = Extract<TEvent, { type: TType }>;
+
+export type StreamEventOptions<TEvent extends StreamEventBase> = Omit<
+  StreamOptions<TEvent, TEvent[]>,
+  'seed' | 'reduce'
+>;
+
+export type StreamSelectOptions<
+  TEvent extends StreamEventBase,
+  TValue
+> = StreamOptions<TEvent, TValue>;
+
 export interface RetryableStreamOptions<TChunk = unknown, TValue = string> extends StreamOptions<TChunk, TValue> {
   maxRetries?: number;
   backoff?: RetryBackoff;
@@ -84,6 +105,17 @@ export interface QoreStream<TChunk = unknown, TValue = string> extends ReadonlyS
   readonly signal?: GlobalAbortSignal | null;
 }
 
+export interface QoreEventStream<TEvent extends StreamEventBase = StreamEventBase>
+  extends QoreStream<TEvent, TEvent[]> {
+  select<TType extends StreamEventType<TEvent>>(
+    type: TType
+  ): QoreStream<StreamEventOf<TEvent, TType>, Array<StreamEventOf<TEvent, TType>>>;
+  select<TType extends StreamEventType<TEvent>, TValue>(
+    type: TType,
+    options: StreamSelectOptions<StreamEventOf<TEvent, TType>, TValue>
+  ): QoreStream<StreamEventOf<TEvent, TType>, TValue>;
+}
+
 export interface StreamFactory {
   <TChunk = unknown>(
     sourceOrSetup: StreamInput<TChunk, string>,
@@ -105,6 +137,10 @@ export interface StreamFactory {
     sourceOrSetup: StreamInput<TChunk, TChunk | null>,
     options?: StreamOptions<TChunk, TChunk | null>
   ): QoreStream<TChunk, TChunk | null>;
+  events<TEvent extends StreamEventBase>(
+    sourceOrSetup: StreamInput<TEvent, TEvent[]>,
+    options?: StreamEventOptions<TEvent>
+  ): QoreEventStream<TEvent>;
   withBackpressure<TChunk = unknown, TValue = string>(
     sourceOrSetup: StreamInput<TChunk, TValue>,
     backpressure: number | BackpressureOptions,

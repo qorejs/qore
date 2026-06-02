@@ -71,6 +71,7 @@ import {
   type ProviderRetryOptions,
   type ProviderStreamMetadata,
   type ProviderUsage,
+  type QoreEventStream,
   type QoreChild,
   type QoreDocumentFragment,
   type QoreElement,
@@ -82,7 +83,8 @@ import {
   type SSEFrame,
   type SSEAdapter,
   type SSEEvent,
-  type StreamController
+  type StreamController,
+  type StreamEventOf
 } from '@qorejs/qore';
 
 type Assert<T extends true> = T;
@@ -136,6 +138,21 @@ const piped = stream.pipe(['a'], [
 const raced = stream.race([[1, 2], [3, 4]]);
 const retried = stream.retryable((attempt) => [`retry-${attempt}`], { maxRetries: 1, backoff: 0 });
 const switched = stream.switchMap(['a', 'b'], (value) => [value, value.toUpperCase()]);
+type AgentEvent =
+  | { type: 'text'; text: string }
+  | { type: 'tool_call'; name: string }
+  | { type: 'status'; value: 'running' | 'done' }
+  | { type: 'diff'; patch: string };
+const events = stream.events<AgentEvent>([
+  { type: 'text', text: 'hello' },
+  { type: 'tool_call', name: 'search' },
+  { type: 'status', value: 'done' },
+  { type: 'diff', patch: '+hello' }
+]);
+const selectedText = events.select('text', {
+  seed: '',
+  reduce: (currentValue, event) => currentValue + event.text
+});
 const mapped = mapStream([1, 2, 3], async (value) => value.toString());
 const scanned = scanStream([1, 2, 3], (total, value) => total + value, 0);
 const replayed = from(['a', 'b', 'c']);
@@ -150,6 +167,9 @@ type _PipedStream = Assert<Equal<typeof piped, QoreStream<string, string>>>;
 type _RacedStream = Assert<Equal<typeof raced, QoreStream<number, string>>>;
 type _RetriedStream = Assert<Equal<typeof retried, QoreStream<string, string>>>;
 type _SwitchedStream = Assert<Equal<typeof switched, QoreStream<string, string>>>;
+type _EventStream = Assert<Equal<typeof events, QoreEventStream<AgentEvent>>>;
+type _SelectedText = Assert<Equal<typeof selectedText, QoreStream<{ type: 'text'; text: string }, string>>>;
+type _StreamEventOf = Assert<Equal<StreamEventOf<AgentEvent, 'tool_call'>, { type: 'tool_call'; name: string }>>;
 type _MappedStream = Assert<Equal<typeof mapped, QoreStream<string, string>>>;
 type _ScannedStream = Assert<Extends<typeof scanned, QoreStream<number, number>>>;
 
@@ -407,6 +427,7 @@ void qoreElement;
 void qoreText;
 void qoreFragment;
 void latest;
+void selectedText;
 void mapped;
 void replayed;
 void transcriptState;

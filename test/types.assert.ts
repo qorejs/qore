@@ -30,10 +30,12 @@ import {
   type ProviderRetryOptions,
   type ProviderStreamMetadata,
   type ProviderUsage,
+  type QoreEventStream,
   type QoreStream,
   type ReadonlySignal,
   type SSEFrame,
-  type SSEAdapter
+  type SSEAdapter,
+  type StreamEventOf
 } from '../src/index.js';
 
 type Assert<T extends true> = T;
@@ -50,6 +52,12 @@ type TokenEvent = {
   text: string;
 };
 
+type AgentEvent =
+  | { type: 'text'; text: string }
+  | { type: 'tool_call'; name: string }
+  | { type: 'status'; value: 'running' | 'done' }
+  | { type: 'diff'; patch: string };
+
 const source = stream(['a', 'b']);
 const listSource = stream.list([{ step: 1 }]);
 const latestSource = stream.latest([1, 2, 3]);
@@ -62,6 +70,17 @@ const pipedSource = stream.pipe(['a'], [
 const racedSource = stream.race([[1, 2], [3, 4]]);
 const retriedSource = stream.retryable((attempt) => [`retry-${attempt}`], { maxRetries: 1, backoff: 0 });
 const switchedSource = stream.switchMap(['a', 'b'], (value) => [value, value.toUpperCase()]);
+const eventSource = stream.events<AgentEvent>([
+  { type: 'text', text: 'hello' },
+  { type: 'tool_call', name: 'search' },
+  { type: 'status', value: 'done' },
+  { type: 'diff', patch: '+hello' }
+]);
+const selectedTextEvents = eventSource.select('text');
+const selectedTextValue = eventSource.select('text', {
+  seed: '',
+  reduce: (currentValue, event) => currentValue + event.text
+});
 const mappedSource = mapStream([1, 2], (value) => value.toString());
 const scannedSource = scanStream([1, 2, 3], (total, value) => total + value, 0);
 const replayed = from(['x', 'y']);
@@ -160,6 +179,10 @@ type _PipedStream = Assert<Equal<typeof pipedSource, QoreStream<string, string>>
 type _RacedStream = Assert<Equal<typeof racedSource, QoreStream<number, string>>>;
 type _RetriedStream = Assert<Equal<typeof retriedSource, QoreStream<string, string>>>;
 type _SwitchedStream = Assert<Equal<typeof switchedSource, QoreStream<string, string>>>;
+type _EventStream = Assert<Equal<typeof eventSource, QoreEventStream<AgentEvent>>>;
+type _SelectedTextEvents = Assert<Equal<typeof selectedTextEvents, QoreStream<{ type: 'text'; text: string }, Array<{ type: 'text'; text: string }>>>>;
+type _SelectedTextValue = Assert<Equal<typeof selectedTextValue, QoreStream<{ type: 'text'; text: string }, string>>>;
+type _StreamEventOf = Assert<Equal<StreamEventOf<AgentEvent, 'tool_call'>, { type: 'tool_call'; name: string }>>;
 type _MappedStream = Assert<Equal<typeof mappedSource, QoreStream<string, string>>>;
 type _ScannedStream = Assert<Extends<typeof scannedSource, QoreStream<number, number>>>;
 type _ReplayStream = Assert<Extends<typeof replayed, QoreStream<string, string>>>;

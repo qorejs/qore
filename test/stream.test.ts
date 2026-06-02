@@ -142,6 +142,74 @@ test('stream.latest keeps only the newest chunk as its signal value', async () =
   assert.deepEqual(answer.chunks(), ['old', 'new']);
 });
 
+test('stream.events exposes typed event timelines as signal state', async () => {
+  type AgentEvent =
+    | { type: 'status'; value: 'thinking' | 'done' }
+    | { type: 'text'; text: string }
+    | { type: 'tool_call'; name: string };
+
+  const events = stream.events<AgentEvent>(async ({ push }) => {
+    await push({ type: 'status', value: 'thinking' });
+    await push({ type: 'tool_call', name: 'search' });
+    await push({ type: 'text', text: 'stream ' });
+    await push({ type: 'text', text: 'runtime' });
+    await push({ type: 'status', value: 'done' });
+  });
+  const textEvents = events.select('text');
+  const statusEvents = events.select('status');
+
+  await Promise.all([events.ready, textEvents.ready, statusEvents.ready]);
+
+  assert.deepEqual(events().map((event) => event.type), ['status', 'tool_call', 'text', 'text', 'status']);
+  assert.deepEqual(textEvents(), [
+    { type: 'text', text: 'stream ' },
+    { type: 'text', text: 'runtime' }
+  ]);
+  assert.deepEqual(statusEvents(), [
+    { type: 'status', value: 'thinking' },
+    { type: 'status', value: 'done' }
+  ]);
+});
+
+test('stream.events select can reduce one event type into UI-ready state', async () => {
+  type AgentEvent =
+    | { type: 'text'; text: string }
+    | { type: 'diff'; patch: string };
+
+  const events = stream.events<AgentEvent>([
+    { type: 'text', text: 'Qore ' },
+    { type: 'diff', patch: '+stream.events' },
+    { type: 'text', text: 'selects streams.' }
+  ]);
+  const text = events.select('text', {
+    seed: '',
+    reduce: (currentValue, event) => currentValue + event.text
+  });
+  const diff = events.select('diff');
+
+  await Promise.all([events.ready, text.ready, diff.ready]);
+
+  assert.equal(text(), 'Qore selects streams.');
+  assert.deepEqual(diff(), [{ type: 'diff', patch: '+stream.events' }]);
+});
+
+test('stream.events select replays event history when created after completion', async () => {
+  const events = stream.events([
+    { type: 'status', value: 'queued' },
+    { type: 'status', value: 'done' }
+  ] as const);
+
+  await events.ready;
+
+  const status = events.select('status');
+  await status.ready;
+
+  assert.deepEqual(status(), [
+    { type: 'status', value: 'queued' },
+    { type: 'status', value: 'done' }
+  ]);
+});
+
 test('stream.merge interleaves multiple sources into one signal surface', async () => {
   const merged = stream.merge([
     (async function* () {

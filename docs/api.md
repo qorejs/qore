@@ -24,6 +24,7 @@ import { stream } from '@qorejs/qore';
 - `stream(source, options?)`: accumulate chunks into a text signal
 - `stream.list(source, options?)`: accumulate chunks into an array signal
 - `stream.latest(source, options?)`: keep only the latest chunk
+- `stream.events(source, options?)`: accumulate typed runtime events into a timeline signal
 - `stream.withBackpressure(source, options?)`: pace stream commits
 - `stream.merge(sources, options?)`: merge multiple streams
 - `stream.concat(sources, options?)`: run sources in sequence
@@ -31,6 +32,22 @@ import { stream } from '@qorejs/qore';
 - `stream.race(sources, options?)`: use the first completing stream
 - `stream.retryable(factory, options?)`: retry a stream factory
 - `stream.switchMap(source, project, options?)`: switch to the latest inner stream
+
+### Event Streams
+
+```js
+const events = stream.events(agent.run(task));
+
+const text = events.select('text', {
+  seed: '',
+  reduce: (current, event) => current + event.text
+});
+const tools = events.select('tool_call');
+const status = events.select('status');
+const diff = events.select('diff');
+```
+
+`stream.events(...)` returns a `QoreEventStream`: a `QoreStream` whose current value is the full event timeline. `select(type)` projects one event type into another stream signal. Without a custom reducer, selected streams accumulate matching events into an array.
 
 ## DOM
 

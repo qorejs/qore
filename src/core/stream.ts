@@ -5,12 +5,18 @@ import { reduceText } from './stream-state.js';
 import type { MaybePromise, SourceLike } from './response.js';
 import type {
   BackpressureOptions,
+  QoreEventStream,
   QoreStream,
   RetryBackoff,
   RetryableStreamOptions,
+  StreamEventBase,
+  StreamEventOf,
+  StreamEventOptions,
+  StreamEventType,
   StreamFactory,
   StreamInput,
   StreamPipeStage,
+  StreamSelectOptions,
   StreamOptions
 } from './stream-types.js';
 import { sleep } from '../shared/utils.js';
@@ -56,6 +62,15 @@ streamFactory.latest = <TChunk>(
   reduce: (_, chunk) => chunk,
   ...options
 });
+
+streamFactory.events = <TEvent extends StreamEventBase>(
+  sourceOrSetup: StreamInput<TEvent, TEvent[]>,
+  options: StreamEventOptions<TEvent> = {}
+): QoreEventStream<TEvent> => attachEventSelectors(createStream(sourceOrSetup, {
+  seed: [] as TEvent[],
+  reduce: (currentValue, chunk) => [...currentValue, chunk],
+  ...options
+}));
 
 // Attach backpressure behavior without changing the reducer semantics.
 streamFactory.withBackpressure = <TChunk = unknown, TValue = string>(
@@ -269,6 +284,60 @@ streamFactory.switchMap = <TInput, TChunk = unknown, TValue = string>(
 // Create a text-accumulating stream by default.
 export const stream = streamFactory;
 
+function attachEventSelectors<TEvent extends StreamEventBase>(
+  events: QoreStream<TEvent, TEvent[]>
+): QoreEventStream<TEvent> {
+  const eventStream = events as QoreEventStream<TEvent>;
+
+  eventStream.select = function select<TType extends StreamEventType<TEvent>, TValue>(
+    type: TType,
+    options?: StreamSelectOptions<StreamEventOf<TEvent, TType>, TValue>
+  ): QoreStream<StreamEventOf<TEvent, TType>, TValue | Array<StreamEventOf<TEvent, TType>>> {
+    type SelectedEvent = StreamEventOf<TEvent, TType>;
+
+    let seen = 0;
+    let drain = Promise.resolve();
+
+    const selectedOptions = options ?? {
+      seed: [] as SelectedEvent[],
+      reduce: (currentValue: SelectedEvent[], chunk: SelectedEvent) => [...currentValue, chunk]
+    };
+
+    return createStream<SelectedEvent, TValue | SelectedEvent[]>(async (controller) => {
+      const emitFrom = async (chunks: TEvent[]): Promise<void> => {
+        while (seen < chunks.length && !controller.signal.aborted) {
+          const event = chunks[seen];
+          seen += 1;
+
+          if (event?.type === type) {
+            await controller.push(event as SelectedEvent);
+          }
+        }
+      };
+
+      const queueDrain = (chunks: TEvent[]): void => {
+        drain = drain
+          .then(() => emitFrom(chunks))
+          .catch((error: unknown) => {
+            controller.fail(error);
+          });
+      };
+
+      queueDrain(events.chunks.peek());
+      const unsubscribe = events.chunks.subscribe(queueDrain, { immediate: false });
+
+      try {
+        await events.ready;
+        await drain;
+      } finally {
+        unsubscribe();
+      }
+    }, selectedOptions as StreamOptions<SelectedEvent, TValue | SelectedEvent[]>);
+  };
+
+  return eventStream;
+}
+
 async function resolveRetryDelay(backoff: RetryBackoff, retry: number, error: unknown): Promise<number> {
   if (typeof backoff === 'function') {
     return Math.max(0, await backoff(retry, error));
@@ -359,13 +428,19 @@ export function scanStream<TInput, TOutput>(
 export { createStream } from './stream-runtime.js';
 export type {
   BackpressureOptions,
+  QoreEventStream,
   QoreStream,
   RetryBackoff,
   RetryableStreamOptions,
   StreamController,
+  StreamEventBase,
+  StreamEventOf,
+  StreamEventOptions,
+  StreamEventType,
   StreamFactory,
   StreamInput,
   StreamOptions,
+  StreamSelectOptions,
   StreamSetup
 } from './stream-types.js';
 export { toAsyncIterable } from './iterable.js';

@@ -50,6 +50,24 @@ stream.switchMap(promptChanges, (prompt) => openai.chat(prompt));
 
 The composed result is still a stream signal.
 
+## Event Streams
+
+Provider streams are only the transport boundary. Agent interfaces need a richer runtime surface: text tokens, tool calls, status updates, reasoning notes, diffs, artifacts, retries, and errors can all be modeled as typed events.
+
+```js
+const events = stream.events(agent.run(task));
+
+const text = events.select('text', {
+  seed: '',
+  reduce: (current, event) => current + event.text
+});
+const toolCalls = events.select('tool_call');
+const status = events.select('status');
+const diffs = events.select('diff');
+```
+
+The full event timeline remains available through `events()`. Each selector is also a stream signal, so one UI region can render the timeline while another region renders only the accumulated markdown or diff.
+
 ## Abort
 
 Streams can be aborted from the Qore stream object or from provider request options:

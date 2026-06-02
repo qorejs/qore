@@ -58,8 +58,10 @@ Qore focuses on streamed interface state:
 - token streams
 - tool-call streams
 - status streams
+- reasoning streams
 - markdown streams
 - diff streams
+- artifact streams
 - realtime event streams
 
 It does not ship a button, dialog, or tab catalog. Those belong in application UI or a separate package.

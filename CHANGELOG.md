@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.1 - 2026-06-02
+
+- Added `stream.events(...)` for typed AI interface event timelines, covering text, tool-call, status, diff, reasoning, artifact, retry, and error style streams without collapsing everything into plain text.
+- Added `QoreEventStream.select(type, options?)` so one event stream can project UI-ready substreams such as accumulated text, tool-call timelines, status panels, or streaming diffs while preserving `stream = signal` semantics.
+- Expanded runtime, type-level, public API, and packed-package smoke coverage so event streams are validated through both source tests and published tarball consumer paths.
+- Updated the README and docs to position provider adapters as transport entrypoints while keeping the runtime moat around `stream -> signal -> UI`.
+
 ## 1.0.0 - 2026-05-27
 
 - Declared the `stream = signal` runtime, provider layer, DOM bindings, and release gates stable for the first production-ready Qore release.

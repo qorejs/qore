@@ -5,13 +5,19 @@ export type { EffectOptions, EffectScheduler, SubscribeOptions } from './core/si
 export { stream, createStream, from, mapStream, scanStream, toAsyncIterable } from './core/stream.js';
 export type {
   BackpressureOptions,
+  QoreEventStream,
   QoreStream,
   RetryBackoff,
   RetryableStreamOptions,
   StreamController,
+  StreamEventBase,
+  StreamEventOf,
+  StreamEventOptions,
+  StreamEventType,
   StreamFactory,
   StreamInput,
   StreamOptions,
+  StreamSelectOptions,
   StreamSetup
 } from './core/stream.js';
 export { createResponse, response } from './core/response.js';

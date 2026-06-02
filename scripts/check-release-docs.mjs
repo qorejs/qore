@@ -35,8 +35,10 @@ assertMatches(readme, ['./docs/architecture.md'], 'README.md must link to docs/a
 assertMatches(concepts, ['stream = signal'], 'docs/concepts.md must retain the stream = signal concept.');
 assertMatches(architecture, ['Provider / AsyncIterable'], 'docs/architecture.md must describe the runtime architecture.');
 assertMatches(api, ['stream.switchMap'], 'docs/api.md must include stream orchestration APIs.');
+assertMatches(api, ['stream.events'], 'docs/api.md must include event stream APIs.');
 assertMatches(providers, ['Do not put provider API keys in browser code'], 'docs/providers.md must include provider key safety guidance.');
 assertMatches(runtime, ['Backpressure'], 'docs/runtime.md must document backpressure.');
+assertMatches(runtime, ['Event Streams'], 'docs/runtime.md must document event streams.');
 assertMatches(comparisons, ['React / Vercel AI SDK'], 'docs/comparisons.md must include the React / Vercel AI SDK comparison.');
 assertMatches(benchmarks, ['snapshot-style transcript rewrites'], 'docs/benchmarks.md must describe the benchmark scope precisely.');
 
