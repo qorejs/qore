@@ -73,7 +73,7 @@ const status = events.select('status');
 const diff = events.select('diff');
 ```
 
-Each selected stream is still a signal and an async iterable. A timeline can render every event, while a markdown pane can bind only to `text()`.
+Each selected stream is still a signal and an async iterable. A timeline can render every event, while a markdown pane can bind only to `text()`. The runnable shape is captured in [`examples/agent-event-stream.ts`](./examples/agent-event-stream.ts).
 
 ## Provider Safety
 

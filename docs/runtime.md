@@ -57,16 +57,21 @@ Provider streams are only the transport boundary. Agent interfaces need a richer
 ```js
 const events = stream.events(agent.run(task));
 
-const text = events.select('text', {
+const markdown = events.select('text', {
   seed: '',
   reduce: (current, event) => current + event.text
 });
 const toolCalls = events.select('tool_call');
 const status = events.select('status');
-const diffs = events.select('diff');
+const diffs = events.select('diff', {
+  seed: '',
+  reduce: (current, event) => current + event.patch
+});
 ```
 
 The full event timeline remains available through `events()`. Each selector is also a stream signal, so one UI region can render the timeline while another region renders only the accumulated markdown or diff.
+
+A complete typed example lives in [`examples/agent-event-stream.ts`](../examples/agent-event-stream.ts). It projects one agent event timeline into markdown, status, tool-call, tool-result, diff, and artifact surfaces without creating separate state stores.
 
 ## Abort
 
