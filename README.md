@@ -15,6 +15,8 @@ Its core primitive is `stream = signal`: an async stream is also a readonly sign
 
 ```bash
 npm i @qorejs/qore
+# React apps can add the adapter when needed.
+npm i @qorejs/react
 ```
 
 ## 30-Second Demo
@@ -75,6 +77,28 @@ const diff = events.select('diff');
 
 Each selected stream is still a signal and an async iterable. A timeline can render every event, while a markdown pane can bind only to `text()`. The runnable shape is captured in [`examples/agent-event-stream.ts`](./examples/agent-event-stream.ts).
 
+
+## React Adapter
+
+Qore can be used inside React without replacing your UI stack. The adapter subscribes to Qore streams through React's external store contract, so the stream remains the source of truth while React renders the view.
+
+```tsx
+import { stream } from '@qorejs/qore';
+import { useQoreStream } from '@qorejs/react';
+
+function Answer({ prompt }) {
+  const answer = useQoreStream(
+    () => stream(fetch(`/api/chat?prompt=${encodeURIComponent(prompt)}`).then((response) => response.body)),
+    [prompt],
+    { initialValue: '' }
+  );
+
+  return <p>{answer.value}</p>;
+}
+```
+
+See [React Adapter](./docs/react.md) for lifecycle, status, abort, and signal subscription details.
+
 ## Provider Safety
 
 Provider adapters are intended for server-side or trusted runtimes. Do not put `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or any vendor secret in browser code. For browsers, expose your own SSE or NDJSON endpoint and stream that endpoint into Qore.
@@ -86,6 +110,7 @@ Provider adapters are intended for server-side or trusted runtimes. Do not put `
 - [API Reference](./docs/api.md): core primitives and composition helpers
 - [Providers](./docs/providers.md): OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, SSE, and NDJSON
 - [Runtime](./docs/runtime.md): backpressure, lifecycle, abort, retry, and orchestration
+- [React Adapter](./docs/react.md): use Qore streams inside existing React apps
 - [Comparisons](./docs/comparisons.md): Qore vs React, Vercel AI SDK, Solid, and Vue
 - [Benchmarks](./docs/benchmarks.md): methodology and current evidence
 - [migration notes](./MIGRATION.md)
@@ -101,6 +126,7 @@ Provider adapters are intended for server-side or trusted runtimes. Do not put `
 | Stream runtime | Supported | backpressure, retry, orchestration, async iteration, and abort |
 | Provider adapters | Supported | OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, generic SSE, generic line-stream |
 | Browser DOM layer | Supported | `h`, `text`, `dynamic`, `list`, `mount`, `createApp(...).mount(...)` |
+| React adapter | Preview | `@qorejs/react` bridges Qore streams through `useSyncExternalStore` |
 | Published package maps | Supported | JavaScript source maps and declaration maps ship in `dist/src` |
 | SSR | Not supported | explicit browser-only DOM boundary in `1.0.x` |
 | Hydration | Not supported | deferred until a fully proven implementation exists |

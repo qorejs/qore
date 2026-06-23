@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "ignoreDeprecations": "6.0",
+    "types": ["node", "react"],
+    "paths": {
+      "@qorejs/qore": ["../../dist/src/index.d.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ]
+}

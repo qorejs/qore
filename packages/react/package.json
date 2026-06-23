@@ -1,0 +1,42 @@
+{
+  "name": "@qorejs/react",
+  "version": "0.1.0",
+  "description": "React adapter for Qore reactive stream runtime.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@qorejs/qore": ">=1.0.1",
+    "react": ">=18.2.0 || >=19.0.0"
+  },
+  "license": "MIT",
+  "homepage": "https://qorejs.dev/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qorejs/qore.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/qorejs/qore/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -74,6 +74,8 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@types/node": "^25.6.0",
+    "@types/react": "^19.2.17",
+    "react": "^19.2.7",
     "typescript": "^6.0.3"
   }
 }
