@@ -78,7 +78,7 @@ Each selected stream is still a signal and an async iterable. A timeline can ren
 
 ## React Adapter
 
-Qore can be used inside React without replacing your UI stack. Install `@qorejs/react` to subscribe to Qore streams through React's external store contract, so the stream remains the source of truth while React renders the view.
+Qore can be used inside React without replacing your UI stack. The release-ready adapter lives in [`packages/react`](./packages/react) and subscribes to Qore streams through React's external store contract, so the stream remains the source of truth while React renders the view.
 
 ```tsx
 import { stream } from '@qorejs/qore';
@@ -124,7 +124,7 @@ Provider adapters are intended for server-side or trusted runtimes. Do not put `
 | Stream runtime | Supported | backpressure, retry, orchestration, async iteration, and abort |
 | Provider adapters | Supported | OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, generic SSE, generic line-stream |
 | Browser DOM layer | Supported | `h`, `text`, `dynamic`, `list`, `mount`, `createApp(...).mount(...)` |
-| React adapter | Supported | `@qorejs/react` bridges Qore streams through `useSyncExternalStore` |
+| React adapter | Release-ready | `packages/react` bridges Qore streams through `useSyncExternalStore`; npm publishing is waiting on scope access |
 | Published package maps | Supported | JavaScript source maps and declaration maps ship in `dist/src` |
 | SSR | Not supported | explicit browser-only DOM boundary in `1.0.x` |
 | Hydration | Not supported | deferred until a fully proven implementation exists |
