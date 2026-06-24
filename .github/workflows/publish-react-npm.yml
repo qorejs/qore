@@ -1,0 +1,82 @@
+name: Publish React Adapter Package
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional release tag to validate against packages/react/package.json
+        required: false
+        type: string
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-react-npm-${{ github.workflow }}-${{ github.ref || github.event.release.tag_name || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  publish-react:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js for trusted publishing
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Check whether npm version already exists
+        id: npm-version
+        run: |
+          VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('packages/react/package.json', 'utf8')).version")
+
+          if npm view "@qorejs/react@$VERSION" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "npm already has @qorejs/react@$VERSION; skipping publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "npm does not have @qorejs/react@$VERSION yet; continuing publish."
+          fi
+
+      - name: Install dependencies
+        if: steps.npm-version.outputs.exists != 'true'
+        run: npm ci
+
+      - name: Verify release tag
+        if: steps.npm-version.outputs.exists != 'true'
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.release_tag }}
+        run: |
+          node --input-type=module <<'EOF_NODE'
+          import fs from 'node:fs';
+
+          const pkg = JSON.parse(fs.readFileSync('packages/react/package.json', 'utf8'));
+          const rawTag = process.env.RELEASE_TAG?.trim() ?? '';
+          const normalizedTag = rawTag.replace(/^@qorejs\/react@/, '').replace(/^react-v/, '').replace(/^v/, '');
+
+          if (rawTag && normalizedTag !== pkg.version) {
+            throw new Error(`Release tag "${rawTag}" does not match packages/react/package.json version "${pkg.version}".`);
+          }
+
+          console.log(`Validated @qorejs/react version ${pkg.version}.`);
+          EOF_NODE
+
+      - name: Run React adapter smoke test
+        if: steps.npm-version.outputs.exists != 'true'
+        run: npm run smoke:react-package
+
+      - name: Publish React adapter to npm
+        if: steps.npm-version.outputs.exists != 'true'
+        working-directory: packages/react
+        run: npm publish --access public --provenance --tag latest

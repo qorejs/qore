@@ -12,6 +12,7 @@ const releaseDocsScript = new URL('./check-release-docs.mjs', import.meta.url);
 const distSyncScript = new URL('./check-dist-sync.mjs', import.meta.url);
 const packageTypeSmokeScript = new URL('./package-type-smoke.mjs', import.meta.url);
 const packageRuntimeSmokeScript = new URL('./package-runtime-smoke.mjs', import.meta.url);
+const reactPackageSmokeScript = new URL('./react-package-smoke.mjs', import.meta.url);
 
 const typecheckRun = spawnSync(process.execPath, [fileURLToPath(typecheckScript)], {
   stdio: 'inherit',
@@ -101,6 +102,15 @@ const packageRuntimeSmokeRun = spawnSync(process.execPath, [fileURLToPath(packag
 
 if (packageRuntimeSmokeRun.status !== 0) {
   process.exit(packageRuntimeSmokeRun.status ?? 1);
+}
+
+const reactPackageSmokeRun = spawnSync(process.execPath, [fileURLToPath(reactPackageSmokeScript)], {
+  stdio: 'inherit',
+  cwd: fileURLToPath(root)
+});
+
+if (reactPackageSmokeRun.status !== 0) {
+  process.exit(reactPackageSmokeRun.status ?? 1);
 }
 
 const npmCli = process.env.npm_execpath;

@@ -38,7 +38,8 @@
     "publish:preflight": "node ./scripts/publish-preflight.mjs",
     "publish:github": "npm publish --registry=https://npm.pkg.github.com",
     "publish:npm": "node ./scripts/publish-npm.mjs",
-    "prepublishOnly": "node ./scripts/release-check.mjs"
+    "prepublishOnly": "node ./scripts/release-check.mjs",
+    "smoke:react-package": "node ./scripts/react-package-smoke.mjs"
   },
   "engines": {
     "node": ">=18.0.0"

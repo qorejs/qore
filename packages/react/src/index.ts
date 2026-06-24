@@ -3,12 +3,40 @@ import type {
   QoreStream,
   ReadonlySignal,
   ResponseStatus,
+  SubscribeOptions,
   StreamInput
 } from '@qorejs/qore';
 import { stream } from '@qorejs/qore';
 import type { DependencyList } from 'react';
 
 const noop = (): void => undefined;
+
+type ReadonlySignalSource<TValue> = {
+  peek(): TValue;
+  subscribe(listener: (value: TValue) => void, options?: SubscribeOptions): () => void;
+};
+
+type QoreStreamSnapshotSource<TChunk, TValue> = ReadonlySignalSource<TValue> & AsyncIterable<TChunk> & {
+  status: ReadonlySignal<ResponseStatus>;
+  error: ReadonlySignal<Error | null>;
+  chunks: ReadonlySignal<TChunk[]>;
+  startedAt: ReadonlySignal<number | null>;
+  finishedAt: ReadonlySignal<number | null>;
+  pending: ReadonlySignal<boolean>;
+  streaming: ReadonlySignal<boolean>;
+  completed: ReadonlySignal<boolean>;
+  failed: ReadonlySignal<boolean>;
+  aborted: ReadonlySignal<boolean>;
+  chunkCount: ReadonlySignal<number>;
+  buffered: ReadonlySignal<number>;
+  dropped: ReadonlySignal<number>;
+  ready: Promise<TValue>;
+  abort(reason?: unknown): TValue;
+};
+
+type QoreStreamChunk<TStream> = TStream extends QoreStreamSnapshotSource<infer TChunk, infer _TValue> ? TChunk : never;
+type QoreStreamValue<TStream> = TStream extends QoreStreamSnapshotSource<infer _TChunk, infer TValue> ? TValue : never;
+type ReadonlySignalValue<TSignal> = TSignal extends ReadonlySignalSource<infer TValue> ? TValue : never;
 
 export interface UseQoreSignalOptions<T> {
   getServerSnapshot?: () => T;
@@ -37,8 +65,13 @@ export interface QoreReactStream<TChunk, TValue> {
   abort(reason?: unknown): TValue | null;
 }
 
+export function useQoreSignal<TSignal extends ReadonlySignalSource<unknown>>(
+  source: TSignal,
+  options?: UseQoreSignalOptions<ReadonlySignalValue<TSignal>>
+): ReadonlySignalValue<TSignal>;
+
 export function useQoreSignal<T>(
-  source: ReadonlySignal<T>,
+  source: ReadonlySignalSource<T>,
   options: UseQoreSignalOptions<T> = {}
 ): T {
   const subscribe = useCallback((onStoreChange: () => void) => source.subscribe(onStoreChange), [source]);
@@ -65,6 +98,16 @@ function useOptionalQoreSignal<T>(
     getServerSnapshot
   );
 }
+
+export function useQoreStreamSnapshot<TStream extends QoreStreamSnapshotSource<unknown, unknown>>(
+  source: TStream,
+  options: UseQoreStreamOptions<QoreStreamValue<TStream>>
+): QoreReactStream<QoreStreamChunk<TStream>, QoreStreamValue<TStream>>;
+
+export function useQoreStreamSnapshot<TChunk, TValue>(
+  source: QoreStream<TChunk, TValue> | null,
+  options: UseQoreStreamOptions<TValue>
+): QoreReactStream<TChunk, TValue>;
 
 export function useQoreStreamSnapshot<TChunk, TValue>(
   source: QoreStream<TChunk, TValue> | null,

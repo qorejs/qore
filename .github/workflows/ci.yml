@@ -78,3 +78,7 @@ jobs:
 
       - name: Run the package runtime smoke test
         run: npm run smoke:package-runtime
+
+      - name: Run the React adapter package smoke test
+        if: matrix.node-version == 20
+        run: npm run smoke:react-package
