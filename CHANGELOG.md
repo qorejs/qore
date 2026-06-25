@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 1.0.2 - 2026-06-25
+
+- Added `stream.from(...)` as a factory alias for the existing `from(...)` helper so iterable source normalization is discoverable from the main stream primitive.
+- Added `useQoreSignalSelector(...)` to the React adapter so React components can subscribe to focused slices of Qore signal state instead of broad stream snapshots.
+- Added an `enabled` option to `useQoreStream(...)` so React components can keep an idle snapshot without starting network or provider work.
+- Added React adapter type and packed-consumer smoke coverage for selector hooks and disabled stream lifecycles.
+- Added `npm run check:npm-access` to diagnose local npm authentication and scope/package permissions before release attempts.
+
 ## 1.0.1 - 2026-06-02
 
 - Added `stream.events(...)` for typed AI interface event timelines, covering text, tool-call, status, diff, reasoning, artifact, retry, and error style streams without collapsing everything into plain text.

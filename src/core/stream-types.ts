@@ -125,6 +125,10 @@ export interface StreamFactory {
     sourceOrSetup: StreamInput<TChunk, TValue>,
     options?: StreamOptions<TChunk, TValue>
   ): QoreStream<TChunk, TValue>;
+  from<TChunk, TValue = string>(
+    source: SourceLike<TChunk>,
+    options?: StreamOptions<TChunk, TValue> & { delay?: number }
+  ): QoreStream<TChunk, TValue>;
   text<TChunk = unknown>(
     sourceOrSetup: StreamInput<TChunk, string>,
     options?: StreamOptions<TChunk, string>

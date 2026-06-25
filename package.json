@@ -1,6 +1,6 @@
 {
   "name": "@qorejs/qore",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Qore is a reactive stream runtime for AI-native interfaces.",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -39,7 +39,8 @@
     "publish:github": "npm publish --registry=https://npm.pkg.github.com",
     "publish:npm": "node ./scripts/publish-npm.mjs",
     "prepublishOnly": "node ./scripts/release-check.mjs",
-    "smoke:react-package": "node ./scripts/react-package-smoke.mjs"
+    "smoke:react-package": "node ./scripts/react-package-smoke.mjs",
+    "check:npm-access": "node ./scripts/check-npm-access.mjs"
   },
   "engines": {
     "node": ">=18.0.0"

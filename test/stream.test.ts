@@ -130,6 +130,13 @@ test('stream surfaces producer failures through ready and status', async () => {
 });
 
 // latest streams should keep every chunk in history while exposing only the newest value.
+test('stream.from exposes the delayed source helper on the factory', async () => {
+  const answer = stream.from(['a', 'b'], { delay: 1 });
+
+  assert.equal(await answer.ready, 'ab');
+  assert.equal(answer(), 'ab');
+});
+
 test('stream.latest keeps only the newest chunk as its signal value', async () => {
   const answer = stream.latest(async ({ push }) => {
     push('old');

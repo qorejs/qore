@@ -281,6 +281,8 @@ streamFactory.switchMap = <TInput, TChunk = unknown, TValue = string>(
   await activeTask;
 }, options);
 
+streamFactory.from = from;
+
 // Create a text-accumulating stream by default.
 export const stream = streamFactory;
 

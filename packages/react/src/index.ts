@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type {
   QoreStream,
   ReadonlySignal,
@@ -10,6 +10,7 @@ import { stream } from '@qorejs/qore';
 import type { DependencyList } from 'react';
 
 const noop = (): void => undefined;
+const objectIs = Object.is as <T>(left: T, right: T) => boolean;
 
 type ReadonlySignalSource<TValue> = {
   peek(): TValue;
@@ -42,8 +43,14 @@ export interface UseQoreSignalOptions<T> {
   getServerSnapshot?: () => T;
 }
 
+export interface UseQoreSignalSelectorOptions<TSelected> {
+  isEqual?: (previous: TSelected, next: TSelected) => boolean;
+  getServerSnapshot?: () => TSelected;
+}
+
 export interface UseQoreStreamOptions<TValue> {
   initialValue: TValue;
+  enabled?: boolean;
 }
 
 export interface QoreReactStream<TChunk, TValue> {
@@ -79,6 +86,46 @@ export function useQoreSignal<T>(
   const getServerSnapshot = options.getServerSnapshot ?? getSnapshot;
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+export function useQoreSignalSelector<
+  TSignal extends ReadonlySignalSource<unknown>,
+  TSelected
+>(
+  source: TSignal,
+  selector: (value: ReadonlySignalValue<TSignal>) => TSelected,
+  options?: UseQoreSignalSelectorOptions<TSelected>
+): TSelected;
+
+export function useQoreSignalSelector<TValue, TSelected>(
+  source: ReadonlySignalSource<TValue>,
+  selector: (value: TValue) => TSelected,
+  options: UseQoreSignalSelectorOptions<TSelected> = {}
+): TSelected {
+  const selectorRef = useRef(selector);
+  const equalityRef = useRef(options.isEqual ?? objectIs<TSelected>);
+  const selectedRef = useRef<{ sourceValue: TValue; selectedValue: TSelected } | null>(null);
+
+  selectorRef.current = selector;
+  equalityRef.current = options.isEqual ?? objectIs<TSelected>;
+
+  const getSelectedSnapshot = useCallback(() => {
+    const sourceValue = source.peek();
+    const selectedValue = selectorRef.current(sourceValue);
+    const previous = selectedRef.current;
+
+    if (previous && equalityRef.current(previous.selectedValue, selectedValue)) {
+      return previous.selectedValue;
+    }
+
+    selectedRef.current = { sourceValue, selectedValue };
+    return selectedValue;
+  }, [source]);
+
+  const subscribe = useCallback((onStoreChange: () => void) => source.subscribe(onStoreChange), [source]);
+  const getServerSnapshot = options.getServerSnapshot ?? getSelectedSnapshot;
+
+  return useSyncExternalStore(subscribe, getSelectedSnapshot, getServerSnapshot);
 }
 
 function useOptionalQoreSignal<T>(
@@ -174,15 +221,24 @@ export function useQoreStream<TChunk = unknown, TValue = string>(
   options: UseQoreStreamOptions<TValue>
 ): QoreReactStream<TChunk, TValue> {
   const [currentStream, setCurrentStream] = useState<QoreStream<TChunk, TValue> | null>(null);
+  const enabled = options.enabled ?? true;
 
   useEffect(() => {
+    if (!enabled) {
+      setCurrentStream((previousStream) => {
+        previousStream?.abort('Qore stream disabled');
+        return null;
+      });
+      return noop;
+    }
+
     const nextStream = createStream();
     setCurrentStream(nextStream);
 
     return () => {
       nextStream.abort();
     };
-  }, dependencies);
+  }, [enabled, ...dependencies]);
 
   return useQoreStreamSnapshot(currentStream, options);
 }

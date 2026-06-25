@@ -89,7 +89,7 @@ writeFileSync(join(tempRoot, 'tsconfig.json'), JSON.stringify({
 }, null, 2));
 
 writeFileSync(join(tempRoot, 'smoke.tsx'), `import { signal, stream } from '@qorejs/qore';
-import { useQoreSignal, useQoreStreamSnapshot } from '@qorejs/react';
+import { useQoreSignal, useQoreSignalSelector, useQoreStream, useQoreStreamSnapshot } from '@qorejs/react';
 import { renderToString } from 'react-dom/server';
 
 const count = signal(1);
@@ -97,9 +97,11 @@ const answer = stream<string>(['Qore']);
 
 function App() {
   const currentCount = useQoreSignal(count);
+  const countLabel = useQoreSignalSelector(count, (value) => value > 0 ? 'positive' : 'empty');
   const snapshot = useQoreStreamSnapshot(answer, { initialValue: '' });
+  const disabled = useQoreStream(() => stream(['skip']), [], { initialValue: '', enabled: false });
 
-  return <main data-status={snapshot.status}>{currentCount}:{snapshot.value}</main>;
+  return <main data-disabled={disabled.status} data-label={countLabel} data-status={snapshot.status}>{currentCount}:{snapshot.value}</main>;
 }
 
 const html = renderToString(<App />);

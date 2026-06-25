@@ -39,7 +39,7 @@ function Answer({ prompt }: { prompt: string }) {
 }
 ```
 
-`useQoreStream` starts the stream after mount, subscribes through `useSyncExternalStore`, and aborts the stream when dependencies change or the component unmounts.
+`useQoreStream` starts the stream after mount, subscribes through `useSyncExternalStore`, and aborts the stream when dependencies change or the component unmounts. Pass `{ enabled: false }` to keep the hook subscribed to an idle snapshot without starting network work.
 
 ## useQoreStreamSnapshot
 
@@ -54,6 +54,22 @@ function Transcript({ answer }: { answer: QoreStream<string, string> }) {
   return <p>{snapshot.value}</p>;
 }
 ```
+
+## useQoreSignalSelector
+
+Use `useQoreSignalSelector` when a React component only needs one derived slice of a Qore signal. The selector keeps React renders focused on the value that component actually reads.
+
+```tsx
+import type { QoreStream } from '@qorejs/qore';
+import { useQoreSignalSelector } from '@qorejs/react';
+
+function TokenCounter({ answer }: { answer: QoreStream<string, string> }) {
+  const tokenCount = useQoreSignalSelector(answer.chunks, (chunks) => chunks.length);
+  return <span>{tokenCount}</span>;
+}
+```
+
+Pass `isEqual` when the selected value is an object and you want to preserve the previous reference until the meaningful fields change.
 
 ## useQoreSignal
 

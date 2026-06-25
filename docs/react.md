@@ -46,7 +46,7 @@ export function Answer({ prompt }: { prompt: string }) {
 }
 ```
 
-When dependencies change, the hook aborts the previous stream and starts a new one. When the component unmounts, the active stream is aborted.
+When dependencies change, the hook aborts the previous stream and starts a new one. When the component unmounts, the active stream is aborted. Pass `{ enabled: false }` to keep the hook subscribed to an idle snapshot without starting network work.
 
 ## useQoreStreamSnapshot
 
@@ -64,6 +64,22 @@ export function Transcript({ answer }: { answer: QoreStream<string, string> }) {
 ```
 
 The returned object includes the stream value plus lifecycle fields such as `status`, `error`, `chunks`, `streaming`, `completed`, `failed`, `aborted`, `buffered`, and `dropped`.
+
+## useQoreSignalSelector
+
+Use `useQoreSignalSelector` when a React component only needs one derived slice of a Qore signal. The selector keeps React renders focused on the value that component actually reads.
+
+```tsx
+import type { QoreStream } from '@qorejs/qore';
+import { useQoreSignalSelector } from '@qorejs/react';
+
+function TokenCounter({ answer }: { answer: QoreStream<string, string> }) {
+  const tokenCount = useQoreSignalSelector(answer.chunks, (chunks) => chunks.length);
+  return <span>{tokenCount}</span>;
+}
+```
+
+Pass `isEqual` when the selected value is an object and you want to preserve the previous reference until the meaningful fields change.
 
 ## useQoreSignal
 

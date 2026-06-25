@@ -24,6 +24,7 @@ import { stream } from '@qorejs/qore';
 - `stream(source, options?)`: accumulate chunks into a text signal
 - `stream.list(source, options?)`: accumulate chunks into an array signal
 - `stream.latest(source, options?)`: keep only the latest chunk
+- `stream.from(source, options?)`: normalize any iterable source, optionally with source delay
 - `stream.events(source, options?)`: accumulate typed runtime events into a timeline signal
 - `stream.withBackpressure(source, options?)`: pace stream commits
 - `stream.merge(sources, options?)`: merge multiple streams
@@ -49,6 +50,8 @@ const diff = events.select('diff', {
   reduce: (current, event) => current + event.patch
 });
 ```
+
+`from(source, options?)` remains available as a standalone export for callers that prefer named helpers. `stream.from(source, options?)` is the same helper exposed on the factory for API discoverability.
 
 `stream.events(...)` returns a `QoreEventStream`: a `QoreStream` whose current value is the full event timeline. `select(type)` projects one event type into another stream signal. Without a custom reducer, selected streams accumulate matching events into an array. See [`examples/agent-event-stream.ts`](../examples/agent-event-stream.ts) for a complete typed agent surface.
 
