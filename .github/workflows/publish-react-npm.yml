@@ -24,6 +24,10 @@ concurrency:
 
 jobs:
   publish-react:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch'
+        || startsWith(github.event.release.tag_name, 'react-v')
+        || startsWith(github.event.release.tag_name, '@qorejs/react@') }}
     runs-on: ubuntu-latest
 
     steps:
