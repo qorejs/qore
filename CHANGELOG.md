@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 1.0.3 - 2026-06-29
+
+- Added a lightweight `globalThis.__QORE_DEVTOOLS__` stream inspection hook with typed DevTools events for create, status, chunk, complete, error, and abort phases.
+- Added stable `QoreStream.id` and optional `QoreStream.name` fields so stream traces and custom inspectors can identify runtime surfaces.
+- Expanded the Agent Event Stream example to cover markdown, status, tool calls, tool results, diffs, artifacts, retries, and recoverable errors from one typed event timeline.
+- Added runtime, API, and DevTools documentation for named streams and development-time stream inspection.
+- Updated release and public API coverage so DevTools types and agent event surfaces are validated before publishing.
+
 ## 1.0.2 - 2026-06-25
 
 - Added `stream.from(...)` as a factory alias for the existing `from(...)` helper so iterable source normalization is discoverable from the main stream primitive.

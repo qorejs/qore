@@ -73,6 +73,24 @@ The full event timeline remains available through `events()`. Each selector is a
 
 A complete typed example lives in [`examples/agent-event-stream.ts`](../examples/agent-event-stream.ts). It projects one agent event timeline into markdown, status, tool-call, tool-result, diff, and artifact surfaces without creating separate state stores.
 
+
+## DevTools Hook
+
+Install `globalThis.__QORE_DEVTOOLS__` in development to inspect stream lifecycle and chunk flow without changing app code.
+
+```js
+globalThis.__QORE_DEVTOOLS__ = {
+  events: [],
+  emit(event) {
+    console.log(event.phase, event.name, event.status);
+  }
+};
+
+const answer = stream(model.chat('hello'), { name: 'answer' });
+```
+
+Named streams expose stable `id` and optional `name` fields. DevTools events are best-effort and never affect stream control flow. See [`docs/devtools.md`](./devtools.md) for the event shape.
+
 ## Abort
 
 Streams can be aborted from the Qore stream object or from provider request options:

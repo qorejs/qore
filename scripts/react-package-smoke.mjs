@@ -8,10 +8,12 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const reactPackage = fileURLToPath(new URL('../packages/react/', import.meta.url));
 const buildScript = fileURLToPath(new URL('./build.mjs', import.meta.url));
 const tempRoot = join(tmpdir(), `qore-react-smoke-${Date.now()}`);
+const npmCache = join(tempRoot, '.npm-cache');
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: root,
+    env: { ...process.env, npm_config_cache: npmCache },
     stdio: 'inherit',
     ...options
   });
@@ -26,6 +28,7 @@ function run(command, args, options = {}) {
 function pack(cwd) {
   const result = spawnSync('npm', ['pack', '--json', '--pack-destination', tempRoot], {
     cwd,
+    env: { ...process.env, npm_config_cache: npmCache },
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit']
   });

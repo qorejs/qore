@@ -17,10 +17,12 @@ if (!npmCli) {
 
 const tempDir = mkdtempSync(join(tmpdir(), 'qore-package-runtime-'));
 let tarballPath = null;
+const npmCache = join(tempDir, '.npm-cache');
 
 try {
   const buildRun = spawnSync(process.execPath, [buildScript], {
     cwd: rootPath,
+    env: { ...process.env, npm_config_cache: npmCache },
     stdio: 'inherit'
   });
 
@@ -30,6 +32,7 @@ try {
 
   const packRun = spawnSync(process.execPath, [npmCli, 'pack', '--json'], {
     cwd: rootPath,
+    env: { ...process.env, npm_config_cache: npmCache },
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit']
   });
@@ -51,6 +54,7 @@ try {
 
   const installRun = spawnSync(process.execPath, [npmCli, 'install', '--no-package-lock', '--ignore-scripts', tarballPath], {
     cwd: tempDir,
+    env: { ...process.env, npm_config_cache: npmCache },
     stdio: 'inherit'
   });
 
@@ -69,6 +73,7 @@ try {
 
   const runtimeRun = spawnSync(process.execPath, [join(tempDir, 'package-runtime-consumer.mjs')], {
     cwd: tempDir,
+    env: { ...process.env, npm_config_cache: npmCache },
     stdio: 'inherit'
   });
 

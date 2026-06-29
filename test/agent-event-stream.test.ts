@@ -9,7 +9,9 @@ const delayedAgentEvents: AgentEvent[] = [
   { type: 'text', text: 'Streaming ' },
   { type: 'text', text: 'interfaces' },
   { type: 'diff', patch: '+stream.events\n' },
+  { type: 'retry', attempt: 1, reason: 'late tool result' },
   { type: 'artifact', title: 'Trace', content: 'tool -> text -> diff' },
+  { type: 'error', message: 'Recovered timeout', recoverable: true },
   { type: 'status', value: 'done', label: 'Completed' }
 ];
 
@@ -23,7 +25,9 @@ test('agent event demo projects one stream into UI-ready surfaces', async () => 
     demo.toolCalls.ready,
     demo.toolResults.ready,
     demo.diff.ready,
-    demo.artifacts.ready
+    demo.artifacts.ready,
+    demo.retries.ready,
+    demo.errors.ready
   ]);
 
   assert.deepEqual(demo.events().map((event) => event.type), [
@@ -33,7 +37,9 @@ test('agent event demo projects one stream into UI-ready surfaces', async () => 
     'text',
     'text',
     'diff',
+    'retry',
     'artifact',
+    'error',
     'status'
   ]);
   assert.equal(demo.markdown(), 'Streaming interfaces');
@@ -42,6 +48,10 @@ test('agent event demo projects one stream into UI-ready surfaces', async () => 
   assert.deepEqual(demo.toolCalls().map((event) => event.name), ['search_docs']);
   assert.deepEqual(demo.toolResults().map((event) => event.output), ['selectors replay event history']);
   assert.deepEqual(demo.artifacts().map((event) => event.title), ['Trace']);
+  assert.deepEqual(demo.retries().map((event) => event.reason), ['late tool result']);
+  assert.deepEqual(demo.errors().map((event) => event.recoverable), [true]);
+  assert.equal(demo.events.name, 'agent-events');
+  assert.equal(demo.markdown.name, 'agent-markdown');
 });
 
 test('agent event demo keeps selectors live while events are still arriving', async () => {

@@ -108,6 +108,7 @@ Provider adapters are intended for server-side or trusted runtimes. Do not put `
 - [API Reference](./docs/api.md): core primitives and composition helpers
 - [Providers](./docs/providers.md): OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, SSE, and NDJSON
 - [Runtime](./docs/runtime.md): backpressure, lifecycle, abort, retry, and orchestration
+- [DevTools Hook](./docs/devtools.md): inspect stream lifecycle and chunk flow during development
 - [React Adapter](./docs/react.md): use Qore streams inside existing React apps
 - [Comparisons](./docs/comparisons.md): Qore vs React, Vercel AI SDK, Solid, and Vue
 - [Benchmarks](./docs/benchmarks.md): methodology and current evidence
@@ -121,7 +122,7 @@ Provider adapters are intended for server-side or trusted runtimes. Do not put `
 | Node runtime | Supported | `Node >= 18` |
 | Browser runtime | Supported | DOM entrypoints require `document` |
 | Reactive core | Supported | `signal`, `computed`, `effect`, `batch`, `createRoot`, `onCleanup` |
-| Stream runtime | Supported | backpressure, retry, orchestration, async iteration, and abort |
+| Stream runtime | Supported | backpressure, retry, orchestration, async iteration, abort, and DevTools hooks |
 | Provider adapters | Supported | OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, generic SSE, generic line-stream |
 | Browser DOM layer | Supported | `h`, `text`, `dynamic`, `list`, `mount`, `createApp(...).mount(...)` |
 | React adapter | Release-ready | `packages/react` bridges Qore streams through `useSyncExternalStore`; npm publishing is waiting on scope access |

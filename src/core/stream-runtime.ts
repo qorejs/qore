@@ -15,11 +15,16 @@ import type {
   StreamResponseState
 } from './stream-types.js';
 import { normalizeError } from '../shared/utils.js';
+import { createDevtoolsStreamId, emitQoreDevtoolsEvent } from './devtools.js';
 
 type MutableStream<TChunk, TValue> = QoreStream<TChunk, TValue> & {
   signal?: AbortSignal | null;
   [Symbol.asyncIterator](): AsyncIterableIterator<TChunk>;
 };
+
+function createDevtoolsBase(id: string, name: string | undefined): { id: string; name?: string } {
+  return name === undefined ? { id } : { id, name };
+}
 
 // Create the core stream primitive: a read-only signal plus async iterable plus lifecycle state.
 export function createStream<TChunk, TValue = string>(
@@ -27,17 +32,29 @@ export function createStream<TChunk, TValue = string>(
   options: StreamOptions<TChunk, TValue> = {}
 ): QoreStream<TChunk, TValue> {
   const {
+    name,
     seed = '' as TValue,
     reduce = reduceText as unknown as (currentValue: TValue, chunk: TChunk, index: number) => TValue,
     backpressure = null
   } = options;
   const pressure = normalizeBackpressure(backpressure);
+  const streamId = createDevtoolsStreamId();
 
   const state = createResponse<TChunk, TValue>({ seed, reduce });
   const queue = new AsyncQueue<TChunk>();
   const readable = createReadableSignal(state.value) as MutableStream<TChunk, TValue>;
   const buffered = createSignal(0);
   const dropped = createSignal(0);
+  emitQoreDevtoolsEvent({
+    kind: 'stream',
+    phase: 'create',
+    ...createDevtoolsBase(streamId, name),
+    status: 'idle',
+    chunkCount: 0,
+    value: seed,
+    timestamp: Date.now()
+  });
+
   const lifecycle = createStreamLifecycle({
     closeQueue: () => queue.close(),
     readCurrent: () => readable.peek()
@@ -68,7 +85,20 @@ export function createStream<TChunk, TValue = string>(
       recordDrop: () => dropped(dropped.peek() + 1),
       signal: runtimeSignal,
       updateBuffered: (count) => buffered(count),
-      writeChunk: push
+      writeChunk: (chunk) => {
+        const nextValue = push(chunk);
+        emitQoreDevtoolsEvent({
+          kind: 'stream',
+          phase: 'chunk',
+          ...createDevtoolsBase(streamId, name),
+          status: state.status.peek(),
+          chunk,
+          value: nextValue,
+          chunkCount: state.chunkCount.peek(),
+          timestamp: Date.now()
+        });
+        return nextValue;
+      }
     });
 
     lifecycle.setCleanup(buffer.flush);
@@ -129,10 +159,47 @@ export function createStream<TChunk, TValue = string>(
     }
   });
 
+  const unsubscribeStatusDevtools = state.status.subscribe((status) => {
+    const phase = status === 'completed'
+      ? 'complete'
+      : status === 'error'
+        ? 'error'
+        : status === 'aborted'
+          ? 'abort'
+          : 'status';
+
+    emitQoreDevtoolsEvent({
+      kind: 'stream',
+      phase,
+      ...createDevtoolsBase(streamId, name),
+      status,
+      value: state.value.peek(),
+      chunkCount: state.chunkCount.peek(),
+      error: state.error.peek(),
+      timestamp: Date.now()
+    });
+  }, { immediate: false });
+
+  run.finally(unsubscribeStatusDevtools).catch(() => {
+    // The original ready promise still carries the stream failure; this branch only prevents
+    // instrumentation cleanup from creating an unhandled rejection.
+  });
+
   // Keep async consumers in sync with failures that surface after startup.
   run.catch((error: unknown) => {
     if (!queue.closed) {
       queue.fail(error);
+    }
+  });
+
+  Object.defineProperties(readable, {
+    id: {
+      enumerable: true,
+      value: streamId
+    },
+    name: {
+      enumerable: true,
+      value: name
     }
   });
 

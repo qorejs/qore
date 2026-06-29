@@ -31,6 +31,7 @@ The stream runtime owns:
 - backpressure buffering
 - async iterator bridging
 - reducer-based accumulation
+- development-time stream inspection through `globalThis.__QORE_DEVTOOLS__`
 
 ## Readonly Signal
 

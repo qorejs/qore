@@ -130,6 +130,27 @@ test('stream surfaces producer failures through ready and status', async () => {
 });
 
 // latest streams should keep every chunk in history while exposing only the newest value.
+
+test('stream emits development events when the DevTools hook is installed', async () => {
+  const events: Array<{ phase: string; id: string; name?: string; chunk?: string; status?: string }> = [];
+  const previousHook = globalThis.__QORE_DEVTOOLS__;
+  globalThis.__QORE_DEVTOOLS__ = { events: events as never[] };
+
+  try {
+    const answer = stream(['A', 'I'], { name: 'answer-stream' });
+    await answer.ready;
+
+    assert.equal(answer.name, 'answer-stream');
+    assert.ok(answer.id.startsWith('qore-stream-'));
+    assert.deepEqual(events.map((event) => event.phase), ['create', 'status', 'chunk', 'chunk', 'complete']);
+    assert.equal(events[0]?.name, 'answer-stream');
+    assert.deepEqual(events.filter((event) => event.phase === 'chunk').map((event) => event.chunk), ['A', 'I']);
+    assert.equal(events.at(-1)?.status, 'completed');
+  } finally {
+    globalThis.__QORE_DEVTOOLS__ = previousHook;
+  }
+});
+
 test('stream.from exposes the delayed source helper on the factory', async () => {
   const answer = stream.from(['a', 'b'], { delay: 1 });
 

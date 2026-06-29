@@ -75,3 +75,15 @@ import { createSSEResponse } from '@qorejs/qore';
 ```
 
 `createSSEResponse(...)` turns strings, events, or async iterables into a standards-compatible `text/event-stream` response.
+
+
+## DevTools
+
+```js
+globalThis.__QORE_DEVTOOLS__ = { events: [] };
+const answer = stream(source, { name: 'answer' });
+```
+
+- `QoreStream.id`: stable runtime id for inspection.
+- `QoreStream.name`: optional stream name from `StreamOptions.name`.
+- `QoreDevtoolsEvent`: exported TypeScript event type for custom inspectors.

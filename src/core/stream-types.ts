@@ -35,6 +35,7 @@ export interface Deferred<T> {
 }
 
 export interface StreamOptions<TChunk = unknown, TValue = string> {
+  name?: string;
   seed?: TValue;
   reduce?: (currentValue: TValue, chunk: TChunk, index: number) => TValue;
   backpressure?: number | BackpressureOptions | null;
@@ -86,6 +87,8 @@ export type StreamSetup<TChunk, TValue> = (
 export type StreamInput<TChunk, TValue> = SourceLike<TChunk> | StreamSetup<TChunk, TValue>;
 
 export interface QoreStream<TChunk = unknown, TValue = string> extends ReadonlySignal<TValue>, AsyncIterable<TChunk> {
+  readonly id: string;
+  readonly name?: string;
   status: ReadonlySignal<ResponseStatus>;
   error: ReadonlySignal<Error | null>;
   chunks: ReadonlySignal<TChunk[]>;
