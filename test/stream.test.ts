@@ -174,7 +174,16 @@ test('createStreamInspector records stream timelines and restores the previous h
     assert.equal(inspected.status, 'completed');
     assert.equal(inspected.chunkCount, 2);
     assert.equal(inspected.value, 'Qore');
+    assert.equal(inspected.terminal, true);
     assert.ok(inspected.finishedAt);
+    assert.ok(inspected.durationMs !== undefined);
+    assert.ok(inspected.firstChunkAt !== undefined);
+    assert.ok(inspected.firstChunkLatencyMs !== undefined);
+    assert.ok(inspected.chunksPerSecond !== undefined);
+
+    const selectedByName = inspector.stream('inspectable-answer');
+    assert.equal(selectedByName()?.id, answer.id);
+    assert.equal(inspector.stream(answer.id), inspector.stream(answer.id));
 
     inspector.clear();
     assert.equal(inspector.events().length, 0);
@@ -200,6 +209,42 @@ test('createStreamInspector can avoid retaining chunk payloads', async () => {
     assert.equal(chunkEvent.value, undefined);
     assert.equal(chunkEvent.chunkCount, 1);
     assert.equal(inspector.streams()[0]?.name, 'metadata-only');
+    assert.equal(inspector.stream('metadata-only')()?.value, undefined);
+  } finally {
+    inspector.dispose();
+    globalThis.__QORE_DEVTOOLS__ = previousHook;
+  }
+});
+
+test('createStreamInspector reports latency and live stream status before completion', async () => {
+  const previousHook = globalThis.__QORE_DEVTOOLS__;
+  const inspector = createStreamInspector();
+
+  try {
+    const answer = stream(async ({ push, signal }) => {
+      await sleep(5, signal);
+      await push('first');
+      await sleep(20, signal);
+      await push(' second');
+    }, { name: 'timed-answer' });
+
+    await sleep(10);
+
+    const liveStream = inspector.stream('timed-answer')();
+    assert.ok(liveStream);
+    assert.equal(liveStream.terminal, false);
+    assert.equal(liveStream.chunkCount, 1);
+    assert.ok((liveStream.firstChunkLatencyMs ?? -1) >= 0);
+
+    await answer.ready;
+
+    const completedStream = inspector.stream('timed-answer')();
+    assert.ok(completedStream);
+    assert.equal(completedStream.terminal, true);
+    assert.equal(completedStream.status, 'completed');
+    assert.equal(completedStream.chunkCount, 2);
+    assert.ok((completedStream.durationMs ?? 0) >= (completedStream.firstChunkLatencyMs ?? 0));
+    assert.ok((completedStream.chunksPerSecond ?? 0) > 0);
   } finally {
     inspector.dispose();
     globalThis.__QORE_DEVTOOLS__ = previousHook;

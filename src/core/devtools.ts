@@ -1,5 +1,5 @@
 import type { ResponseStatus } from './response.js';
-import { computed, signal, type ReadonlySignal } from './signal.js';
+import { computed, signal, type ComputedSignal, type ReadonlySignal } from './signal.js';
 
 export type QoreDevtoolsStreamPhase = 'create' | 'status' | 'chunk' | 'complete' | 'error' | 'abort';
 
@@ -32,7 +32,12 @@ export interface QoreInspectedStream<TValue = unknown> {
   chunkCount: number;
   createdAt: number;
   updatedAt: number;
+  firstChunkAt?: number;
   finishedAt?: number;
+  durationMs?: number;
+  firstChunkLatencyMs?: number;
+  chunksPerSecond?: number;
+  terminal: boolean;
   error?: Error | null;
 }
 
@@ -44,6 +49,7 @@ export interface StreamInspectorOptions {
 export interface QoreStreamInspector {
   events: ReadonlySignal<readonly QoreDevtoolsEvent[]>;
   streams: ReadonlySignal<readonly QoreInspectedStream[]>;
+  stream(idOrName: string): ReadonlySignal<QoreInspectedStream | undefined>;
   clear(): void;
   dispose(): void;
 }
@@ -91,6 +97,7 @@ export function createStreamInspector(options: StreamInspectorOptions = {}): Qor
   const { maxEvents = 500, capturePayloads = true } = options;
   const previousHook = globalThis.__QORE_DEVTOOLS__;
   const recordedEvents = signal<readonly QoreDevtoolsEvent[]>([]);
+  const streamSelectors = new Map<string, ComputedSignal<QoreInspectedStream | undefined>>();
 
   function record(event: QoreDevtoolsEvent): void {
     const nextEvent = capturePayloads ? event : withoutPayload(event);
@@ -117,16 +124,21 @@ export function createStreamInspector(options: StreamInspectorOptions = {}): Qor
       const createdAt = previous?.createdAt ?? event.timestamp;
       const updatedAt = event.timestamp;
       const chunkCount = event.chunkCount ?? previous?.chunkCount ?? 0;
+      const terminal = previous?.terminal === true || isTerminalPhase(event.phase);
       const nextStreamInput: InspectedStreamInput = {
         id: event.id,
         chunkCount,
         createdAt,
-        updatedAt
+        updatedAt,
+        terminal
       };
 
       const name = event.name ?? previous?.name;
       const status = event.status ?? previous?.status;
       const value = event.value ?? previous?.value;
+      const firstChunkAt = event.phase === 'chunk'
+        ? previous?.firstChunkAt ?? event.timestamp
+        : previous?.firstChunkAt;
       const finishedAt = isTerminalPhase(event.phase) ? event.timestamp : previous?.finishedAt;
       const error = event.error ?? previous?.error;
 
@@ -140,6 +152,10 @@ export function createStreamInspector(options: StreamInspectorOptions = {}): Qor
 
       if (value !== undefined) {
         nextStreamInput.value = value;
+      }
+
+      if (firstChunkAt !== undefined) {
+        nextStreamInput.firstChunkAt = firstChunkAt;
       }
 
       if (finishedAt !== undefined) {
@@ -161,11 +177,28 @@ export function createStreamInspector(options: StreamInspectorOptions = {}): Qor
   return {
     events: recordedEvents,
     streams: inspectedStreams,
+    stream(idOrName) {
+      const existingSelector = streamSelectors.get(idOrName);
+
+      if (existingSelector) {
+        return existingSelector;
+      }
+
+      const selector = computed(() => inspectedStreams().find((stream) => stream.id === idOrName || stream.name === idOrName));
+      streamSelectors.set(idOrName, selector);
+      return selector;
+    },
     clear() {
       recordedEvents([]);
     },
     dispose() {
       inspectedStreams.stop();
+
+      for (const selector of streamSelectors.values()) {
+        selector.stop();
+      }
+
+      streamSelectors.clear();
 
       if (globalThis.__QORE_DEVTOOLS__ === record) {
         globalThis.__QORE_DEVTOOLS__ = previousHook;
@@ -182,7 +215,9 @@ type InspectedStreamInput = {
   chunkCount: number;
   createdAt: number;
   updatedAt: number;
+  firstChunkAt?: number;
   finishedAt?: number;
+  terminal: boolean;
   error?: Error | null;
 };
 
@@ -191,7 +226,8 @@ function createInspectedStream(input: InspectedStreamInput): QoreInspectedStream
     id: input.id,
     chunkCount: input.chunkCount,
     createdAt: input.createdAt,
-    updatedAt: input.updatedAt
+    updatedAt: input.updatedAt,
+    terminal: input.terminal
   };
 
   if (input.name !== undefined) {
@@ -208,6 +244,19 @@ function createInspectedStream(input: InspectedStreamInput): QoreInspectedStream
 
   if (input.finishedAt !== undefined) {
     stream.finishedAt = input.finishedAt;
+  }
+
+  if (input.firstChunkAt !== undefined) {
+    stream.firstChunkAt = input.firstChunkAt;
+    stream.firstChunkLatencyMs = Math.max(0, input.firstChunkAt - input.createdAt);
+  }
+
+  const durationEnd = input.finishedAt ?? input.updatedAt;
+  const durationMs = Math.max(0, durationEnd - input.createdAt);
+  stream.durationMs = durationMs;
+
+  if (input.chunkCount > 0) {
+    stream.chunksPerSecond = input.chunkCount / (Math.max(1, durationMs) / 1000);
   }
 
   if (input.error !== undefined) {

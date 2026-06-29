@@ -20,7 +20,27 @@ console.log(inspector.events());
 inspector.dispose();
 ```
 
-`inspector.events()` is a readonly signal containing the recent raw DevTools events. `inspector.streams()` is a derived readonly signal summarizing each observed stream by `id`, `name`, `status`, `chunkCount`, timestamps, and latest value.
+`inspector.events()` is a readonly signal containing the recent raw DevTools events. `inspector.streams()` is a derived readonly signal summarizing each observed stream by `id`, `name`, `status`, `chunkCount`, timestamps, latest value, and runtime metrics.
+
+```js
+const answerSummary = inspector.stream('answer');
+
+console.log({
+  status: answerSummary()?.status,
+  firstChunkLatencyMs: answerSummary()?.firstChunkLatencyMs,
+  durationMs: answerSummary()?.durationMs,
+  chunksPerSecond: answerSummary()?.chunksPerSecond,
+  terminal: answerSummary()?.terminal
+});
+```
+
+The summary includes:
+
+- `firstChunkAt`: timestamp for the first observed chunk
+- `firstChunkLatencyMs`: time from stream creation to first chunk
+- `durationMs`: time from stream creation to terminal state, or latest update while active
+- `chunksPerSecond`: observed chunk throughput, using a 1ms minimum window for instant streams
+- `terminal`: whether the stream reached `complete`, `error`, or `abort`
 
 Use `capturePayloads: false` when you want lifecycle timing without retaining token payloads:
 

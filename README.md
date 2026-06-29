@@ -108,13 +108,14 @@ import { createStreamInspector, stream } from '@qorejs/qore';
 
 const inspector = createStreamInspector({ maxEvents: 200 });
 const answer = stream(provider.chat(prompt), { name: 'answer' });
+const trace = inspector.stream('answer');
 
 await answer.ready;
-console.table(inspector.streams());
+console.log(trace()?.firstChunkLatencyMs, trace()?.chunksPerSecond);
 inspector.dispose();
 ```
 
-The inspector is zero-dependency and built on the same `__QORE_DEVTOOLS__` hook that custom panels can consume.
+The inspector is zero-dependency and built on the same `__QORE_DEVTOOLS__` hook that custom panels can consume. It reports lifecycle events, terminal state, first-chunk latency, total duration, and chunk throughput.
 
 ## Documentation
 

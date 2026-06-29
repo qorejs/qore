@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.5 - 2026-06-29
+
+- Added inspector stream metrics for first-chunk timestamp, first-chunk latency, duration, chunk throughput, and terminal state.
+- Added `QoreStreamInspector.stream(idOrName)` so custom panels and tests can subscribe to one stream summary without manually filtering the full inspector list.
+- Cached focused inspector selectors and dispose them with the inspector to avoid long-lived development panels leaking computed signals.
+- Expanded inspector tests and documentation around live stream status, timing metrics, metadata-only capture, and selector reuse.
+
 ## 1.0.4 - 2026-06-29
 
 - Added `createStreamInspector(...)`, a zero-dependency wrapper around the DevTools hook that exposes recent stream events and derived stream summaries as readonly signals.

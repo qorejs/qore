@@ -89,4 +89,6 @@ const answer = stream(source, { name: 'answer' });
 - `createStreamInspector(options?)`: install a disposable inspector over the global DevTools hook.
 - `QoreStreamInspector.events()`: recent raw stream lifecycle events.
 - `QoreStreamInspector.streams()`: derived stream summaries for custom panels and tests.
+- `QoreStreamInspector.stream(idOrName)`: subscribe to one stream summary by runtime id or name.
+- `QoreInspectedStream`: includes status, chunk count, terminal state, first-chunk latency, duration, and chunks-per-second metrics.
 - `QoreDevtoolsEvent`: exported TypeScript event type for custom inspectors.
