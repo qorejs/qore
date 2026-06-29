@@ -2,7 +2,16 @@
 export { signal, computed, createRoot, effect, onCleanup, batch, untrack, isSignal } from './core/signal.js';
 export type { ComputedSignal, ReadonlySignal, Signal } from './core/signal.js';
 export type { EffectOptions, EffectScheduler, SubscribeOptions } from './core/signal-types.js';
-export type { QoreDevtoolsEvent, QoreDevtoolsHook, QoreDevtoolsStreamEvent, QoreDevtoolsStreamPhase } from './core/devtools.js';
+export { createStreamInspector } from './core/devtools.js';
+export type {
+  QoreDevtoolsEvent,
+  QoreDevtoolsHook,
+  QoreDevtoolsStreamEvent,
+  QoreDevtoolsStreamPhase,
+  QoreInspectedStream,
+  QoreStreamInspector,
+  StreamInspectorOptions
+} from './core/devtools.js';
 export { stream, createStream, from, mapStream, scanStream, toAsyncIterable } from './core/stream.js';
 export type {
   BackpressureOptions,

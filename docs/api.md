@@ -80,10 +80,13 @@ import { createSSEResponse } from '@qorejs/qore';
 ## DevTools
 
 ```js
-globalThis.__QORE_DEVTOOLS__ = { events: [] };
+const inspector = createStreamInspector({ maxEvents: 200 });
 const answer = stream(source, { name: 'answer' });
 ```
 
 - `QoreStream.id`: stable runtime id for inspection.
 - `QoreStream.name`: optional stream name from `StreamOptions.name`.
+- `createStreamInspector(options?)`: install a disposable inspector over the global DevTools hook.
+- `QoreStreamInspector.events()`: recent raw stream lifecycle events.
+- `QoreStreamInspector.streams()`: derived stream summaries for custom panels and tests.
 - `QoreDevtoolsEvent`: exported TypeScript event type for custom inspectors.

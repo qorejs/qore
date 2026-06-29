@@ -1,6 +1,6 @@
 {
   "name": "@qorejs/qore",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Qore is a reactive stream runtime for AI-native interfaces.",
   "type": "module",
   "main": "./dist/src/index.js",

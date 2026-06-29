@@ -101,6 +101,21 @@ See [React Adapter](./docs/react.md) for lifecycle, status, abort, and signal su
 
 Provider adapters are intended for server-side or trusted runtimes. Do not put `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or any vendor secret in browser code. For browsers, expose your own SSE or NDJSON endpoint and stream that endpoint into Qore.
 
+## Inspect Streams
+
+```js
+import { createStreamInspector, stream } from '@qorejs/qore';
+
+const inspector = createStreamInspector({ maxEvents: 200 });
+const answer = stream(provider.chat(prompt), { name: 'answer' });
+
+await answer.ready;
+console.table(inspector.streams());
+inspector.dispose();
+```
+
+The inspector is zero-dependency and built on the same `__QORE_DEVTOOLS__` hook that custom panels can consume.
+
 ## Documentation
 
 - [Concepts](./docs/concepts.md): `stream = signal` and the mental model

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { mapStream, scanStream, sleep, stream } from '../src/index.js';
+import { createStreamInspector, mapStream, scanStream, sleep, stream } from '../src/index.js';
 
 // The default stream surface should read like a signal while keeping stream lifecycle state.
 test('stream is also a signal and accumulates text by default', async () => {
@@ -147,6 +147,61 @@ test('stream emits development events when the DevTools hook is installed', asyn
     assert.deepEqual(events.filter((event) => event.phase === 'chunk').map((event) => event.chunk), ['A', 'I']);
     assert.equal(events.at(-1)?.status, 'completed');
   } finally {
+    globalThis.__QORE_DEVTOOLS__ = previousHook;
+  }
+});
+
+test('createStreamInspector records stream timelines and restores the previous hook', async () => {
+  const forwarded: string[] = [];
+  const previousHook = globalThis.__QORE_DEVTOOLS__;
+  const baseHook = (event: { phase: string }) => {
+    forwarded.push(event.phase);
+  };
+  globalThis.__QORE_DEVTOOLS__ = baseHook;
+  const inspector = createStreamInspector({ maxEvents: 3 });
+
+  try {
+    const answer = stream(['Q', 'ore'], { name: 'inspectable-answer' });
+    await answer.ready;
+
+    assert.deepEqual(forwarded, ['create', 'status', 'chunk', 'chunk', 'complete']);
+    assert.deepEqual(inspector.events().map((event) => event.phase), ['chunk', 'chunk', 'complete']);
+
+    const inspected = inspector.streams()[0];
+    assert.ok(inspected);
+    assert.equal(inspected.id, answer.id);
+    assert.equal(inspected.name, 'inspectable-answer');
+    assert.equal(inspected.status, 'completed');
+    assert.equal(inspected.chunkCount, 2);
+    assert.equal(inspected.value, 'Qore');
+    assert.ok(inspected.finishedAt);
+
+    inspector.clear();
+    assert.equal(inspector.events().length, 0);
+    assert.equal(inspector.streams().length, 0);
+  } finally {
+    inspector.dispose();
+    assert.equal(globalThis.__QORE_DEVTOOLS__, baseHook);
+    globalThis.__QORE_DEVTOOLS__ = previousHook;
+  }
+});
+
+test('createStreamInspector can avoid retaining chunk payloads', async () => {
+  const previousHook = globalThis.__QORE_DEVTOOLS__;
+  const inspector = createStreamInspector({ capturePayloads: false });
+
+  try {
+    const answer = stream(['large-token'], { name: 'metadata-only' });
+    await answer.ready;
+
+    const chunkEvent = inspector.events().find((event) => event.phase === 'chunk');
+    assert.ok(chunkEvent);
+    assert.equal(chunkEvent.chunk, undefined);
+    assert.equal(chunkEvent.value, undefined);
+    assert.equal(chunkEvent.chunkCount, 1);
+    assert.equal(inspector.streams()[0]?.name, 'metadata-only');
+  } finally {
+    inspector.dispose();
     globalThis.__QORE_DEVTOOLS__ = previousHook;
   }
 });

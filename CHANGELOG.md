@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.4 - 2026-06-29
+
+- Added `createStreamInspector(...)`, a zero-dependency wrapper around the DevTools hook that exposes recent stream events and derived stream summaries as readonly signals.
+- Added inspector options for bounded event history and metadata-only capture so development panels can avoid retaining large token payloads.
+- Documented the inspector workflow across the README, API reference, and DevTools guide.
+- Expanded stream tests and the public API snapshot so inspector lifecycle, hook restoration, payload capture, and exported types are release-gated.
+
 ## 1.0.3 - 2026-06-29
 
 - Added a lightweight `globalThis.__QORE_DEVTOOLS__` stream inspection hook with typed DevTools events for create, status, chunk, complete, error, and abort phases.
