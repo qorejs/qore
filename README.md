@@ -80,6 +80,8 @@ Each selected stream is still a signal and an async iterable. A timeline can ren
 
 Qore can be used inside React without replacing your UI stack. The release-ready adapter lives in [`packages/react`](./packages/react) and subscribes to Qore streams through React's external store contract, so the stream remains the source of truth while React renders the view.
 
+> Status: `@qorejs/react` is release-ready in this repository, but npm publishing is still waiting on `@qorejs/react` package access for the `@qorejs` scope. The adapter smoke test passes; the package will be announced as published only after npm accepts it.
+
 ```tsx
 import { stream } from '@qorejs/qore';
 import { useQoreStream } from '@qorejs/react';

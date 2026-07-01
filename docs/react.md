@@ -2,7 +2,10 @@
 
 Qore's core runtime is framework-neutral. The React adapter lets React apps consume Qore streams without treating streaming as a special rendering case.
 
+> Status: the adapter is release-ready in [`packages/react`](../packages/react), but the npm package is not published yet. Publishing currently fails with npm `E404` for `@qorejs/react`, which means the `@qorejs` npm scope/package access still needs to be provisioned before the install command below becomes valid.
+
 ```bash
+# Available after npm package access is provisioned.
 npm i @qorejs/qore @qorejs/react
 ```
 

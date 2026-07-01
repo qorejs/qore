@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.0.6 - 2026-07-01
+
+- Moved release and GitHub Packages validation lanes to Node.js 24 so release artifacts no longer carry Node.js 20 action-runtime warnings.
+- Moved CI browser regression, benchmark, artifact upload, and React adapter package smoke lanes to Node.js 24 while keeping Node.js 18, 20, and 22 compatibility checks.
+- Clarified the React adapter documentation so `@qorejs/react` is described as release-ready but not npm-published until the `@qorejs` scope/package access issue is resolved.
+
 ## 1.0.5 - 2026-06-29
 
 - Added inspector stream metrics for first-chunk timestamp, first-chunk latency, duration, chunk throughput, and terminal state.
