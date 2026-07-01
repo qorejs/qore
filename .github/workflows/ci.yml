@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload browser regression artifacts
         if: matrix.node-version == 24 && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: qore-browser-regression-node-24
           path: |
