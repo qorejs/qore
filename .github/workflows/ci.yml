@@ -27,6 +27,7 @@ jobs:
           - 18
           - 20
           - 22
+          - 24
 
     steps:
       - name: Check out the repository
@@ -48,22 +49,22 @@ jobs:
         run: npm test
 
       - name: Install Chromium for browser regression
-        if: matrix.node-version == 20
+        if: matrix.node-version == 24
         run: npx playwright install --with-deps chromium
 
       - name: Run the browser smoke suite
-        if: matrix.node-version == 20
+        if: matrix.node-version == 24
         run: npm run test:browser
 
       - name: Run the benchmark regression gate
-        if: matrix.node-version == 20
+        if: matrix.node-version == 24
         run: npm run test:benchmark
 
       - name: Upload browser regression artifacts
-        if: matrix.node-version == 20 && always()
+        if: matrix.node-version == 24 && always()
         uses: actions/upload-artifact@v4
         with:
-          name: qore-browser-regression-node-20
+          name: qore-browser-regression-node-24
           path: |
             test-results
             playwright-report
@@ -80,5 +81,5 @@ jobs:
         run: npm run smoke:package-runtime
 
       - name: Run the React adapter package smoke test
-        if: matrix.node-version == 20
+        if: matrix.node-version == 24
         run: npm run smoke:react-package
