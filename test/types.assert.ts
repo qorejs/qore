@@ -35,7 +35,8 @@ import {
   type ReadonlySignal,
   type SSEFrame,
   type SSEAdapter,
-  type StreamEventOf
+  type StreamEventOf,
+  type StructuredStreamOptions
 } from '../src/index.js';
 
 type Assert<T extends true> = T;
@@ -61,6 +62,7 @@ type AgentEvent =
 const source = stream(['a', 'b']);
 const listSource = stream.list([{ step: 1 }]);
 const latestSource = stream.latest([1, 2, 3]);
+const structuredSource = stream.json<{ ok: boolean }>(['{"ok":true}']);
 const mergedSource = stream.merge([[1, 2], [3, 4]]);
 const concatenatedSource = stream.concat([[1, 2], [3, 4]]);
 const pipedSource = stream.pipe(['a'], [
@@ -137,6 +139,11 @@ const retryOptions: ProviderRetryOptions = {
   backoff: 'exponential',
   resume: true
 };
+const structuredOptions: StructuredStreamOptions<{ ok: boolean }> = {
+  validate(value): value is { ok: boolean } {
+    return typeof value === 'object' && value !== null && 'ok' in value;
+  }
+};
 const usage: ProviderUsage = {
   inputTokens: 1,
   outputTokens: 2,
@@ -173,6 +180,7 @@ const ollamaMetadata = extractOllamaMetadata({
 type _DefaultStream = Assert<Equal<typeof source, QoreStream<string, string>>>;
 type _ListStream = Assert<Equal<typeof listSource, QoreStream<{ step: number }, Array<{ step: number }>>>>;
 type _LatestStream = Assert<Equal<typeof latestSource, QoreStream<number, number | null>>>;
+type _StructuredStream = Assert<Equal<typeof structuredSource, QoreStream<{ ok: boolean }, { ok: boolean } | null>>>;
 type _MergedStream = Assert<Equal<typeof mergedSource, QoreStream<number, string>>>;
 type _ConcatenatedStream = Assert<Equal<typeof concatenatedSource, QoreStream<number, string>>>;
 type _PipedStream = Assert<Equal<typeof pipedSource, QoreStream<string, string>>>;
@@ -197,6 +205,7 @@ type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 
 void providerOptions;
 void retryOptions;
+void structuredOptions;
 void providerMetadata;
 void mergedMetadata;
 void collectedMetadata;

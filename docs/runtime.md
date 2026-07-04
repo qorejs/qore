@@ -50,6 +50,29 @@ stream.switchMap(promptChanges, (prompt) => openai.chat(prompt));
 
 The composed result is still a stream signal.
 
+## Structured JSON
+
+AI providers increasingly return structured output as streamed text. Keep that
+boundary reactive too:
+
+```ts
+const result = stream.json<{ title: string; items: string[] }>(provider.chat(prompt), {
+  validate(value): value is { title: string; items: string[] } {
+    return typeof value === 'object'
+      && value !== null
+      && 'title' in value
+      && 'items' in value;
+  }
+});
+
+result(); // null until valid JSON is available, then the parsed object
+```
+
+`stream.json()` parses the accumulated text after each chunk. It publishes valid
+JSON as signal state and fails the stream if the source completes without valid
+JSON. It intentionally does not pretend that arbitrary half-written JSON can be
+parsed safely.
+
 ## Event Streams
 
 Provider streams are only the transport boundary. Agent interfaces need a richer runtime surface: text tokens, tool calls, status updates, reasoning notes, diffs, artifacts, retries, and errors can all be modeled as typed events.

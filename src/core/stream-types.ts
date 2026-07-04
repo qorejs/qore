@@ -57,6 +57,15 @@ export type StreamEventOptions<TEvent extends StreamEventBase> = Omit<
   'seed' | 'reduce'
 >;
 
+export interface StructuredStreamOptions<TValue> extends Omit<
+  StreamOptions<TValue, TValue | null>,
+  'seed' | 'reduce'
+> {
+  seed?: TValue | null;
+  parse?: (text: string) => TValue;
+  validate?: (value: unknown) => value is TValue;
+}
+
 export type StreamSelectOptions<
   TEvent extends StreamEventBase,
   TValue
@@ -144,6 +153,10 @@ export interface StreamFactory {
     sourceOrSetup: StreamInput<TChunk, TChunk | null>,
     options?: StreamOptions<TChunk, TChunk | null>
   ): QoreStream<TChunk, TChunk | null>;
+  json<TValue = unknown>(
+    source: SourceLike<string>,
+    options?: StructuredStreamOptions<TValue>
+  ): QoreStream<TValue, TValue | null>;
   events<TEvent extends StreamEventBase>(
     sourceOrSetup: StreamInput<TEvent, TEvent[]>,
     options?: StreamEventOptions<TEvent>

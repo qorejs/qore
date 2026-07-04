@@ -75,6 +75,18 @@ const diff = events.select('diff');
 
 Each selected stream is still a signal and an async iterable. A timeline can render every event, while a markdown pane can bind only to `text()`. The runnable shape is captured in [`examples/agent-event-stream.ts`](./examples/agent-event-stream.ts).
 
+## Structured Output
+
+Structured AI output should also flow through the same runtime path:
+
+```ts
+const result = stream.json<{ title: string; items: string[] }>(provider.chat(prompt));
+
+result(); // null until valid JSON is available, then the parsed object
+```
+
+Use `validate` when you want a typed guard before publishing parsed output into UI state. Invalid JSON fails through the normal stream lifecycle instead of becoming hidden glue code.
+
 
 ## React Adapter
 
@@ -140,7 +152,7 @@ The inspector is zero-dependency and built on the same `__QORE_DEVTOOLS__` hook 
 | Node runtime | Supported | `Node >= 18` |
 | Browser runtime | Supported | DOM entrypoints require `document` |
 | Reactive core | Supported | `signal`, `computed`, `effect`, `batch`, `createRoot`, `onCleanup` |
-| Stream runtime | Supported | backpressure, retry, orchestration, async iteration, abort, and DevTools hooks |
+| Stream runtime | Supported | backpressure, retry, orchestration, structured JSON, async iteration, abort, and DevTools hooks |
 | Provider adapters | Supported | OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, generic SSE, generic line-stream |
 | Browser DOM layer | Supported | `h`, `text`, `dynamic`, `list`, `mount`, `createApp(...).mount(...)` |
 | React adapter | Release-ready | `packages/react` bridges Qore streams through `useSyncExternalStore`; npm publishing is waiting on scope access |

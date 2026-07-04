@@ -17,7 +17,8 @@ import type {
   StreamInput,
   StreamPipeStage,
   StreamSelectOptions,
-  StreamOptions
+  StreamOptions,
+  StructuredStreamOptions
 } from './stream-types.js';
 import { sleep } from '../shared/utils.js';
 
@@ -62,6 +63,62 @@ streamFactory.latest = <TChunk>(
   reduce: (_, chunk) => chunk,
   ...options
 });
+
+streamFactory.json = <TValue = unknown>(
+  source: SourceLike<string>,
+  options: StructuredStreamOptions<TValue> = {}
+): QoreStream<TValue, TValue | null> => {
+  const {
+    seed = null,
+    parse = JSON.parse as (text: string) => TValue,
+    validate,
+    ...streamOptions
+  } = options;
+
+  return createStream<TValue, TValue | null>(async (controller) => {
+    let buffer = '';
+    let parsedOnce = false;
+    let lastParsedText = '';
+    let lastParseError: unknown = null;
+
+    for await (const chunk of toAsyncIterable(source)) {
+      if (controller.signal.aborted) {
+        break;
+      }
+
+      buffer += chunk;
+      const candidateText = buffer.trim();
+
+      try {
+        const parsed = parse(candidateText);
+
+        if (validate && !validate(parsed)) {
+          throw new TypeError('Structured stream value failed validation.');
+        }
+
+        parsedOnce = true;
+        lastParseError = null;
+
+        if (candidateText !== lastParsedText) {
+          lastParsedText = candidateText;
+          await controller.push(parsed);
+        }
+      } catch (error) {
+        lastParseError = error;
+      }
+    }
+
+    if (!controller.signal.aborted && (!parsedOnce || lastParseError !== null)) {
+      throw lastParseError instanceof Error
+        ? lastParseError
+        : new SyntaxError('Structured stream did not produce valid JSON.');
+    }
+  }, {
+    seed,
+    reduce: (_, chunk) => chunk,
+    ...streamOptions
+  });
+};
 
 streamFactory.events = <TEvent extends StreamEventBase>(
   sourceOrSetup: StreamInput<TEvent, TEvent[]>,
@@ -443,6 +500,7 @@ export type {
   StreamInput,
   StreamOptions,
   StreamSelectOptions,
-  StreamSetup
+  StreamSetup,
+  StructuredStreamOptions
 } from './stream-types.js';
 export { toAsyncIterable } from './iterable.js';

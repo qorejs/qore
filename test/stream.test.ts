@@ -47,6 +47,66 @@ test('stream.list keeps structured chunks in signal form', async () => {
   assert.deepEqual(feed(), [{ step: 1 }, { step: 2 }]);
 });
 
+test('stream.json turns JSON token streams into structured signal state', async () => {
+  type Answer = { title: string; steps: string[] };
+
+  const answer = stream.json<Answer>(['{"title":"Qore",', '"steps":["stream",', '"signal"]}']);
+
+  await answer.ready;
+
+  assert.deepEqual(answer(), {
+    title: 'Qore',
+    steps: ['stream', 'signal']
+  });
+  assert.equal(answer.status(), 'completed');
+  assert.equal(answer.chunkCount(), 1);
+});
+
+test('stream.json surfaces invalid structured output as a stream error', async () => {
+  const answer = stream.json(['{"ok":']);
+
+  await assert.rejects(answer.ready, SyntaxError);
+
+  assert.equal(answer.status(), 'error');
+  assert.equal(answer(), null);
+});
+
+test('stream.json ignores trailing whitespace without publishing duplicate objects', async () => {
+  const answer = stream.json<{ ok: true }>(['{"ok":true}', '  \n']);
+
+  await answer.ready;
+
+  assert.deepEqual(answer(), { ok: true });
+  assert.equal(answer.chunkCount(), 1);
+});
+
+test('stream.json rejects trailing garbage after an initially valid object', async () => {
+  const answer = stream.json(['{"ok":true}', ' nope']);
+
+  await assert.rejects(answer.ready, SyntaxError);
+
+  assert.equal(answer.status(), 'error');
+  assert.deepEqual(answer(), { ok: true });
+});
+
+test('stream.json can validate parsed structured output before publishing it', async () => {
+  type Payload = { ok: true };
+
+  const answer = stream.json<Payload>(['{"ok":false}'], {
+    validate(value): value is Payload {
+      return typeof value === 'object'
+        && value !== null
+        && 'ok' in value
+        && value.ok === true;
+    }
+  });
+
+  await assert.rejects(answer.ready, /validation/);
+
+  assert.equal(answer.failed(), true);
+  assert.equal(answer(), null);
+});
+
 // Wrapping an existing stream should treat it as data, not as a setup callback.
 test('stream can wrap another stream without treating it like a setup function', async () => {
   const source = stream<string>(async ({ push }) => {

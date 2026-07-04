@@ -108,6 +108,7 @@ export const PUBLIC_API_SNAPSHOT = [
   'StreamOptions',
   'StreamSelectOptions',
   'StreamSetup',
+  'StructuredStreamOptions',
   'SubscribeOptions',
   'assertCanUseDOM',
   'batch',
