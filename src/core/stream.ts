@@ -18,6 +18,7 @@ import type {
   StreamPipeStage,
   StreamSelectOptions,
   StreamOptions,
+  StructuredLineStreamOptions,
   StructuredStreamOptions
 } from './stream-types.js';
 import { sleep } from '../shared/utils.js';
@@ -90,11 +91,7 @@ streamFactory.json = <TValue = unknown>(
       const candidateText = buffer.trim();
 
       try {
-        const parsed = parse(candidateText);
-
-        if (validate && !validate(parsed)) {
-          throw new TypeError('Structured stream value failed validation.');
-        }
+        const parsed = parseStructuredValue(candidateText, parse, validate);
 
         parsedOnce = true;
         lastParseError = null;
@@ -116,6 +113,58 @@ streamFactory.json = <TValue = unknown>(
   }, {
     seed,
     reduce: (_, chunk) => chunk,
+    ...streamOptions
+  });
+};
+
+streamFactory.ndjson = <TValue = unknown>(
+  source: SourceLike<string>,
+  options: StructuredLineStreamOptions<TValue> = {}
+): QoreStream<TValue, TValue[]> => {
+  const {
+    seed = [],
+    parse = JSON.parse as (text: string) => TValue,
+    validate,
+    ...streamOptions
+  } = options;
+
+  return createStream<TValue, TValue[]>(async (controller) => {
+    let buffer = '';
+
+    const publishLine = async (line: string): Promise<void> => {
+      const text = line.trim();
+
+      if (text.length === 0) {
+        return;
+      }
+
+      await controller.push(parseStructuredValue(text, parse, validate));
+    };
+
+    for await (const chunk of toAsyncIterable(source)) {
+      if (controller.signal.aborted) {
+        break;
+      }
+
+      buffer += chunk;
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (controller.signal.aborted) {
+          break;
+        }
+
+        await publishLine(line);
+      }
+    }
+
+    if (!controller.signal.aborted) {
+      await publishLine(buffer);
+    }
+  }, {
+    seed,
+    reduce: (currentValue, chunk) => [...currentValue, chunk],
     ...streamOptions
   });
 };
@@ -414,6 +463,20 @@ async function resolveRetryDelay(backoff: RetryBackoff, retry: number, error: un
   return Math.max(0, backoff);
 }
 
+function parseStructuredValue<TValue>(
+  text: string,
+  parse: (text: string) => TValue,
+  validate: ((value: unknown) => value is TValue) | undefined
+): TValue {
+  const parsed = parse(text);
+
+  if (validate && !validate(parsed)) {
+    throw new TypeError('Structured stream value failed validation.');
+  }
+
+  return parsed;
+}
+
 // Turn any iterable or async iterable into a stream, optionally adding source delay.
 export function from<TChunk, TValue = string>(
   source: SourceLike<TChunk>,
@@ -501,6 +564,7 @@ export type {
   StreamOptions,
   StreamSelectOptions,
   StreamSetup,
+  StructuredLineStreamOptions,
   StructuredStreamOptions
 } from './stream-types.js';
 export { toAsyncIterable } from './iterable.js';

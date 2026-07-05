@@ -29,6 +29,7 @@ export type {
   StreamOptions,
   StreamSelectOptions,
   StreamSetup,
+  StructuredLineStreamOptions,
   StructuredStreamOptions
 } from './core/stream.js';
 export { createResponse, response } from './core/response.js';

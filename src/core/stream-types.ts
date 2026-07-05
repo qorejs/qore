@@ -66,6 +66,15 @@ export interface StructuredStreamOptions<TValue> extends Omit<
   validate?: (value: unknown) => value is TValue;
 }
 
+export interface StructuredLineStreamOptions<TValue> extends Omit<
+  StreamOptions<TValue, TValue[]>,
+  'seed' | 'reduce'
+> {
+  seed?: TValue[];
+  parse?: (text: string) => TValue;
+  validate?: (value: unknown) => value is TValue;
+}
+
 export type StreamSelectOptions<
   TEvent extends StreamEventBase,
   TValue
@@ -157,6 +166,10 @@ export interface StreamFactory {
     source: SourceLike<string>,
     options?: StructuredStreamOptions<TValue>
   ): QoreStream<TValue, TValue | null>;
+  ndjson<TValue = unknown>(
+    source: SourceLike<string>,
+    options?: StructuredLineStreamOptions<TValue>
+  ): QoreStream<TValue, TValue[]>;
   events<TEvent extends StreamEventBase>(
     sourceOrSetup: StreamInput<TEvent, TEvent[]>,
     options?: StreamEventOptions<TEvent>

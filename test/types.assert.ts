@@ -36,6 +36,7 @@ import {
   type SSEFrame,
   type SSEAdapter,
   type StreamEventOf,
+  type StructuredLineStreamOptions,
   type StructuredStreamOptions
 } from '../src/index.js';
 
@@ -63,6 +64,7 @@ const source = stream(['a', 'b']);
 const listSource = stream.list([{ step: 1 }]);
 const latestSource = stream.latest([1, 2, 3]);
 const structuredSource = stream.json<{ ok: boolean }>(['{"ok":true}']);
+const structuredLineSource = stream.ndjson<{ ok: boolean }>(['{"ok":true}\n']);
 const mergedSource = stream.merge([[1, 2], [3, 4]]);
 const concatenatedSource = stream.concat([[1, 2], [3, 4]]);
 const pipedSource = stream.pipe(['a'], [
@@ -144,6 +146,11 @@ const structuredOptions: StructuredStreamOptions<{ ok: boolean }> = {
     return typeof value === 'object' && value !== null && 'ok' in value;
   }
 };
+const structuredLineOptions: StructuredLineStreamOptions<{ ok: boolean }> = {
+  validate(value): value is { ok: boolean } {
+    return typeof value === 'object' && value !== null && 'ok' in value;
+  }
+};
 const usage: ProviderUsage = {
   inputTokens: 1,
   outputTokens: 2,
@@ -181,6 +188,7 @@ type _DefaultStream = Assert<Equal<typeof source, QoreStream<string, string>>>;
 type _ListStream = Assert<Equal<typeof listSource, QoreStream<{ step: number }, Array<{ step: number }>>>>;
 type _LatestStream = Assert<Equal<typeof latestSource, QoreStream<number, number | null>>>;
 type _StructuredStream = Assert<Equal<typeof structuredSource, QoreStream<{ ok: boolean }, { ok: boolean } | null>>>;
+type _StructuredLineStream = Assert<Equal<typeof structuredLineSource, QoreStream<{ ok: boolean }, Array<{ ok: boolean }>>>>;
 type _MergedStream = Assert<Equal<typeof mergedSource, QoreStream<number, string>>>;
 type _ConcatenatedStream = Assert<Equal<typeof concatenatedSource, QoreStream<number, string>>>;
 type _PipedStream = Assert<Equal<typeof pipedSource, QoreStream<string, string>>>;
@@ -206,6 +214,7 @@ type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 void providerOptions;
 void retryOptions;
 void structuredOptions;
+void structuredLineOptions;
 void providerMetadata;
 void mergedMetadata;
 void collectedMetadata;

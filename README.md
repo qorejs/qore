@@ -85,7 +85,15 @@ const result = stream.json<{ title: string; items: string[] }>(provider.chat(pro
 result(); // null until valid JSON is available, then the parsed object
 ```
 
-Use `validate` when you want a typed guard before publishing parsed output into UI state. Invalid JSON fails through the normal stream lifecycle instead of becoming hidden glue code.
+For line-delimited event streams, use the same idea per line:
+
+```ts
+const events = stream.ndjson<{ type: string; value: unknown }>(fetch('/api/events').then((r) => r.body));
+
+events(); // accumulated structured events
+```
+
+Use `validate` when you want a typed guard before publishing parsed output into UI state. Invalid JSON or NDJSON fails through the normal stream lifecycle instead of becoming hidden glue code.
 
 
 ## React Adapter
@@ -152,7 +160,7 @@ The inspector is zero-dependency and built on the same `__QORE_DEVTOOLS__` hook 
 | Node runtime | Supported | `Node >= 18` |
 | Browser runtime | Supported | DOM entrypoints require `document` |
 | Reactive core | Supported | `signal`, `computed`, `effect`, `batch`, `createRoot`, `onCleanup` |
-| Stream runtime | Supported | backpressure, retry, orchestration, structured JSON, async iteration, abort, and DevTools hooks |
+| Stream runtime | Supported | backpressure, retry, orchestration, structured JSON/NDJSON, async iteration, abort, and DevTools hooks |
 | Provider adapters | Supported | OpenAI, Anthropic, OpenRouter, DeepSeek, Ollama, generic SSE, generic line-stream |
 | Browser DOM layer | Supported | `h`, `text`, `dynamic`, `list`, `mount`, `createApp(...).mount(...)` |
 | React adapter | Release-ready | `packages/react` bridges Qore streams through `useSyncExternalStore`; npm publishing is waiting on scope access |

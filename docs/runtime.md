@@ -73,6 +73,18 @@ JSON as signal state and fails the stream if the source completes without valid
 JSON. It intentionally does not pretend that arbitrary half-written JSON can be
 parsed safely.
 
+For event streams that arrive as line-delimited JSON, use `stream.ndjson()`:
+
+```ts
+const events = stream.ndjson<{ type: string; value: unknown }>(agentEvents);
+
+events(); // accumulated structured events
+```
+
+Each valid line is published as a chunk and added to the signal array. Blank
+lines are ignored, and an invalid final line fails the stream while keeping the
+events that were already safely published.
+
 ## Event Streams
 
 Provider streams are only the transport boundary. Agent interfaces need a richer runtime surface: text tokens, tool calls, status updates, reasoning notes, diffs, artifacts, retries, and errors can all be modeled as typed events.

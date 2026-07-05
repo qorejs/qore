@@ -25,6 +25,7 @@ import { stream } from '@qorejs/qore';
 - `stream.list(source, options?)`: accumulate chunks into an array signal
 - `stream.latest(source, options?)`: keep only the latest chunk
 - `stream.json(source, options?)`: parse JSON text into structured signal state
+- `stream.ndjson(source, options?)`: parse line-delimited JSON text into a structured event signal
 - `stream.from(source, options?)`: normalize any iterable source, optionally with source delay
 - `stream.events(source, options?)`: accumulate typed runtime events into a timeline signal
 - `stream.withBackpressure(source, options?)`: pace stream commits
@@ -67,6 +68,12 @@ const result = stream.json(provider.chat(prompt), {
 ```
 
 `stream.json(...)` parses accumulated text after each chunk. The signal value is `null` until valid JSON is available, then it becomes the parsed object. If the source finishes without valid JSON, the stream fails through the normal `status`, `error`, and `ready` lifecycle.
+
+```js
+const events = stream.ndjson(source);
+```
+
+`stream.ndjson(...)` parses each complete line as JSON, publishes each parsed object as a chunk, and exposes the accumulated event list as signal state. Blank lines are ignored. An invalid trailing line fails the stream while preserving already-published events.
 
 ## DOM
 

@@ -107,6 +107,57 @@ test('stream.json can validate parsed structured output before publishing it', a
   assert.equal(answer(), null);
 });
 
+test('stream.ndjson turns line-delimited JSON into a structured event signal', async () => {
+  type Event = { type: 'token'; text: string } | { type: 'status'; value: 'done' };
+
+  const events = stream.ndjson<Event>([
+    '{"type":"token","text":"stream"}\n{"type":"token",',
+    '"text":" signal"}\n',
+    '\n{"type":"status","value":"done"}'
+  ]);
+
+  const chunks: Event[] = [];
+
+  for await (const event of events) {
+    chunks.push(event);
+  }
+
+  assert.deepEqual(chunks, [
+    { type: 'token', text: 'stream' },
+    { type: 'token', text: ' signal' },
+    { type: 'status', value: 'done' }
+  ]);
+  assert.deepEqual(events(), chunks);
+  assert.equal(events.status(), 'completed');
+});
+
+test('stream.ndjson rejects invalid trailing lines', async () => {
+  const events = stream.ndjson(['{"ok":true}\n{"ok":']);
+
+  await assert.rejects(events.ready, SyntaxError);
+
+  assert.deepEqual(events(), [{ ok: true }]);
+  assert.equal(events.status(), 'error');
+});
+
+test('stream.ndjson validates each published line', async () => {
+  type Event = { type: 'token'; text: string };
+  const events = stream.ndjson<Event>(['{"type":"status","value":"done"}\n'], {
+    validate(value): value is Event {
+      return typeof value === 'object'
+        && value !== null
+        && 'type' in value
+        && value.type === 'token'
+        && 'text' in value;
+    }
+  });
+
+  await assert.rejects(events.ready, /validation/);
+
+  assert.deepEqual(events(), []);
+  assert.equal(events.failed(), true);
+});
+
 // Wrapping an existing stream should treat it as data, not as a setup callback.
 test('stream can wrap another stream without treating it like a setup function', async () => {
   const source = stream<string>(async ({ push }) => {
