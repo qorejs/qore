@@ -19,6 +19,7 @@ export type {
   QoreStream,
   RetryBackoff,
   RetryableStreamOptions,
+  StreamCollectionOptions,
   StreamController,
   StreamEventBase,
   StreamEventOf,

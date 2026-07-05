@@ -35,6 +35,7 @@ import {
   type ReadonlySignal,
   type SSEFrame,
   type SSEAdapter,
+  type StreamCollectionOptions,
   type StreamEventOf,
   type StructuredLineStreamOptions,
   type StructuredStreamOptions
@@ -146,7 +147,11 @@ const structuredOptions: StructuredStreamOptions<{ ok: boolean }> = {
     return typeof value === 'object' && value !== null && 'ok' in value;
   }
 };
+const collectionOptions: StreamCollectionOptions<{ ok: boolean }> = {
+  maxItems: 10
+};
 const structuredLineOptions: StructuredLineStreamOptions<{ ok: boolean }> = {
+  maxItems: 10,
   validate(value): value is { ok: boolean } {
     return typeof value === 'object' && value !== null && 'ok' in value;
   }
@@ -214,6 +219,7 @@ type _OpenRouterAdapter = Assert<Extends<typeof openrouter, OpenRouterAdapter>>;
 void providerOptions;
 void retryOptions;
 void structuredOptions;
+void collectionOptions;
 void structuredLineOptions;
 void providerMetadata;
 void mergedMetadata;

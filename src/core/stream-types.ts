@@ -53,9 +53,13 @@ export type StreamEventOf<
 > = Extract<TEvent, { type: TType }>;
 
 export type StreamEventOptions<TEvent extends StreamEventBase> = Omit<
-  StreamOptions<TEvent, TEvent[]>,
+  StreamCollectionOptions<TEvent>,
   'seed' | 'reduce'
 >;
+
+export interface StreamCollectionOptions<TChunk> extends StreamOptions<TChunk, TChunk[]> {
+  maxItems?: number;
+}
 
 export interface StructuredStreamOptions<TValue> extends Omit<
   StreamOptions<TValue, TValue | null>,
@@ -67,10 +71,9 @@ export interface StructuredStreamOptions<TValue> extends Omit<
 }
 
 export interface StructuredLineStreamOptions<TValue> extends Omit<
-  StreamOptions<TValue, TValue[]>,
-  'seed' | 'reduce'
+  StreamCollectionOptions<TValue>,
+  'reduce'
 > {
-  seed?: TValue[];
   parse?: (text: string) => TValue;
   validate?: (value: unknown) => value is TValue;
 }
@@ -156,7 +159,7 @@ export interface StreamFactory {
   ): QoreStream<TChunk, string>;
   list<TChunk>(
     sourceOrSetup: StreamInput<TChunk, TChunk[]>,
-    options?: StreamOptions<TChunk, TChunk[]>
+    options?: StreamCollectionOptions<TChunk>
   ): QoreStream<TChunk, TChunk[]>;
   latest<TChunk>(
     sourceOrSetup: StreamInput<TChunk, TChunk | null>,

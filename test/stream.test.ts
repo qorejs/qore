@@ -47,6 +47,15 @@ test('stream.list keeps structured chunks in signal form', async () => {
   assert.deepEqual(feed(), [{ step: 1 }, { step: 2 }]);
 });
 
+test('stream.list can bound its signal collection for long-running feeds', async () => {
+  const feed = stream.list([1, 2, 3, 4], { maxItems: 2 });
+
+  await feed.ready;
+
+  assert.deepEqual(feed(), [3, 4]);
+  assert.deepEqual(feed.chunks(), [1, 2, 3, 4]);
+});
+
 test('stream.json turns JSON token streams into structured signal state', async () => {
   type Answer = { title: string; steps: string[] };
 
@@ -129,6 +138,21 @@ test('stream.ndjson turns line-delimited JSON into a structured event signal', a
   ]);
   assert.deepEqual(events(), chunks);
   assert.equal(events.status(), 'completed');
+});
+
+test('stream.ndjson can keep a bounded signal window while preserving iteration', async () => {
+  type Event = { index: number };
+  const events = stream.ndjson<Event>([
+    '{"index":1}\n{"index":2}\n{"index":3}\n'
+  ], { maxItems: 2 });
+  const chunks: Event[] = [];
+
+  for await (const event of events) {
+    chunks.push(event);
+  }
+
+  assert.deepEqual(chunks, [{ index: 1 }, { index: 2 }, { index: 3 }]);
+  assert.deepEqual(events(), [{ index: 2 }, { index: 3 }]);
 });
 
 test('stream.ndjson rejects invalid trailing lines', async () => {
@@ -408,6 +432,25 @@ test('stream.events exposes typed event timelines as signal state', async () => 
     { type: 'status', value: 'thinking' },
     { type: 'status', value: 'done' }
   ]);
+});
+
+test('stream.events can bound the timeline signal for long agent runs', async () => {
+  const events = stream.events<
+    | { type: 'status'; value: string }
+    | { type: 'text'; text: string }
+  >([
+    { type: 'status', value: 'queued' },
+    { type: 'text', text: 'thinking' },
+    { type: 'status', value: 'done' }
+  ], { maxItems: 2 });
+
+  await events.ready;
+
+  assert.deepEqual(events(), [
+    { type: 'text', text: 'thinking' },
+    { type: 'status', value: 'done' }
+  ]);
+  assert.equal(events.chunkCount(), 3);
 });
 
 test('stream.events select can reduce one event type into UI-ready state', async () => {

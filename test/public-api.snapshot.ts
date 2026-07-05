@@ -97,6 +97,7 @@ export const PUBLIC_API_SNAPSHOT = [
   'SSERequestConfig',
   'Signal',
   'SourceLike',
+  'StreamCollectionOptions',
   'StreamController',
   'StreamEventBase',
   'StreamEventOf',

@@ -75,6 +75,18 @@ const events = stream.ndjson(source);
 
 `stream.ndjson(...)` parses each complete line as JSON, publishes each parsed object as a chunk, and exposes the accumulated event list as signal state. Blank lines are ignored. An invalid trailing line fails the stream while preserving already-published events.
 
+Collection-style streams accept `maxItems` to keep the signal value bounded for
+long-running feeds:
+
+```js
+const events = stream.events(agent.run(task), { maxItems: 200 });
+const lines = stream.ndjson(source, { maxItems: 500 });
+const rows = stream.list(source, { maxItems: 100 });
+```
+
+`maxItems` limits the current signal array. It does not hide chunks from async
+iteration or lifecycle counters.
+
 ## DOM
 
 ```js

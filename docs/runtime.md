@@ -85,6 +85,20 @@ Each valid line is published as a chunk and added to the signal array. Blank
 lines are ignored, and an invalid final line fails the stream while keeping the
 events that were already safely published.
 
+## Bounded Collections
+
+Agent timelines, logs, and tool-event feeds can run much longer than a chat
+answer. Use `maxItems` when the UI only needs the latest window:
+
+```ts
+const timeline = stream.events(agent.run(task), { maxItems: 200 });
+const logs = stream.ndjson(logSource, { maxItems: 500 });
+const rows = stream.list(rowSource, { maxItems: 100 });
+```
+
+The current signal value keeps the newest items. Async iteration, chunk history,
+and `chunkCount()` still reflect the full stream lifecycle.
+
 ## Event Streams
 
 Provider streams are only the transport boundary. Agent interfaces need a richer runtime surface: text tokens, tool calls, status updates, reasoning notes, diffs, artifacts, retries, and errors can all be modeled as typed events.

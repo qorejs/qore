@@ -4,6 +4,7 @@
 
 - Added `stream.json(...)` for structured JSON text streams so provider output can become typed signal state without manual parse glue.
 - Added `stream.ndjson(...)` for line-delimited structured event streams so server and agent events can publish typed objects per line.
+- Added `maxItems` for collection-style stream signals so long-running `stream.list(...)`, `stream.events(...)`, and `stream.ndjson(...)` feeds can keep a bounded UI window.
 - Added validation, trailing-whitespace, trailing-garbage, type-level, and public API snapshot coverage for structured stream parsing.
 - Documented structured output in the README, API reference, and runtime guide.
 

@@ -9,6 +9,7 @@ import type {
   QoreStream,
   RetryBackoff,
   RetryableStreamOptions,
+  StreamCollectionOptions,
   StreamEventBase,
   StreamEventOf,
   StreamEventOptions,
@@ -48,11 +49,11 @@ streamFactory.text = <TChunk = unknown>(
 // Convenience constructor for streams that accumulate every chunk into an array.
 streamFactory.list = <TChunk>(
   sourceOrSetup: StreamInput<TChunk, TChunk[]>,
-  options: StreamOptions<TChunk, TChunk[]> = {}
+  options: StreamCollectionOptions<TChunk> = {}
 ): QoreStream<TChunk, TChunk[]> => createStream(sourceOrSetup, {
-  seed: [],
-  reduce: (currentValue, chunk) => [...currentValue, chunk],
-  ...options
+  ...options,
+  seed: trimCollection(options.seed ?? [], options.maxItems),
+  reduce: createCollectionReducer(options)
 });
 
 // Convenience constructor for streams that only expose the latest chunk as current value.
@@ -125,8 +126,12 @@ streamFactory.ndjson = <TValue = unknown>(
     seed = [],
     parse = JSON.parse as (text: string) => TValue,
     validate,
+    maxItems,
     ...streamOptions
   } = options;
+  const collectionOptions: StreamCollectionOptions<TValue> = maxItems === undefined
+    ? { ...streamOptions, seed }
+    : { ...streamOptions, seed, maxItems };
 
   return createStream<TValue, TValue[]>(async (controller) => {
     let buffer = '';
@@ -163,9 +168,9 @@ streamFactory.ndjson = <TValue = unknown>(
       await publishLine(buffer);
     }
   }, {
-    seed,
-    reduce: (currentValue, chunk) => [...currentValue, chunk],
-    ...streamOptions
+    ...streamOptions,
+    seed: trimCollection(seed, maxItems),
+    reduce: createCollectionReducer(collectionOptions)
   });
 };
 
@@ -173,9 +178,9 @@ streamFactory.events = <TEvent extends StreamEventBase>(
   sourceOrSetup: StreamInput<TEvent, TEvent[]>,
   options: StreamEventOptions<TEvent> = {}
 ): QoreEventStream<TEvent> => attachEventSelectors(createStream(sourceOrSetup, {
-  seed: [] as TEvent[],
-  reduce: (currentValue, chunk) => [...currentValue, chunk],
-  ...options
+  ...options,
+  seed: [],
+  reduce: createCollectionReducer<TEvent>(options)
 }));
 
 // Attach backpressure behavior without changing the reducer semantics.
@@ -477,6 +482,44 @@ function parseStructuredValue<TValue>(
   return parsed;
 }
 
+function createCollectionReducer<TChunk>(
+  options: StreamCollectionOptions<TChunk>
+): (currentValue: TChunk[], chunk: TChunk, index: number) => TChunk[] {
+  return (currentValue, chunk, index) => {
+    const nextValue = options.reduce
+      ? options.reduce(currentValue, chunk, index)
+      : [...currentValue, chunk];
+
+    return trimCollection(nextValue, options.maxItems);
+  };
+}
+
+function trimCollection<TItem>(items: TItem[], maxItems: number | undefined): TItem[] {
+  const normalizedMaxItems = normalizeMaxItems(maxItems);
+
+  if (normalizedMaxItems === null || items.length <= normalizedMaxItems) {
+    return items;
+  }
+
+  if (normalizedMaxItems === 0) {
+    return [];
+  }
+
+  return items.slice(items.length - normalizedMaxItems);
+}
+
+function normalizeMaxItems(maxItems: number | undefined): number | null {
+  if (maxItems === undefined) {
+    return null;
+  }
+
+  if (!Number.isFinite(maxItems)) {
+    return null;
+  }
+
+  return Math.max(0, Math.floor(maxItems));
+}
+
 // Turn any iterable or async iterable into a stream, optionally adding source delay.
 export function from<TChunk, TValue = string>(
   source: SourceLike<TChunk>,
@@ -554,6 +597,7 @@ export type {
   QoreStream,
   RetryBackoff,
   RetryableStreamOptions,
+  StreamCollectionOptions,
   StreamController,
   StreamEventBase,
   StreamEventOf,
