@@ -17,6 +17,7 @@ import type {
   StreamFactory,
   StreamInput,
   StreamPipeStage,
+  StreamSelectCollectionOptions,
   StreamSelectOptions,
   StreamOptions,
   StructuredLineStreamOptions,
@@ -405,16 +406,20 @@ function attachEventSelectors<TEvent extends StreamEventBase>(
   eventStream.select = function select<TType extends StreamEventType<TEvent>, TValue>(
     type: TType,
     options?: StreamSelectOptions<StreamEventOf<TEvent, TType>, TValue>
+      | StreamSelectCollectionOptions<StreamEventOf<TEvent, TType>>
   ): QoreStream<StreamEventOf<TEvent, TType>, TValue | Array<StreamEventOf<TEvent, TType>>> {
     type SelectedEvent = StreamEventOf<TEvent, TType>;
 
     let seen = 0;
     let drain = Promise.resolve();
 
-    const selectedOptions = options ?? {
-      seed: [] as SelectedEvent[],
-      reduce: (currentValue: SelectedEvent[], chunk: SelectedEvent) => [...currentValue, chunk]
-    };
+    const selectedOptions = isCollectionSelectOptions<SelectedEvent, TValue>(options)
+      ? {
+          ...options,
+          seed: trimCollection(options?.seed ?? [], options?.maxItems),
+          reduce: createCollectionReducer<SelectedEvent>(options ?? {})
+        }
+      : options;
 
     return createStream<SelectedEvent, TValue | SelectedEvent[]>(async (controller) => {
       const emitFrom = async (chunks: TEvent[]): Promise<void> => {
@@ -449,6 +454,12 @@ function attachEventSelectors<TEvent extends StreamEventBase>(
   };
 
   return eventStream;
+}
+
+function isCollectionSelectOptions<TEvent extends StreamEventBase, TValue>(
+  options: StreamSelectOptions<TEvent, TValue> | StreamSelectCollectionOptions<TEvent> | undefined
+): options is StreamSelectCollectionOptions<TEvent> | undefined {
+  return options === undefined || Array.isArray(options.seed) || 'maxItems' in options;
 }
 
 async function resolveRetryDelay(backoff: RetryBackoff, retry: number, error: unknown): Promise<number> {
@@ -606,6 +617,7 @@ export type {
   StreamFactory,
   StreamInput,
   StreamOptions,
+  StreamSelectCollectionOptions,
   StreamSelectOptions,
   StreamSetup,
   StructuredLineStreamOptions,

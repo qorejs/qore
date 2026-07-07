@@ -475,6 +475,29 @@ test('stream.events select can reduce one event type into UI-ready state', async
   assert.deepEqual(diff(), [{ type: 'diff', patch: '+stream.events' }]);
 });
 
+test('stream.events select can bound selected event timelines', async () => {
+  type AgentEvent =
+    | { type: 'status'; value: string }
+    | { type: 'text'; text: string };
+
+  const events = stream.events<AgentEvent>([
+    { type: 'status', value: 'queued' },
+    { type: 'text', text: 'one' },
+    { type: 'status', value: 'thinking' },
+    { type: 'text', text: 'two' },
+    { type: 'status', value: 'done' }
+  ]);
+  const statuses = events.select('status', { maxItems: 2 });
+
+  await Promise.all([events.ready, statuses.ready]);
+
+  assert.deepEqual(statuses(), [
+    { type: 'status', value: 'thinking' },
+    { type: 'status', value: 'done' }
+  ]);
+  assert.equal(statuses.chunkCount(), 3);
+});
+
 test('stream.events select replays event history when created after completion', async () => {
   const events = stream.events([
     { type: 'status', value: 'queued' },

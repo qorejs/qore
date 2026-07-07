@@ -28,6 +28,7 @@ export type {
   StreamFactory,
   StreamInput,
   StreamOptions,
+  StreamSelectCollectionOptions,
   StreamSelectOptions,
   StreamSetup,
   StructuredLineStreamOptions,

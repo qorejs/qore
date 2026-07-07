@@ -37,6 +37,7 @@ import {
   type SSEAdapter,
   type StreamCollectionOptions,
   type StreamEventOf,
+  type StreamSelectCollectionOptions,
   type StructuredLineStreamOptions,
   type StructuredStreamOptions
 } from '../src/index.js';
@@ -82,6 +83,7 @@ const eventSource = stream.events<AgentEvent>([
   { type: 'diff', patch: '+hello' }
 ]);
 const selectedTextEvents = eventSource.select('text');
+const boundedStatusEvents = eventSource.select('status', { maxItems: 1 });
 const selectedTextValue = eventSource.select('text', {
   seed: '',
   reduce: (currentValue, event) => currentValue + event.text
@@ -150,6 +152,9 @@ const structuredOptions: StructuredStreamOptions<{ ok: boolean }> = {
 const collectionOptions: StreamCollectionOptions<{ ok: boolean }> = {
   maxItems: 10
 };
+const selectCollectionOptions: StreamSelectCollectionOptions<Extract<AgentEvent, { type: 'status' }>> = {
+  maxItems: 5
+};
 const structuredLineOptions: StructuredLineStreamOptions<{ ok: boolean }> = {
   maxItems: 10,
   validate(value): value is { ok: boolean } {
@@ -202,6 +207,7 @@ type _RetriedStream = Assert<Equal<typeof retriedSource, QoreStream<string, stri
 type _SwitchedStream = Assert<Equal<typeof switchedSource, QoreStream<string, string>>>;
 type _EventStream = Assert<Equal<typeof eventSource, QoreEventStream<AgentEvent>>>;
 type _SelectedTextEvents = Assert<Equal<typeof selectedTextEvents, QoreStream<{ type: 'text'; text: string }, Array<{ type: 'text'; text: string }>>>>;
+type _BoundedStatusEvents = Assert<Equal<typeof boundedStatusEvents, QoreStream<{ type: 'status'; value: 'running' | 'done' }, Array<{ type: 'status'; value: 'running' | 'done' }>>>>;
 type _SelectedTextValue = Assert<Equal<typeof selectedTextValue, QoreStream<{ type: 'text'; text: string }, string>>>;
 type _StreamEventOf = Assert<Equal<StreamEventOf<AgentEvent, 'tool_call'>, { type: 'tool_call'; name: string }>>;
 type _MappedStream = Assert<Equal<typeof mappedSource, QoreStream<string, string>>>;
@@ -220,6 +226,7 @@ void providerOptions;
 void retryOptions;
 void structuredOptions;
 void collectionOptions;
+void selectCollectionOptions;
 void structuredLineOptions;
 void providerMetadata;
 void mergedMetadata;

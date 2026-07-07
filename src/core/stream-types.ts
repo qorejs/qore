@@ -83,6 +83,8 @@ export type StreamSelectOptions<
   TValue
 > = StreamOptions<TEvent, TValue>;
 
+export type StreamSelectCollectionOptions<TEvent extends StreamEventBase> = StreamCollectionOptions<TEvent>;
+
 export interface RetryableStreamOptions<TChunk = unknown, TValue = string> extends StreamOptions<TChunk, TValue> {
   maxRetries?: number;
   backoff?: RetryBackoff;
@@ -133,6 +135,10 @@ export interface QoreEventStream<TEvent extends StreamEventBase = StreamEventBas
   extends QoreStream<TEvent, TEvent[]> {
   select<TType extends StreamEventType<TEvent>>(
     type: TType
+  ): QoreStream<StreamEventOf<TEvent, TType>, Array<StreamEventOf<TEvent, TType>>>;
+  select<TType extends StreamEventType<TEvent>>(
+    type: TType,
+    options: StreamSelectCollectionOptions<StreamEventOf<TEvent, TType>>
   ): QoreStream<StreamEventOf<TEvent, TType>, Array<StreamEventOf<TEvent, TType>>>;
   select<TType extends StreamEventType<TEvent>, TValue>(
     type: TType,

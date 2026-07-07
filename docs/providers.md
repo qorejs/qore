@@ -56,3 +56,20 @@ const answer = stream(openai.chat('Explain stream = signal'));
 ```
 
 Keep this code on the server when it uses real secrets.
+
+
+## Server Boundary
+
+Provider adapters are designed for server-side or otherwise trusted runtimes. A browser application should not receive provider API keys. The recommended production path is:
+
+```text
+Browser UI -> your SSE / NDJSON endpoint -> provider adapter -> model provider
+```
+
+Then the browser consumes your endpoint as a Qore stream:
+
+```ts
+const answer = stream(fetch('/api/agent').then((response) => response.body));
+```
+
+For a complete application boundary example, see [`examples/server-sse-to-qore-client.ts`](../examples/server-sse-to-qore-client.ts).

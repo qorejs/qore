@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.0.7 - 2026-07-07
+
+- Added bounded selected event stream windows via `events.select(type, { maxItems })` so long-running agent status, retry, and tool panes can stay compact without losing async iteration semantics.
+- Added production-facing examples for streaming markdown + code diff surfaces and server-safe SSE endpoints consumed by browser Qore streams.
+
 - Added `stream.json(...)` for structured JSON text streams so provider output can become typed signal state without manual parse glue.
 - Added `stream.ndjson(...)` for line-delimited structured event streams so server and agent events can publish typed objects per line.
 - Added `maxItems` for collection-style stream signals so long-running `stream.list(...)`, `stream.events(...)`, and `stream.ndjson(...)` feeds can keep a bounded UI window.

@@ -46,7 +46,7 @@ const text = events.select('text', {
   reduce: (current, event) => current + event.text
 });
 const tools = events.select('tool_call');
-const status = events.select('status');
+const status = events.select('status', { maxItems: 20 });
 const diff = events.select('diff', {
   seed: '',
   reduce: (current, event) => current + event.patch
@@ -55,7 +55,7 @@ const diff = events.select('diff', {
 
 `from(source, options?)` remains available as a standalone export for callers that prefer named helpers. `stream.from(source, options?)` is the same helper exposed on the factory for API discoverability.
 
-`stream.events(...)` returns a `QoreEventStream`: a `QoreStream` whose current value is the full event timeline. `select(type)` projects one event type into another stream signal. Without a custom reducer, selected streams accumulate matching events into an array. See [`examples/agent-event-stream.ts`](../examples/agent-event-stream.ts) for a complete typed agent surface.
+`stream.events(...)` returns a `QoreEventStream`: a `QoreStream` whose current value is the full event timeline. `select(type)` projects one event type into another stream signal. Without a custom reducer, selected streams accumulate matching events into an array. `select(type, { maxItems })` bounds only that selected signal window, which is useful for long-running status, retry, and tool-call panes. See [`examples/agent-event-stream.ts`](../examples/agent-event-stream.ts) for a complete typed agent surface.
 
 ### Structured JSON
 
@@ -80,6 +80,7 @@ long-running feeds:
 
 ```js
 const events = stream.events(agent.run(task), { maxItems: 200 });
+const status = events.select('status', { maxItems: 20 });
 const lines = stream.ndjson(source, { maxItems: 500 });
 const rows = stream.list(source, { maxItems: 100 });
 ```

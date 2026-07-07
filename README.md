@@ -69,11 +69,11 @@ const text = events.select('text', {
   reduce: (current, event) => current + event.text
 });
 const tools = events.select('tool_call');
-const status = events.select('status');
+const status = events.select('status', { maxItems: 20 });
 const diff = events.select('diff');
 ```
 
-Each selected stream is still a signal and an async iterable. A timeline can render every event, while a markdown pane can bind only to `text()`. The runnable shape is captured in [`examples/agent-event-stream.ts`](./examples/agent-event-stream.ts).
+Each selected stream is still a signal and an async iterable. A timeline can render every event, while a markdown pane can bind only to `text()`. Use `maxItems` on the full timeline or selected timelines when an agent can run for minutes. The runnable shape is captured in [`examples/agent-event-stream.ts`](./examples/agent-event-stream.ts), with focused examples for [`streaming-markdown-diff`](./examples/streaming-markdown-diff.ts) and [`server-sse-to-qore-client`](./examples/server-sse-to-qore-client.ts).
 
 ## Structured Output
 
@@ -127,7 +127,7 @@ See [React Adapter](./docs/react.md) for lifecycle, status, abort, and signal su
 
 ## Provider Safety
 
-Provider adapters are intended for server-side or trusted runtimes. Do not put `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or any vendor secret in browser code. For browsers, expose your own SSE or NDJSON endpoint and stream that endpoint into Qore.
+Provider adapters are intended for server-side or trusted runtimes. Do not put `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or any vendor secret in browser code. For browsers, expose your own SSE or NDJSON endpoint and stream that endpoint into Qore. See [`examples/server-sse-to-qore-client.ts`](./examples/server-sse-to-qore-client.ts) for the recommended boundary.
 
 ## Inspect Streams
 

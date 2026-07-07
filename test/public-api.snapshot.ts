@@ -107,6 +107,7 @@ export const PUBLIC_API_SNAPSHOT = [
   'StreamInput',
   'StreamInspectorOptions',
   'StreamOptions',
+  'StreamSelectCollectionOptions',
   'StreamSelectOptions',
   'StreamSetup',
   'StructuredLineStreamOptions',
